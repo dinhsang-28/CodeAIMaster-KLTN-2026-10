@@ -12,12 +12,67 @@ import { GetCartLength } from "../../api/cart";
 import {useUserCart} from "../../store/cart";
 import { get } from "node:http";
 import { PostLogout } from "../../api/auth";
+import { AutoComplete } from "antd";
+import { useCourseStore } from "../../store/course";
+import { CloseOutlined } from "@ant-design/icons";
 const Navbar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [navSelected, setNavSelected] = useState(location.pathname);
     const { userInfo, clearUserInfo } = useUserInfo();
     const {setQuantityCart,countQuantityCart} = useUserCart();
+    const { globalCourses, setGlobalSearchKeyword } = useCourseStore();
+    const [searchValue, setSearchValue] = useState("");
+    const [options, setOptions] = useState<{ value: string; label: React.ReactNode }[]>([]);
+
+    const handleSearch = (value: string) => {
+        setSearchValue(value);
+
+        if (!value) {
+            setOptions([]);
+            return;
+        }
+
+        const filtered = globalCourses
+            .filter((course) =>
+                course.title.toLowerCase().includes(value.toLowerCase())
+            )
+            .map((course) => ({
+                value: course.title,
+                label: (
+                    <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                        <img
+                            src={course.thumbnail}
+                            alt=""
+                            className="w-10 h-10 object-cover rounded-lg"
+                        />
+                        <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-slate-800">
+                                {course.title}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                                {course.category.category_name}
+                            </span>
+                        </div>
+                    </div>
+                ),
+            }));
+
+        setOptions(filtered);
+    };
+
+    const handleSelect = (value: string) => {
+        setSearchValue(value);
+        setGlobalSearchKeyword(value);
+        navigate("/course");
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            setGlobalSearchKeyword(searchValue);
+            navigate("/course");
+        }
+    };
     useEffect(() => {
         setNavSelected(location.pathname);
     }, [location]);
@@ -96,13 +151,35 @@ const Navbar = () => {
                     </nav>
                 </div>
                 <div className="flex space-x-6">
-                    <div className="flex items-center rounded-full bg-brand-25 space-x-3 px-4 py-2 shadow-md">
-                        <SearchOutlined className="cursor-pointer hover:text-brand-400" />
-                        <input
-                            className="bg-brand-25 rounded-full px-2 outline-none"
-                            type="text"
-                            placeholder="Tìm kiếm khóa học..."
-                        />
+                    <div className="flex items-center rounded-full bg-brand-25 space-x-3 px-4 py-2 shadow-md w-[400px]">
+                        <SearchOutlined className="cursor-pointer hover:text-brand-400" onClick={() => {
+                            setGlobalSearchKeyword(searchValue);
+                            navigate("/course");
+                        }} />
+                        <AutoComplete
+                            value={searchValue}
+                            options={options}
+                            onSearch={handleSearch}
+                            onSelect={handleSelect}
+                            className="w-full custom-autocomplete"
+                            notFoundContent={searchValue ? "Không có kết quả tìm kiếm" : null}
+                        >
+                            <input
+                                className="bg-transparent w-full outline-none border-none focus:outline-none focus:ring-0 placeholder:text-gray-500 font-medium text-sm"
+                                type="text"
+                                placeholder="Tìm kiếm khóa học..."
+                                onKeyDown={handleKeyDown}
+                            />
+                        </AutoComplete>
+                        {searchValue && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchValue("")}
+                                className="ml-2 text-slate-400 hover:text-slate-600"
+                            >
+                                <CloseOutlined />
+                            </button>
+                        )}
                     </div>
 
                     {userInfo && (

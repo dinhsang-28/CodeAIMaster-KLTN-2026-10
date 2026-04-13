@@ -1,7 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { QuestionsService } from './questions.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
+import { ParseObjectIdPipe } from '@/common/pipes/parse-object-id.pipe';
 
 @Controller('questions')
 export class QuestionsController {
@@ -13,22 +23,25 @@ export class QuestionsController {
   }
 
   @Get()
-  findAll() {
-    return this.questionsService.findAll();
+  findAll(@Query('quiz_id') quizId?: string) {
+    return this.questionsService.findAll(quizId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.questionsService.findOne(+id);
+  findOne(@Param('id', ParseObjectIdPipe) id: string) {
+    return this.questionsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateQuestionDto: UpdateQuestionDto) {
-    return this.questionsService.update(+id, updateQuestionDto);
+  update(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() updateQuestionDto: UpdateQuestionDto,
+  ) {
+    return this.questionsService.update(id, updateQuestionDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.questionsService.remove(+id);
+  remove(@Param('id', ParseObjectIdPipe) id: string) {
+    return this.questionsService.remove(id);
   }
 }

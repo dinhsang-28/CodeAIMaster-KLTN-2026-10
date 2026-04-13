@@ -6,7 +6,11 @@ import HomeRoute from "../../components/home/home-route";
 import HomeNews from "../../components/home/home-news";
 import CTASection from "../../components/home/home-box";
 import Footer from "../../components/footer";
+import { useEffect } from "react";
+import { useUserInfo } from "../../store/user";
 const Home = () => {
+  const {userInfo} = useUserInfo();
+  
   return (
     <div className="">
       <HomeBaner />
@@ -14,7 +18,11 @@ const Home = () => {
       <HomeCourses />
       <HomeRoute />
       <HomeNews />
-      <CTASection />
+      {userInfo ? (
+        <></>
+      ) : (
+        <CTASection />
+      )}
       <Footer />
     </div>
   );

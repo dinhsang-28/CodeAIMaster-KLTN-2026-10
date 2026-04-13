@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Get,
@@ -7,10 +6,12 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { SearchCourse } from './dto/search-course.dto';
 
 @Controller('courses')
 export class CoursesController {
@@ -25,6 +26,11 @@ export class CoursesController {
   @Get()
   findAll() {
     return this.coursesService.findAll();
+  }
+
+  @Get('search')
+  searchCourse(@Query() search: SearchCourse) {
+    return this.coursesService.searchCourses(search);
   }
 
   @Get(':id')

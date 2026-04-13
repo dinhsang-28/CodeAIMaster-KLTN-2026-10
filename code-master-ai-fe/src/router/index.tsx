@@ -19,12 +19,12 @@ import CourseManage from "../pages/courseManage";
 import ExerciseManage from "../pages/exerciseManage";
 import UserManage from "../pages/userManage";
 import CategoryManage from "../pages/categoryManage";
+import RevenueStatisticsPage from "../pages/revenueManage";
 import GoogleAuthCallback from "../pages/auth/GoogleAuthCallback";
 import LearnLayout from "../layout/LearnLayout";
 import LessonPage from "../pages/lesson";
 import Quizz from "../pages/quizz";
 import GithubAuthCallback from "../pages/auth/GithubAuthCallback";
-import RevenueStatisticsPage from "../pages/revenueManage";
 import ExercisePage from "../pages/lesson/excersite";
 
 export const router = createBrowserRouter([

@@ -5,7 +5,8 @@ export type CodeAssignmentDocument = HydratedDocument<CodeAssignment>;
 
 @Schema({ timestamps: true })
 export class CodeAssignment {
-  @Prop({ type: Types.ObjectId, ref: 'Assignment', required: true }) assignment_id!: Types.ObjectId ;
+  @Prop({ type: Types.ObjectId, ref: 'Assignment', required: true })
+  assignment_id!: Types.ObjectId;
   @Prop({ required: true }) problem_description!: string;
   @Prop() input_format!: string;
   @Prop() output_format!: string;
@@ -21,4 +22,5 @@ export class CodeAssignment {
   @Prop({ type: [String], default: [] })
   tags!: string[]; // ['Array', 'For Loop', 'Math']
 }
-export const CodeAssignmentSchema = SchemaFactory.createForClass(CodeAssignment);
+export const CodeAssignmentSchema =
+  SchemaFactory.createForClass(CodeAssignment);

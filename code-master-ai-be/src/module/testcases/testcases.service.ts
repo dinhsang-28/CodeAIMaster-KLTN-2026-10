@@ -1,25 +1,44 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateTestcaseDto } from './dto/create-testcase.dto';
 import { UpdateTestcaseDto } from './dto/update-testcase.dto';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { TestCase, TestCaseDocument } from './entities/testcase.entity';
 import { Model, Types } from 'mongoose';
-import { Assignment, AssignmentDocument } from '../assignments/entities/assignment.entity';
+import {
+  Assignment,
+  AssignmentDocument,
+} from '../assignments/entities/assignment.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Type } from 'class-transformer';
-import { CodeAssignment, CodeAssignmentDocument } from '../code-assignments/entities/code-assignment.entity';
+import {
+  CodeAssignment,
+  CodeAssignmentDocument,
+} from '../code-assignments/entities/code-assignment.entity';
 
 @Injectable()
 export class TestcasesService {
   private genAI: GoogleGenerativeAI;
   constructor(
-    @InjectModel(TestCase.name) private testCaseModel:Model<TestCaseDocument>,
-    @InjectModel(Assignment.name) private assignmentModel:Model<AssignmentDocument>,
-    @InjectModel(CodeAssignment.name) private codeAssignmentModel: Model<CodeAssignmentDocument>
-  ){this.genAI=new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')};
-  async generateTestCaseByAI(assignmentId:string , solutionCode:string,constraints:string,numberOfTestCases:number=5){
+    @InjectModel(TestCase.name) private testCaseModel: Model<TestCaseDocument>,
+    @InjectModel(Assignment.name)
+    private assignmentModel: Model<AssignmentDocument>,
+    @InjectModel(CodeAssignment.name)
+    private codeAssignmentModel: Model<CodeAssignmentDocument>,
+  ) {
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+  }
+  async generateTestCaseByAI(
+    assignmentId: string,
+    solutionCode: string,
+    constraints: string,
+    numberOfTestCases: number = 5,
+  ) {
     const assignment = await this.assignmentModel.findById(assignmentId);
-    if(!assignment){
+    if (!assignment) {
       throw new BadRequestException('khong tim thay bai tap');
     }
     // 2. Thiết lập Prompt ép AI trả về chuẩn cấu trúc DB của bạn
@@ -47,46 +66,97 @@ export class TestcasesService {
       ]
     `;
     try {
-      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = this.genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+      });
       const result = await model.generateContent(prompt); // Đã sửa lại lỗi await
       let textResponse = result.response.text();
-      
-      textResponse = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+
+      textResponse = textResponse
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
       const parsedTestCases = JSON.parse(textResponse);
-      
-      const testCasesToSave = parsedTestCases.map(tc => ({
+
+      const testCasesToSave = parsedTestCases.map((tc) => ({
         ...tc,
-        assignment_id: new Types.ObjectId(assignmentId)
+        assignment_id: new Types.ObjectId(assignmentId),
       }));
-      
-      const savedTestCases = await this.testCaseModel.insertMany(testCasesToSave);
-      
+
+      const savedTestCases =
+        await this.testCaseModel.insertMany(testCasesToSave);
+
       return {
         message: `Đã tự động tạo và lưu ${savedTestCases.length} Test Cases thành công!`,
-        data: testCasesToSave
-      }
+        data: testCasesToSave,
+      };
     } catch (error) {
       console.error(error);
-      throw new BadRequestException('AI tạo Test Case thất bại, vui lòng thử lại hoặc kiểm tra prompt.');
+      throw new BadRequestException(
+        'AI tạo Test Case thất bại, vui lòng thử lại hoặc kiểm tra prompt.',
+      );
     }
   }
-  // create(createTestcaseDto: CreateTestcaseDto) {
-  //   return 'This action adds a new testcase';
-  // }
+  async findAll(code_assignment_id?: string): Promise<TestCase[]> {
+    ``;
+    const filter: Record<string, any> = {};
+    if (code_assignment_id) {
+      if (!Types.ObjectId.isValid(code_assignment_id)) {
+        throw new BadRequestException('code_assignment_id không hợp lệ');
+      }
+      filter.code_assignment_id = code_assignment_id;
+    }
 
-  // findAll() {
-  //   return `This action returns all testcases`;
-  // }
+    return this.testCaseModel.find(filter).lean().exec();
+  }
+  async create(createTestcaseDto: CreateTestcaseDto): Promise<TestCase> {
+    const codeAssignment = await this.codeAssignmentModel.findById(
+      createTestcaseDto.code_assignment_id,
+    );
+    if (!codeAssignment) {
+      throw new NotFoundException('CodeAssignment not found');
+    }
 
-  // findOne(id: number) {
-  //   return `This action returns a #${id} testcase`;
-  // }
+    return this.testCaseModel.create(createTestcaseDto);
+  }
+  async findOne(id: string): Promise<TestCase> {
+    const testCase = await this.testCaseModel.findById(id).lean().exec();
+    if (!testCase) {
+      throw new NotFoundException('TestCase not found');
+    }
+    return testCase;
+  }
 
-  // update(id: number, updateTestcaseDto: UpdateTestcaseDto) {
-  //   return `This action updates a #${id} testcase`;
-  // }
+  async update(
+    id: string,
+    updateTestcaseDto: UpdateTestcaseDto,
+  ): Promise<TestCase> {
+    if (updateTestcaseDto.code_assignment_id) {
+      const codeAssignment = await this.codeAssignmentModel.findById(
+        updateTestcaseDto.code_assignment_id,
+      );
+      if (!codeAssignment) {
+        throw new NotFoundException('CodeAssignment not found');
+      }
+    }
 
-  // remove(id: number) {
-  //   return `This action removes a #${id} testcase`;
-  // }
+    const updated = await this.testCaseModel.findByIdAndUpdate(
+      id,
+      updateTestcaseDto,
+      { new: true, runValidators: true },
+    );
+
+    if (!updated) {
+      throw new NotFoundException('TestCase not found');
+    }
+
+    return updated.toObject();
+  }
+
+  async remove(id: string): Promise<void> {
+    const deleted = await this.testCaseModel.findByIdAndDelete(id);
+    if (!deleted) {
+      throw new NotFoundException('TestCase not found');
+    }
+  }
 }

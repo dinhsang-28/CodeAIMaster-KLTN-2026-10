@@ -3,7 +3,7 @@
 }
 
 .App-logo {
-  height: 40vmin;
+  height        : 40vmin;
   pointer-events: none;
 }
 
@@ -13,15 +13,46 @@
   }
 }
 
+.custom-autocomplete,
+.custom-autocomplete .ant-select-selector,
+.custom-autocomplete .ant-input,
+.custom-autocomplete input,
+.custom-autocomplete .ant-select-selection-search-input,
+.custom-autocomplete .ant-select-selection-search-input input {
+  border        : none !important;
+  border-color  : transparent !important;
+  box-shadow    : none !important;
+  outline       : none !important;
+  outline-offset: 0 !important;
+  background    : transparent !important;
+}
+
+.custom-autocomplete.ant-select-focused .ant-select-selector,
+.custom-autocomplete.ant-select-focused .ant-select-selection-search-input,
+.custom-autocomplete .ant-input:focus,
+.custom-autocomplete input:focus,
+.custom-autocomplete .ant-select-selector:focus,
+.custom-autocomplete .ant-select-selection-search-input:focus,
+.custom-autocomplete :focus,
+.custom-autocomplete :focus-visible,
+.custom-autocomplete *:focus,
+.custom-autocomplete *:focus-visible {
+  border        : none !important;
+  border-color  : transparent !important;
+  box-shadow    : none !important;
+  outline       : none !important;
+  outline-offset: 0 !important;
+}
+
 .App-header {
   background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  min-height      : 100vh;
+  display         : flex;
+  flex-direction  : column;
+  align-items     : center;
+  justify-content : center;
+  font-size       : calc(10px + 2vmin);
+  color           : white;
 }
 
 .App-link {
@@ -32,6 +63,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }

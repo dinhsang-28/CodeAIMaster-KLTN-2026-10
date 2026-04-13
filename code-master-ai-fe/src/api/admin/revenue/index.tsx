@@ -1,5 +1,6 @@
 import { API_URL } from "../../auth";
 import axios from "axios";
+import { showMessage } from "../../../utils/showMessages";
 
 export const GetRevenue = async (year: string) => {
   const Url = `${API_URL}/statistics/revenue-by-month?year=${year}`;
@@ -12,4 +13,7 @@ export const GetRevenue = async (year: string) => {
     console.log("THAT BAI: ", err);
     throw err;
   }
+};
+export const GetRevenueExport = async (year: string) => {
+  window.location.href = `${API_URL}/statistics/export-revenue-detail?year=${year}`;
 };

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+// import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { GetHistoryOrder, type OrderItem } from "../../api/order/HistoryOrder";
 import type { OrderStatus, PurchaseItem } from "../../types/purchase/purchase";
 import EmptyState from "../../components/purchase/empty-state/EmptyState";
@@ -45,24 +46,81 @@ const PurchaseHistoryContent = () => {
     return new Date(date).toLocaleDateString("vi-VN");
   };
 
-  const mapApiOrderToPurchaseItem = (order: OrderItem): PurchaseItem => {
-    const firstOrderDetail = order.orderDetails?.[0];
-    const firstCourse = firstOrderDetail?.course;
+  // const mapApiOrderToPurchaseItem = (order: OrderItem): PurchaseItem => {
+  //   const firstOrderDetail = order.orderDetails?.[0];
+  //   const firstCourse = firstOrderDetail?.course;
 
-    return {
-      id: order._id,
-      typeLabel: "Khóa học trực tuyến",
-      title: firstCourse?.title || "Đơn hàng khóa học",
-      date: formatDate(order.createdAt),
-      paymentMethod: "Thanh toán online",
-      total: formatPrice(order.total_price),
-      status: mapOrderStatus(order.status),
-      thumbnail:
-        order.firstCourseImage ||
-        firstCourse?.thumbnail ||
-        "https://via.placeholder.com/300x200?text=Course",
-    };
-  };
+  //   return {
+  //     id: order._id,
+  //     typeLabel: "Khóa học trực tuyến",
+  //     title: firstCourse?.title || "Đơn hàng khóa học",
+  //     date: formatDate(order.createdAt),
+  //     paymentMethod: "Thanh toán online",
+  //     total: formatPrice(order.total_price),
+  //     status: mapOrderStatus(order.status),
+  //     thumbnail:
+  //       order.firstCourseImage ||
+  //       firstCourse?.thumbnail ||
+  //       "https://via.placeholder.com/300x200?text=Course",
+  //   };
+  // };
+  const mapApiOrderToPurchaseItem = useCallback(
+    (order: OrderItem): PurchaseItem => {
+      const firstOrderDetail = order.orderDetails?.[0];
+      const firstCourse = firstOrderDetail?.course;
+
+      return {
+        id: order._id,
+        typeLabel: "Khóa học trực tuyến",
+        title: firstCourse?.title || "Đơn hàng khóa học",
+        date: formatDate(order.createdAt),
+        paymentMethod: "Thanh toán online",
+        total: formatPrice(order.total_price),
+        status: mapOrderStatus(order.status),
+        thumbnail:
+          order.firstCourseImage ||
+          firstCourse?.thumbnail ||
+          "https://via.placeholder.com/300x200?text=Course",
+      };
+    },
+    [],
+  );
+  // useEffect(() => {
+  //   const fetchOrders = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const apiStatus =
+  //         activeFilter === "all"
+  //           ? undefined
+  //           : activeFilter === "failed"
+  //             ? "cancelled"
+  //             : activeFilter;
+
+  //       const res = await GetHistoryOrder({
+  //         current: currentPage,
+  //         pageSize,
+  //         status: apiStatus,
+  //       });
+
+  //       const mappedOrders = (res.data.results || []).map(
+  //         mapApiOrderToPurchaseItem,
+  //       );
+
+  //       setOrders(mappedOrders);
+  //       setTotalPages(res.data.totalPages || 1);
+  //       setTotalItems(res.data.totalItems || 0);
+  //     } catch (error) {
+  //       console.error("Lỗi lấy lịch sử đơn hàng:", error);
+  //       setOrders([]);
+  //       setTotalPages(1);
+  //       setTotalItems(0);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchOrders();
+  // }, [currentPage, pageSize, activeFilter]);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -99,8 +157,7 @@ const PurchaseHistoryContent = () => {
     };
 
     fetchOrders();
-  }, [currentPage, pageSize, activeFilter]);
-
+  }, [currentPage, pageSize, activeFilter, mapApiOrderToPurchaseItem]);
   useEffect(() => {
     setCurrentPage(1);
   }, [activeFilter]);

@@ -92,24 +92,27 @@ const AdminLayout: React.FC = () => {
                         }`}
                 >
                     {!collapsed ? (
-                        <h1 className="text-[18px] font-bold tracking-tight text-brand-600">
-                            <NavLink to="/admin" className="flex items-center gap-3">
+                        <h1 onClick={() => setCollapsed((prev) => !prev)} className="text-[18px] font-bold tracking-tight text-brand-600 cursor-pointer">
+                            <div  className="flex items-center gap-3">
                                 <div className="bg-brand-600 rounded-full w-8 h-8 flex items-center justify-center">
-                                    {<CodeOutlined className="text-white"/>}
+                                    {<CodeOutlined className="text-white" />}
                                 </div>
                                 <div>
                                     <p>CodeMaster AI</p>
                                     <p className="font-normal text-sm">ADMIN CONSOLE</p>
                                 </div>
-                            </NavLink>
+                            </div>
                         </h1>
                     ) : (
-                        <NavLink
-                            to="/admin"
-                            className="flex h-10 w-10 items-center justify-center text-brand-600 text-lg font-extrabold"
+                        <div
+                           
+                            onClick={() => setCollapsed((prev) => !prev)}
+                            className="flex h-10 w-10 items-center justify-center text-brand-600 text-lg font-extrabold cursor-pointer"
                         >
-                            {<CodeOutlined />}
-                        </NavLink>
+                            <div className="bg-brand-600 rounded-full w-8 h-8 flex items-center justify-center">
+                                {<CodeOutlined className="text-white" />}
+                            </div>
+                        </div>
                     )}
                 </div>
 
@@ -211,17 +214,14 @@ const AdminLayout: React.FC = () => {
                 </header>
 
                 <main className="flex-1 bg-white p-4 md:p-6">
-                    <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-brand-300">
-                        {/* <NavLink to="/admin" className="hover:text-brand-600">
-                            Bảng điều khiển
-                        </NavLink> */}
+                    {/* <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-brand-300">
                         {location.pathname !== "/admin" && (
                             <>
                                 <span>/</span>
                                 <span className="font-semibold text-brand-700">{pageTitle}</span>
                             </>
                         )}
-                    </div>
+                    </div> */}
                     <Outlet />
                 </main>
             </div>

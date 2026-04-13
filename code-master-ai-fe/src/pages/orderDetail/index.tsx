@@ -15,7 +15,7 @@ import { useParams } from "react-router-dom";
 const OrderDetailPage: React.FC = () => {
   const { orderId } = useParams();
   const [order, setOrder] = useState<OrderDetailData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchOrder = async () => {
