@@ -14,6 +14,7 @@ import { ApiResponse } from '@/common/dto/api-response.dto';
 import { Lesson, LessonDocument } from '../lessons/entities/lesson.entity';
 import { SearchCourse } from './dto/search-course.dto';
 import { filter } from 'rxjs';
+import { UploadService } from '@/upload/upload.service';
 
 @Injectable()
 export class CoursesService {
@@ -26,15 +27,26 @@ export class CoursesService {
 
     @InjectModel(Lesson.name)
     private readonly lessonModel: Model<LessonDocument>,
+    private readonly uploadService: UploadService,
   ) {}
-  async create(createCourseDto: CreateCourseDto): Promise<Course> {
+  async create(
+    createCourseDto: CreateCourseDto,
+    file?: Express.Multer.File,
+  ): Promise<Course> {
     const category = await this.categoryModel.findById(
       createCourseDto.category,
     );
-    if (!category)
+    if (!category) {
       throw new NotFoundException('Cant search Category in Course');
+    }
+    let thumbnailUrl = createCourseDto.thumbnail || '';
+    if (file) {
+      const uploadResult = await this.uploadService.uploadFile(file);
+      thumbnailUrl = uploadResult.url;
+    }
     const createCourse = await this.courseModel.create({
       ...createCourseDto,
+      thumbnail: thumbnailUrl,
       level: CourseLevel.BEGINNER,
       status: CourseStatus.ACTIVE,
     });
@@ -79,7 +91,32 @@ export class CoursesService {
     });
   }
 
-  async update(id: string, updateCourseDto: UpdateCourseDto): Promise<Course> {
+  // <<<<<<< HEAD
+  //   async update(id: string, updateCourseDto: UpdateCourseDto): Promise<Course> {
+  // =======
+  //   const lessons = await this.lessonModel
+  //     .find({ course_id: id })
+  //     .sort({ lesson_order: 1 })
+  //     .lean();
+
+  //   return new ApiResponse('Chi tiết khóa học', {
+  //     ...course,
+  //     lessons,
+  //   });
+  // }
+
+  async update(
+    id: string,
+    updateCourseDto: UpdateCourseDto,
+    file?: Express.Multer.File,
+  ): Promise<Course> {
+    let thumbnailUrl = updateCourseDto.thumbnail;
+    if (file) {
+      const uploadResult = await this.uploadService.uploadFile(file);
+      thumbnailUrl = uploadResult.url;
+      updateCourseDto.thumbnail = thumbnailUrl;
+    }
+    // >>>>>>> 7a09b174f54336764d48cfc516c4821069271587
     const updated = await this.courseModel.findByIdAndUpdate(
       id,
       updateCourseDto,

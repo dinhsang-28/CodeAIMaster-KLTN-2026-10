@@ -8,15 +8,21 @@ import { Model } from 'mongoose';
 
 @Injectable()
 export class BlogsService {
+  uploadService: any;
   constructor(
     @InjectModel(Blog.name)
     private readonly blogsModel: Model<BlogDocument>,
   ) {}
 
-  async create(createBlogDto: CreateBlogDto): Promise<ApiResponse<Blog>> {
-    const newBlog = await this.blogsModel.create(createBlogDto);
+  async create(createBlogDto: CreateBlogDto,file:Express.Multer.File): Promise<ApiResponse<Blog>> {
+    let coverImageUrl = createBlogDto.cover_image || '';
+    if (file) {
+      const uploadResult = await this.uploadService.uploadFile(file);
+      coverImageUrl = uploadResult.secure_url;
+    }
+    const newBlog = await this.blogsModel.create({ ...createBlogDto, cover_image: coverImageUrl });
 
-    return new ApiResponse('Tạo thể loại thành công', newBlog.toObject());
+    return new ApiResponse('Tạo bài viết thành công', newBlog.toObject());
   }
 
   async findAll(): Promise<ApiResponse<Blog[]>> {
@@ -38,7 +44,12 @@ export class BlogsService {
   async update(
     id: string,
     updateBlogDto: UpdateBlogDto,
+    file?: Express.Multer.File
   ): Promise<ApiResponse<Blog>> {
+    if (file) {
+      const uploadResult = await this.uploadService.uploadFile(file);
+      updateBlogDto.cover_image = uploadResult.secure_url;
+    }
     const updated = await this.blogsModel.findByIdAndUpdate(id, updateBlogDto, {
       new: true,
       runValidators: true,

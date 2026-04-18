@@ -1,5 +1,4 @@
 import { GetCategories } from "../../api/course";
-import { get } from "node:http";
 
 export type CourseLevel = 'Cơ bản' | 'Trung bình' | 'Nâng cao';
 

@@ -12,7 +12,7 @@ export class AiAssistantService {
   // 1. TÍNH NĂNG GIA SƯ ẢO
   async explainError(language: string, sourceCode: string, status: string, errorDetail: string | null) {
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-flash-lite-latest' });
       
       const prompt = `
       Bạn là một gia sư lập trình AI tận tâm trên hệ thống CodeMaster AI.
@@ -43,7 +43,7 @@ export class AiAssistantService {
     if (failedTags.length === 0) return [];
     
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-flash-lite-latest' });
       const prompt = `
       Dưới đây là danh sách các thẻ (tags) bài tập mà một học viên liên tục làm sai:
       ${JSON.stringify(failedTags)}

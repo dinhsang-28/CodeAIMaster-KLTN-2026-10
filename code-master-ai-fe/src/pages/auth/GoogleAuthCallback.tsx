@@ -46,7 +46,7 @@ export default function GoogleAuthCallback() {
   const { setUserInfo } = useUserInfo();
   const ran = useRef(false);
   useEffect(() => {
-    if (ran.current) return; 
+    if (ran.current) return;
     ran.current = true;
     try {
       const params = new URLSearchParams(window.location.search);
@@ -67,7 +67,7 @@ export default function GoogleAuthCallback() {
       showMessage("error", "Có lỗi khi xử lý đăng nhập Google!");
       navigate("/login");
     }
-  }, []);
+  }, [navigate, setUserInfo]);
 
   return (
     <div className="flex h-screen items-center justify-center">

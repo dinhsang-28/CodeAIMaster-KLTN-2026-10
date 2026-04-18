@@ -7,12 +7,15 @@ import {
   CodeAuthDto,
   CreateAuthDto,
 } from './dto/create-auth.dto';
+// import { permission } from 'process';
 
 @Injectable()
 export class AuthService {
+  userModel: any;
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    
   ) {}
 
   async validateUser(username: string, pass: string): Promise<any> {
@@ -29,7 +32,10 @@ export class AuthService {
     const accessCookieAge = parseInt(process.env.COOKIE_ACCESS_MAX_AGE as string, 10) || 900000;
     const refreshCookieAge = parseInt(process.env.COOKIE_REFRESH_MAX_AGE as string, 10) || 604800000;
 
-    const payload = { username: user.email, sub: user._id.toString() };
+    //lam quyen
+    const userInfo = await this.usersService.findOne(user._id);;
+
+    const payload = { username: user.email, sub: user._id.toString(),permissions: userInfo?.role_id?.['permissions'] || [] };
     
     // Cấp token
     const token = this.jwtService.sign(payload, { expiresIn: accessExpire as any });
@@ -56,7 +62,7 @@ export class AuthService {
     });
 
     return res.status(HttpStatus.OK).json({
-      user: { email: user.email, _id: user._id, name: user.name },
+      user: { email: user.email, _id: user._id, name: user.name ,permissions:payload.permissions,phone:user.phone,image:user.image},
       message: 'Đăng nhập thành công!',
     });
   }

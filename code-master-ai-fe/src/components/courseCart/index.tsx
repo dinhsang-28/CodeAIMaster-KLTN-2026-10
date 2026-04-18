@@ -20,43 +20,43 @@ const getCategoryBadgeClass = (categoryName: string) => {
   }
 };
 
-const getLevelLabel = (level: string) => {
-  switch (level) {
-    case "beginner":
-      return "Cơ bản";
-    case "intermediate":
-      return "Trung bình";
-    case "advanced":
-      return "Nâng cao";
-    default:
-      return level;
-  }
-};
+// const getLevelLabel = (level: string) => {
+//   switch (level) {
+//     case "beginner":
+//       return "Cơ bản";
+//     case "intermediate":
+//       return "Trung bình";
+//     case "advanced":
+//       return "Nâng cao";
+//     default:
+//       return level;
+//   }
+// };
 
-const renderStars = (rating: number) => {
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 !== 0;
-  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+// const renderStars = (rating: number) => {
+//   const fullStars = Math.floor(rating);
+//   const hasHalfStar = rating % 1 !== 0;
+//   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
-  return (
-    <div className="flex items-center gap-1">
-      <div className="flex text-amber-400">
-        {Array.from({ length: fullStars }).map((_, index) => (
-          <span key={`full-${index}`}>★</span>
-        ))}
-        {hasHalfStar && <span>☆</span>}
-        {Array.from({ length: emptyStars }).map((_, index) => (
-          <span key={`empty-${index}`} className="opacity-40">
-            ★
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-};
+//   return (
+//     <div className="flex items-center gap-1">
+//       <div className="flex text-amber-400">
+//         {Array.from({ length: fullStars }).map((_, index) => (
+//           <span key={`full-${index}`}>★</span>
+//         ))}
+//         {hasHalfStar && <span>☆</span>}
+//         {Array.from({ length: emptyStars }).map((_, index) => (
+//           <span key={`empty-${index}`} className="opacity-40">
+//             ★
+//           </span>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// };
 export const CourseCard = ({ course }: { course: ICourse }) => {
   const navigate = useNavigate();
-  const {setQuantityCart} = useUserCart();
+  const { setQuantityCart } = useUserCart();
   const onCart = async () => {
     try {
       await createCartItem(course._id);
@@ -66,13 +66,13 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
     } catch (error) {
       console.log("Lỗi khi thêm vào giỏ hàng. Vui lòng thử lại.");
     }
-  }
+  };
   return (
-    <article
-
-      className="group  flex h-full flex-col overflow-hidden rounded-3xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
-    >
-      <div onClick={() => navigate(`/course/${course._id}`)} className="relative aspect-[16/10] overflow-hidden cursor-pointer">
+    <article className="group  flex h-full flex-col overflow-hidden rounded-3xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+      <div
+        onClick={() => navigate(`/course/${course._id}`)}
+        className="relative aspect-[16/10] overflow-hidden cursor-pointer"
+      >
         <img
           src={course.thumbnail}
           alt={course.title}
@@ -89,7 +89,10 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
       </div>
 
       <div className="flex flex-1 flex-col p-6">
-        <div onClick={() => navigate(`/course/${course._id}`)} className="cursor-pointer">
+        <div
+          onClick={() => navigate(`/course/${course._id}`)}
+          className="cursor-pointer"
+        >
           <h3 className="mb-3 line-clamp-2 text-lg font-bold leading-snug text-brand-700">
             {course.title}
           </h3>
@@ -118,8 +121,9 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
               </span>
             )} */}
             <span
-              className={`text-lg font-bold ${course.price === 0 ? "text-brand-600" : "text-brand-600"
-                }`}
+              className={`text-lg font-bold ${
+                course.price === 0 ? "text-brand-600" : "text-brand-600"
+              }`}
             >
               {course.price} Đ
             </span>

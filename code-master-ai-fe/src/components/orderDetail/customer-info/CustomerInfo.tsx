@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { ShieldCheck } from "lucide-react";
-import type { CustomerInfo as CustomerInfoType } from "../../../types/order/order";
 import {
   getPaymentByOrderId,
   PaymentByOrderData,

@@ -18,25 +18,25 @@ const Footer = () => {
                             thống và trí tuệ nhân tạo hiện đại.
                         </p>
                         <div className="flex space-x-4">
-                            <a href="#"
+                            <a href="/"
                                 className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                             >
                                 <i className="fab fa-facebook-f text-xl"></i>
                             </a>
                             <a
-                                href="#"
+                                href="/"
                                 className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                             >
                                 <i className="fab fa-twitter text-xl"></i>
                             </a>
                             <a
-                                href="#"
+                                href="/"
                                 className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                             >
                                 <i className="fab fa-instagram text-xl"></i>
                             </a>
                             <a
-                                href="#"
+                                href="/"
                                 className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                             >
                                 <i className="fab fa-youtube text-xl"></i>
@@ -49,7 +49,7 @@ const Footer = () => {
                         <ul className="space-y-2">
                             <li>
                                 <a
-                                    href="#"
+                                    href="/"
                                     className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                                 >
                                     Tất cả khóa học
@@ -57,7 +57,7 @@ const Footer = () => {
                             </li>
                             <li>
                                 <a
-                                    href="#"
+                                    href="/"
                                     className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                                 >
                                     Lộ trình học tập
@@ -65,7 +65,7 @@ const Footer = () => {
                             </li>
                             <li>
                                 <a
-                                    href="#"
+                                    href="/"
                                     className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                                 >
                                     Cộng đồng CodeMaster AI
@@ -73,7 +73,7 @@ const Footer = () => {
                             </li>
                             <li>
                                 <a
-                                    href="#"
+                                    href="/"
                                     className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                                 >
                                     Tin tức công nghệ
@@ -81,7 +81,7 @@ const Footer = () => {
                             </li>
                             <li>
                                 <a
-                                    href="#"
+                                    href="/"
                                     className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                                 >
                                     Việc làm IT
@@ -95,7 +95,7 @@ const Footer = () => {
                         <ul className="space-y-2">
                             <li>
                                 <a
-                                    href="#"
+                                    href="/"
                                     className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                                 >
                                     Trung tâm trợ giúp
@@ -103,7 +103,7 @@ const Footer = () => {
                             </li>
                             <li>
                                 <a
-                                    href="#"
+                                    href="/"
                                     className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                                 >
                                     Chính sách bảo mật
@@ -111,7 +111,7 @@ const Footer = () => {
                             </li>
                             <li>
                                 <a
-                                    href="#"
+                                    href="/"
                                     className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                                 >
                                     Điều khoản dịch vụ
@@ -119,7 +119,7 @@ const Footer = () => {
                             </li>
                             <li>
                                 <a
-                                    href="#"
+                                    href="/"
                                     className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                                 >
                                     Câu hỏi thường gặp
@@ -127,7 +127,7 @@ const Footer = () => {
                             </li>
                             <li>
                                 <a
-                                    href="#"
+                                    href="/"
                                     className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                                 >
                                     Liện hệ hợp tác

@@ -32,7 +32,9 @@ export default function CoursesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("Tất cả");
   const [coursesData, setCourses] = useState<ICourse[]>([]);
   const [categories, setCategories] = useState<string[]>(["Tất cả"]);
-  const [priceFilter, setPriceFilter] = useState<"all" | "free" | "paid">("all");
+  const [priceFilter, setPriceFilter] = useState<"all" | "free" | "paid">(
+    "all",
+  );
   const { globalSearchKeyword, setGlobalCourses } = useCourseStore();
   const [searchValue, setSearchValue] = useState(globalSearchKeyword);
   const { userInfo } = useUserInfo();
@@ -42,7 +44,9 @@ export default function CoursesPage() {
     setSearchValue(globalSearchKeyword);
   }, [globalSearchKeyword]);
 
-  const [sortBy, setSortBy] = useState<"newest" | "popular" | "priceAsc" | "priceDesc">("newest");
+  const [sortBy, setSortBy] = useState<
+    "newest" | "popular" | "priceAsc" | "priceDesc"
+  >("newest");
   const [options, setOptions] = useState<
     { value: string; label: React.ReactNode }[]
   >([]);
@@ -64,10 +68,15 @@ export default function CoursesPage() {
 
   const getSortLabel = () => {
     switch (sortBy) {
-      case "popular": return "Phổ biến";
-      case "priceAsc": return "Giá tăng dần";
-      case "priceDesc": return "Giá giảm dần";
-      case "newest": default: return "Mới nhất";
+      case "popular":
+        return "Phổ biến";
+      case "priceAsc":
+        return "Giá tăng dần";
+      case "priceDesc":
+        return "Giá giảm dần";
+      case "newest":
+      default:
+        return "Mới nhất";
     }
   };
 
@@ -82,7 +91,7 @@ export default function CoursesPage() {
 
     const filtered = coursesData
       .filter((course) =>
-        course.title.toLowerCase().includes(value.toLowerCase())
+        course.title.toLowerCase().includes(value.toLowerCase()),
       )
       .map((course) => ({
         value: course.title,
@@ -118,14 +127,14 @@ export default function CoursesPage() {
   // 1. Lọc theo Autocomplete Text (Search)
   if (searchValue) {
     filteredCourses = filteredCourses.filter((course) =>
-      course.title.toLowerCase().includes(searchValue.toLowerCase())
+      course.title.toLowerCase().includes(searchValue.toLowerCase()),
     );
   }
 
   // 2. Lọc theo Category
   if (selectedCategory !== "Tất cả") {
     filteredCourses = filteredCourses.filter(
-      (course) => course.category.category_name === selectedCategory
+      (course) => course.category.category_name === selectedCategory,
     );
   }
 
@@ -149,7 +158,7 @@ export default function CoursesPage() {
 
   useEffect(() => {
     setSearchValue("");
-    window.scrollTo(0, 0);  
+    window.scrollTo(0, 0);
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -167,7 +176,7 @@ export default function CoursesPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [setGlobalCourses]);
 
   return (
     <>
@@ -199,10 +208,8 @@ export default function CoursesPage() {
           {/* ── Filter bar ── */}
           <section className="z-30 mb-8 sm:mb-10">
             <div className="flex flex-col gap-4 sm:gap-6">
-
               {/* Search + price toggle + sort */}
               <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center">
-
                 {/* Search */}
                 <div className="w-full md:flex-1">
                   <label className="flex items-center rounded-2xl border border-brand-100 bg-white px-4 sm:px-5 py-3 sm:py-3.5 shadow-sm">
@@ -220,7 +227,9 @@ export default function CoursesPage() {
                       onSearch={handleSearch}
                       onSelect={(value) => setSearchValue(value)}
                       className="w-full custom-autocomplete"
-                      notFoundContent={searchValue ? "Không có kết quả tìm kiếm" : null}
+                      notFoundContent={
+                        searchValue ? "Không có kết quả tìm kiếm" : null
+                      }
                     >
                       <input
                         placeholder="Tìm kiếm khóa học, kỹ năng, công nghệ..."
@@ -246,27 +255,32 @@ export default function CoursesPage() {
                     <button
                       type="button"
                       onClick={() => togglePriceFilter("free")}
-                      className={`rounded-xl px-5 sm:px-7 py-2 sm:py-2.5 text-sm font-bold transition-colors ${priceFilter === "free"
-                        ? "bg-brand-600 text-white shadow"
-                        : "text-slate-600 hover:bg-brand-25"
-                        }`}
+                      className={`rounded-xl px-5 sm:px-7 py-2 sm:py-2.5 text-sm font-bold transition-colors ${
+                        priceFilter === "free"
+                          ? "bg-brand-600 text-white shadow"
+                          : "text-slate-600 hover:bg-brand-25"
+                      }`}
                     >
                       Miễn phí
                     </button>
                     <button
                       type="button"
                       onClick={() => togglePriceFilter("paid")}
-                      className={`rounded-xl px-5 sm:px-7 py-2 sm:py-2.5 text-sm font-bold transition-colors ${priceFilter === "paid"
-                        ? "bg-brand-600 text-white shadow"
-                        : "text-slate-600 hover:bg-brand-25"
-                        }`}
+                      className={`rounded-xl px-5 sm:px-7 py-2 sm:py-2.5 text-sm font-bold transition-colors ${
+                        priceFilter === "paid"
+                          ? "bg-brand-600 text-white shadow"
+                          : "text-slate-600 hover:bg-brand-25"
+                      }`}
                     >
                       Trả phí
                     </button>
                   </div>
 
                   {/* Sort dropdown */}
-                  <Dropdown menu={{ items: sortItems, onClick: handleSortMenuClick }} placement="bottomLeft">
+                  <Dropdown
+                    menu={{ items: sortItems, onClick: handleSortMenuClick }}
+                    placement="bottomLeft"
+                  >
                     <div className="rounded-2xl border flex gap-2 items-center border-brand-100 bg-white px-4 sm:px-6 py-2.5 sm:py-3 cursor-pointer text-sm font-bold text-slate-700 shadow-sm outline-none shrink-0">
                       {getSortLabel()}
                       <DownOutlined />
@@ -282,10 +296,11 @@ export default function CoursesPage() {
                     key={category}
                     type="button"
                     onClick={() => setSelectedCategory(category)}
-                    className={`whitespace-nowrap rounded-full px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-bold transition-all ${selectedCategory === category
-                      ? "bg-brand-700 text-white shadow-lg"
-                      : "border border-brand-100 bg-white text-slate-600 hover:bg-brand-25"
-                      }`}
+                    className={`whitespace-nowrap rounded-full px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-bold transition-all ${
+                      selectedCategory === category
+                        ? "bg-brand-700 text-white shadow-lg"
+                        : "border border-brand-100 bg-white text-slate-600 hover:bg-brand-25"
+                    }`}
                   >
                     {category}
                   </button>
@@ -295,10 +310,14 @@ export default function CoursesPage() {
           </section>
 
           {/* ── Course grid ── */}
-            {loading ? (
-              <div className="flex justify-center py-20"><LoadingOutlined className="text-4xl"/></div>
-            ) : filteredCourses.length === 0 ? (
-             <div className="flex justify-center py-20"><Empty description="Không có kết quả tìm kiếm" /></div>
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <LoadingOutlined className="text-4xl" />
+            </div>
+          ) : filteredCourses.length === 0 ? (
+            <div className="flex justify-center py-20">
+              <Empty description="Không có kết quả tìm kiếm" />
+            </div>
           ) : (
             <section className="grid grid-cols-1 gap-5 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredCourses.map((course) => (
@@ -332,12 +351,17 @@ export default function CoursesPage() {
                       Lộ trình học tập cá nhân hóa
                     </h2>
                     <p className="mb-6 sm:mb-8 max-w-xl text-base sm:text-lg md:text-xl font-medium leading-relaxed text-brand-100">
-                      Bạn chưa biết bắt đầu từ đâu? Hãy để AI của chúng tôi thiết kế
-                      lộ trình riêng phù hợp với năng lực và mục tiêu của bạn.
+                      Bạn chưa biết bắt đầu từ đâu? Hãy để AI của chúng tôi
+                      thiết kế lộ trình riêng phù hợp với năng lực và mục tiêu
+                      của bạn.
                     </p>
 
                     <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:justify-start">
-                      {["Đánh giá năng lực", "Tài liệu chọn lọc", "Cam kết đầu ra"].map((item) => (
+                      {[
+                        "Đánh giá năng lực",
+                        "Tài liệu chọn lọc",
+                        "Cam kết đầu ra",
+                      ].map((item) => (
                         <div
                           key={item}
                           className="flex items-center gap-2 sm:gap-2.5 rounded-xl sm:rounded-2xl border border-white/10 bg-white/10 px-3 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-bold backdrop-blur-sm"
@@ -364,7 +388,8 @@ export default function CoursesPage() {
                   Hàng ngàn học viên đã thay đổi sự nghiệp
                 </h2>
                 <p className="mx-auto mb-8 sm:mb-12 max-w-4xl text-base sm:text-lg md:text-xl font-medium leading-relaxed text-slate-600">
-                  Bắt đầu hành trình chinh phục công nghệ cùng CodeMaster AI ngay hôm nay.
+                  Bắt đầu hành trình chinh phục công nghệ cùng CodeMaster AI
+                  ngay hôm nay.
                 </p>
                 <button
                   type="button"
@@ -376,8 +401,6 @@ export default function CoursesPage() {
             </div>
           )}
           {/* ── AI roadmap banner ── */}
-
-
         </div>
       </main>
       <Footer />

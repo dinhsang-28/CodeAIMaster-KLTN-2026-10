@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Landmark } from "lucide-react";
-import type { PaymentInfo } from "../../../types/order/order";
 import {
   getPaymentByOrderId,
   PaymentByOrderData,

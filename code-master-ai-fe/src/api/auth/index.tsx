@@ -11,9 +11,11 @@ interface PostRegisterProps {
 interface PostLoginProps {
   email: string;
   password: string;
+  permissions?: string[];
 }
 
 interface LoginResponse {
+  permissions: never[];
   access_token: string;
   user?: any;
 }
@@ -40,11 +42,13 @@ export const PostRegister = async ({
 export const PostLogin = async ({
   email,
   password,
+  permissions = [],
 }: PostLoginProps): Promise<LoginResponse> => {
   try {
     const res = await axiosInstance.post<LoginResponse>('/auth/login', {
       username: email,
       password,
+      permissions, // Gửi thêm permissions nếu có (dành cho admin)
     });
     console.log("THANH CONG: ", res.data);
     return res.data;

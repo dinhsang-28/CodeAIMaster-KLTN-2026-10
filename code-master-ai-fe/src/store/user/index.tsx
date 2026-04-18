@@ -5,6 +5,10 @@ interface UserInfo {
   email?: string;
   _id: string;
   name: string;
+  permissions: string[];
+  phone: string;
+  address: string;
+  image: string;
 }
 
 type Store = {
@@ -21,7 +25,7 @@ export const useUserInfo = create<Store>()(
       clearUserInfo: () => set({ userInfo: null }),
     }),
     {
-      name: "userInfo",
+      name: "userInfo", // ten key luu trong localStorage
     }
   )
 );

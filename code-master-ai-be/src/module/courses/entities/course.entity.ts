@@ -8,36 +8,36 @@ export type CourseDocument = Course & Document;
 @Schema({ timestamps: true })
 export class Course {
   @Prop({ required: true, trim: true })
-  title: string;
+  title!: string;
 
   @Prop({ default: '' })
-  description: string;
+  description!: string;
 
   @Prop({ required: true, min: 0 })
-  price: number;
+  price!: number;
 
   @Prop({
     default: CourseLevel.BEGINNER,
   })
-  level: CourseLevel;
+  level!: CourseLevel;
 
   @Prop()
-  thumbnail: string;
+  thumbnail!: string;
 
   @Prop({
     default: CourseStatus.ACTIVE,
   })
-  status: CourseStatus;
+  status!: CourseStatus;
 
   //FK -> Category
   @Prop({ type: Types.ObjectId, ref: 'Category' })
-  category: Types.ObjectId;
+  category!: Types.ObjectId;
 
   @Prop({ type: [String], default: [] })
-  learning_outcomes: string[];
+  learning_outcomes!: string[];
 
   @Prop({ type: [String], default: [] })
-  requirements: string[];
+  requirements!: string[];
 }
 
 export const CourseSchema = SchemaFactory.createForClass(Course);

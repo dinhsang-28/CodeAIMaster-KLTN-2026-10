@@ -24,7 +24,8 @@ import { GithubStrategy } from './passport/github.strategy';
       }),
       inject: [ConfigService],
     }),
-    PassportModule
+    PassportModule,
+    
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy,GithubStrategy],

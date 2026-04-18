@@ -30,7 +30,7 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto,file?: Express.Multer.File) {
-    const { name, email, password, phone, address, image } = createUserDto;
+    const { name, email, password, phone, address, image ,role_id } = createUserDto;
     
     // check Email
     const isExist = await this.isEmailExist(email);
@@ -45,52 +45,101 @@ export class UsersService {
     // hash password
     const hashPassword = await hashPasswordHelper(password);
     const user = await this.userModel.create({
-      name, email, password: hashPassword, phone, address, image:imageUrl
+      name, email, password: hashPassword, phone, address, image:imageUrl,
+      role_id: role_id ? new mongoose.Types.ObjectId(role_id) : undefined,
+      isActive: true
     });
     console.log("image:",user.image)
     return { _id: user._id ,image:user.image};
   }
 
-  async findAll(query: any, current: number, pageSize: number) {
-    // const { filter, sort } = aqp(query);
-    const { default: aqp } = await import('api-query-params');
-    const { filter, sort } = aqp(query);
-    if (filter.current) delete filter.current;
-    if (filter.pageSize) delete filter.pageSize;
+  // async findAll(query: any, current: number, pageSize: number) {
+  //   // const { filter, sort } = aqp(query);
+  //   const { default: aqp } = await import('api-query-params');
+  //   const options = { ...query };
+  //   delete options.current;
+  //   delete options.pageSize;
+
+  //   const { filter, sort } = aqp(options);
     
-    if (!current) current = 1;
-    if (!pageSize) pageSize = 10;
+  //   if (!current) current = 1;
+  //   if (!pageSize) pageSize = 10;
     
-    // Tối ưu hiệu suất bằng countDocuments
-    const totalItems = await this.userModel.countDocuments(filter);
-    const totalPages = Math.ceil(totalItems / pageSize);
-    const skip = (+current - 1) * (+pageSize);
+  //   // Tối ưu hiệu suất bằng countDocuments
+  //   const totalItems = await this.userModel.countDocuments(filter);
+  //   const totalPages = Math.ceil(totalItems / pageSize);
+  //   const skip = (+current - 1) * (+pageSize);
     
-    const results = await this.userModel
-      .find(filter)
-      .limit(pageSize)
-      .skip(skip)
-      .select("-password")
-      .sort(sort as any);
+  //   const results = await this.userModel
+  //     .find(filter)
+  //     .limit(pageSize)
+  //     .skip(skip)
+  //     .populate('role_id')
+  //     .select("-password")
+  //     .sort(sort as any);
       
-    return { results, totalPages };
-  }
+  //   return { results, totalPages };
+  // }
+  async findAll(query: any, current: number, pageSize: number) {
+    // 1. Tạm thời bỏ qua aqp để test
+    const limit = pageSize || 10;
+    const offset = ((current || 1) - 1) * limit;
+
+    // 2. Chỉ tìm những người chưa bị xóa (nếu bạn có trường deleted)
+    // Nếu không có trường deleted, hãy để là {}
+    const filter = {}; 
+
+    const [results, totalItems] = await Promise.all([
+      this.userModel
+        .find(filter)
+        .limit(limit)
+        .skip(offset)
+        .populate('role_id')
+        .select("-password")
+        .exec(),
+      this.userModel.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return { 
+      meta: {
+        current: current || 1,
+        pageSize: limit,
+        pages: totalPages,
+        total: totalItems
+      },
+      results 
+    };
+}
 
   async findOne(id: string) {
     if (!mongoose.isValidObjectId(id)) {
       throw new BadRequestException("ID không đúng định dạng MongoDB");
     }
-    return await this.userModel.findById(id).select("-password");
+    return await this.userModel.findById(id).populate('role_id').select("-password");
   }
 
   async findByEmail(email: string) {
     return this.userModel.findOne({ email });
   }
 
-  async update(updateUserDto: UpdateUserDto) {
+  async update(updateUserDto: UpdateUserDto, file: Express.Multer.File) {
+    const { _id, name, email, phone, address, image, role_id } = updateUserDto;
+    
+    let imageUrl = image;
+    if(file){
+      const uploadResult = await this.uploadService.uploadFile(file);
+      imageUrl = uploadResult.secure_url;
+    }
+    const finalUpdateData = {
+      ...updateUserDto,
+      image: imageUrl, 
+    };
+
     return await this.userModel.updateOne(
       { _id: updateUserDto._id },
-      { ...updateUserDto }
+      finalUpdateData
     );
   }
 
@@ -101,6 +150,41 @@ export class UsersService {
       throw new BadRequestException("Id không đúng định dạng MongoDB");
     }   
   }
+  // ho so nguoi dung
+  async updateMyProfile(userId: string, data: any, file?: Express.Multer.File) {
+    const { name, phone, address, password } = data; // Tuyệt đối không lấy 'email' và 'role_id' từ data
+
+    // Xử lý ảnh
+    let imageUrl = data.image;
+    if (file) {
+      const uploadResult = await this.uploadService.uploadFile(file);
+      imageUrl = uploadResult.secure_url;
+    }
+
+    const finalUpdateData: any = {};
+    if (name) finalUpdateData.name = name;
+    if (phone) finalUpdateData.phone = phone;
+    if (address) finalUpdateData.address = address;
+    if (imageUrl) finalUpdateData.image = imageUrl;
+
+    // Nếu có nhập mật khẩu mới thì băm ra
+    if (password && password.trim() !== "") {
+      finalUpdateData.password = await hashPasswordHelper(password);
+    }
+
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $set: finalUpdateData }
+    );
+
+    // Trả về thông tin user mới để Frontend cập nhật Zustand
+    const updatedUser = await this.userModel.findById(userId).populate('role_id').select('-password');
+    return { 
+      success: true, 
+      message: "Cập nhật hồ sơ thành công!",
+      user: updatedUser 
+    };
+  }
   // LUỒNG XÁC THỰC (AUTH) VÀ GỬI MAIL
   async handleRegister(registerDto: CreateAuthDto) {
     const { name, email, password } = registerDto;
@@ -108,7 +192,6 @@ export class UsersService {
     if (await this.isEmailExist(email)) {
       throw new BadRequestException(`Email đã tồn tại: ${email}, vui lòng sử dụng email khác`);
     }
-
     const hashPassword = await hashPasswordHelper(password);
     const codeId = await generateVerificationCode(5); 
     let defaultRole = await this.roleModel.findOne({ role_name: 'user' });

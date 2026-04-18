@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Input, Button, Checkbox, Divider } from "antd";
+import { Input, Button, Divider } from "antd";
 import { showMessage } from "../../utils/showMessages";
 import {
   MailOutlined,
@@ -9,12 +9,16 @@ import {
   UserOutlined,
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
-import { PostOTP, PostRegister, handleGithubLogin, handleGoogleLogin } from "../../api/auth";
+import {
+  PostOTP,
+  PostRegister,
+  handleGithubLogin,
+  handleGoogleLogin,
+} from "../../api/auth";
 import { PostLogin } from "../../api/auth";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "antd";
 import { useUserInfo } from "../../store/user";
-import { on } from "node:cluster";
 type AuthFormProps = {
   type?: "login" | "register";
 };
@@ -48,12 +52,12 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
     password: "",
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-  const [forgotStep, setForgotStep] = useState<"email" | "otp">("email");
+  const [, setIsForgotModalOpen] = useState(false);
+  const [, setForgotStep] = useState<"email" | "otp">("email");
 
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotOTP, setForgotOTP] = useState("");
-  const [newPassword, setNewPassword] = useState("");
+  // const [forgotEmail, setForgotEmail] = useState("");
+  // const [forgotOTP, setForgotOTP] = useState("");
+  // const [newPassword, setNewPassword] = useState("");
   //dropdown OTP
   const showModal = () => {
     setIsModalOpen(true);
@@ -178,11 +182,18 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
         try {
           console.log("formLoginData: ", formLoginData);
           const data = await PostLogin(formLoginData);
-          if(data && data.user){
+          if (data && data.user) {
             setUserInfo(data.user);
-            console.log("data:",data.user);
-            showMessage("success","Dang nhap thanh cong");
-            navigate("/");
+            console.log("data:", data.user);
+            showMessage("success", "Dang nhap thanh cong");
+            const perms = data.user.permissions || [];
+            console.log("permissions: ", perms);
+            if (perms.length > 0) {
+              navigate("/admin");
+            } else {
+              navigate("/");
+            }
+            // navigate("/");
           }
           // if (data.access_token) {
           //   localStorage.setItem("token", data.access_token);

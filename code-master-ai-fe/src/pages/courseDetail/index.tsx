@@ -1,12 +1,8 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CourseDetail,
   TabKey,
-  courseData,
-  fakeLearnings,
   fakeRelatedCourses,
-  fakeRequirements,
-  fakeSections,
 } from "../../data/courseDetail";
 import { useParams } from "react-router-dom";
 import { GetCoursesDetail } from "../../api/courseDetail";
@@ -100,11 +96,11 @@ export default function CourseDetailPage() {
     <div className="min-h-screen bg-brand-25 text-slate-900">
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <nav className="mb-8 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <a href="#" className="hover:text-brand-600">
+          <a href="/" className="hover:text-brand-600">
             Trang chủ
           </a>
           <span>/</span>
-          <a href="#" className="hover:text-brand-600">
+          <a href="/" className="hover:text-brand-600">
             Khóa học
           </a>
           <span>/</span>
@@ -201,68 +197,6 @@ export default function CourseDetailPage() {
                     <h3 className="mb-5 text-2xl font-bold text-brand-800">
                       Nội dung khóa học
                     </h3>
-
-                    {/* <div className="space-y-4">
-                      {courseDetail.lessons.map((section, index) => {
-                        const isOpen = openSectionIndex === index;
-
-                        return (
-                          <div
-                            key={section.title}
-                            className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => setOpenSectionIndex(index)}
-                              className="flex w-full items-center justify-between px-5 py-4 text-left"
-                            >
-                              <div>
-                                <p className="font-bold text-brand-900">
-                                  {section.title}
-                                </p>
-                                <p className="mt-1 text-sm text-slate-500">
-                                  {section.meta}
-                                </p>
-                              </div>
-                              <span className="text-xl text-brand-400">
-                                {isOpen ? "−" : "+"}
-                              </span>
-                            </button>
-
-                            {isOpen && (
-                              <div className="space-y-3 border-t border-brand-50 px-5 py-4">
-                                {section.map((lesson) => (
-                                  <div
-                                    key={lesson.title}
-                                    className="flex items-center justify-between gap-4 text-sm"
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <span className="text-slate-400">
-                                        {lesson.preview ? "▶" : "🔒"}
-                                      </span>
-                                      <span className="text-slate-700">
-                                        {lesson.title}
-                                      </span>
-                                    </div>
-                                    <div className="shrink-0">
-                                      {lesson.preview ? (
-                                        <span className="rounded-lg bg-brand-50 px-2 py-1 text-[10px] font-bold uppercase text-brand-700">
-                                          Xem thử
-                                        </span>
-                                      ) : (
-                                        <span className="text-slate-500">
-                                          {lesson.duration}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div> */}
 
                     {(activeTab === "intro" || activeTab === "content") && (
                       <section>
@@ -407,7 +341,7 @@ export default function CourseDetailPage() {
                 Bạn cần tư vấn thêm?
               </p>
               <a
-                href="#"
+                href="/"
                 className="text-sm font-bold text-brand-700 underline underline-offset-4"
               >
                 Liên hệ hỗ trợ ngay
@@ -421,7 +355,7 @@ export default function CourseDetailPage() {
             <h2 className="text-3xl font-extrabold text-brand-800">
               Khóa học liên quan
             </h2>
-            <a href="#" className="font-bold text-brand-600 hover:underline">
+            <a href="/" className="font-bold text-brand-600 hover:underline">
               Xem tất cả
             </a>
           </div>

@@ -1,9 +1,15 @@
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { lessons } from "./fakeData";
 
 const LessonPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // Auto scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   const lesson = lessons.find((l) => l.id === Number(id));
 

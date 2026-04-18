@@ -6,15 +6,15 @@ import { useUserInfo } from "../../store/user";
 export default function GithubAuthCallback() {
   const navigate = useNavigate();
   const { setUserInfo } = useUserInfo();
-   const ran = useRef(false);
+  const ran = useRef(false);
 
   useEffect(() => {
-    if (ran.current) return; 
+    if (ran.current) return;
     ran.current = true;
     try {
       const params = new URLSearchParams(window.location.search);
       const userString = params.get("user");
-      console.log("userString",userString);
+      console.log("userString", userString);
 
       if (!userString) {
         showMessage("error", "Đăng nhập GitHub thất bại!");
@@ -32,7 +32,7 @@ export default function GithubAuthCallback() {
       showMessage("error", "Có lỗi khi xử lý đăng nhập GitHub!");
       navigate("/login");
     }
-  }, []);
+  }, [navigate, setUserInfo]);
 
   return (
     <div className="flex h-screen items-center justify-center">

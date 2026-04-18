@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { quizData } from "./fakeData";
 import { lessons } from "../lesson/fakeData";
@@ -7,6 +7,11 @@ import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 const Quizz = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // Auto scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   const [answers, setAnswers] = useState<number[][]>([]);
   const [submitted, setSubmitted] = useState(false);

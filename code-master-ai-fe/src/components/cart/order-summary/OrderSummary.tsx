@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
-import { CartItemData } from "../cart-item/CartItem";
 
 interface OrderSummaryProps {
   totalPrice: number;
@@ -68,7 +67,7 @@ export default function OrderSummary({ totalPrice }: OrderSummaryProps) {
 
       <p className="text-center text-[11px] text-slate-400 mt-8 leading-relaxed">
         Bằng cách tiếp tục, bạn đồng ý với các{" "}
-        <a href="#" className="underline">
+        <a href="/" className="underline">
           Điều khoản Dịch vụ
         </a>{" "}
         của CodeMaster AI.
