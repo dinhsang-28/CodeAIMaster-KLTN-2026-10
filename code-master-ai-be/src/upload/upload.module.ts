@@ -3,6 +3,6 @@ import { UploadService } from './upload.service';
 
 @Module({
   providers: [UploadService],
-  exports: [UploadService] // Dòng này quan trọng: Mở cửa cho module khác xài ké Service
+  exports: [UploadService] 
 })
 export class UploadModule {}

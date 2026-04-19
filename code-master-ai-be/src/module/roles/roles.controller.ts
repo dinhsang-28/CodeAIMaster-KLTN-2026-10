@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -7,14 +7,15 @@ import { JwtAuthGuard } from '@/auth/passport/jwt-auth.guard';
 import { PermissionsGuard } from '@/auth/passport/permissions.guard';
 import { RequirePermissions } from '@/auth/decorators/permisions.decorator';
 import { Public } from '@/decorator/customize';
+import { use } from 'passport';
 
 // @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('admin/roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
-  // @RequirePermissions('roles_create')
-  @Public()
+  @RequirePermissions('roles_create')
+  // @Public()
   @Post()
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);
@@ -22,8 +23,18 @@ export class RolesController {
 
   @RequirePermissions('roles_view')
   @Get()
-  findAll() {
-    return this.rolesService.findAll();
+  findAll( @Query() query: any, 
+      @Query("current") current: string,
+      @Query("pageSize") pageSize: string) {
+    return this.rolesService.findAll(query, +current, +pageSize);
+  }
+
+  // get role permissiom
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('roles_view')
+  @Get('list')
+  async getList(){
+    return await this.rolesService.getList();
   }
 
   @RequirePermissions('roles_view')

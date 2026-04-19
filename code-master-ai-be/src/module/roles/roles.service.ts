@@ -23,8 +23,32 @@ export class RolesService {
     }
   }
 
-  async findAll() {
-    return await this.roleModel.find();
+  async findAll(query: any, current: number, pageSize: number) {
+    const limit = pageSize ? Number(pageSize) : 10;
+    const offset = ((current ? Number(current) : 1) - 1) * limit;
+
+    const filter: any = {};
+    // Tìm kiếm theo tên nhóm quyền
+    if (query.search) {
+      filter.role_name = { $regex: query.search, $options: 'i' };
+    }
+
+    const [results, totalItems] = await Promise.all([
+      this.roleModel.find(filter).limit(limit).skip(offset).exec(),
+      this.roleModel.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+      meta: {
+        current: current ? Number(current) : 1,
+        pageSize: limit,
+        pages: totalPages,
+        total: totalItems
+      },
+      results
+    };
   }
 
   async findOne(id: string) {
@@ -70,5 +94,9 @@ export class RolesService {
       { _id: roleId },
       { $set: { permissions: permissions } }
     );
+  }
+
+  async getList(){
+    return await this.roleModel.find({role_name:{$ne:'user'}}).select('_id role_name permissions').exec();
   }
 }

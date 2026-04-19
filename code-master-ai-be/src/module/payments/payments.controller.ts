@@ -42,6 +42,7 @@ export class PaymentsController {
     if (vnp_ResponseCode !== '00') {
       return res.redirect(
         `https://code-ai-master-kltn-2026-10.vercel.app/payment-fail/${orderid}`,
+        // `http://localhost:3000/payment-fail/${orderid}`
       );
     }
 
