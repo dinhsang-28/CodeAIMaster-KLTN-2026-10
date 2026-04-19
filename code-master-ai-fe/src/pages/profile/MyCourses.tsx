@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Progress, Tag, Typography } from "antd";
+// import { Progress, Tag, Typography } from "antd";
+import { Typography } from "antd";
 import { BookOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;

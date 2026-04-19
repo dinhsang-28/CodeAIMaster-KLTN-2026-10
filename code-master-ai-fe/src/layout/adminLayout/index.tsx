@@ -22,7 +22,6 @@ import {
   IdcardOutlined,
   KeyOutlined,
 } from "@ant-design/icons";
-import { Code } from "lucide-react";
 import { useUserInfo } from "../../store/user";
 
 type MenuItem = {

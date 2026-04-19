@@ -10,10 +10,11 @@ import {
 
 const ArticleManage = () => {
   // ARTICLES DATA
-  const [articles, setArticles] = useState([
+  const [articles] = useState([
     {
       id: 1,
-      thumbnail: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=100&h=100&fit=crop",
+      thumbnail:
+        "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=100&h=100&fit=crop",
       title: "Hướng dẫn làm chủ React Hooks trong năm 2024",
       category: "LẬP TRÌNH FRONTEND",
       author: "Admin Master",
@@ -22,7 +23,8 @@ const ArticleManage = () => {
     },
     {
       id: 2,
-      thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=100&h=100&fit=crop",
+      thumbnail:
+        "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=100&h=100&fit=crop",
       title: "Lộ trình học Web Frontend từ Zero đến Hero",
       category: "CHĂM SÓC HỌC TẬP",
       author: "Minh Anh",
@@ -31,7 +33,8 @@ const ArticleManage = () => {
     },
     {
       id: 3,
-      thumbnail: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100&h=100&fit=crop",
+      thumbnail:
+        "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100&h=100&fit=crop",
       title: "Tại sao Python là ngôn ngữ tốt nhất cho AI?",
       category: "TRỊ THỨC NHÂN TẠO",
       author: "Hoàng Nam",
@@ -40,7 +43,8 @@ const ArticleManage = () => {
     },
     {
       id: 4,
-      thumbnail: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=100&h=100&fit=crop",
+      thumbnail:
+        "https://images.unsplash.com/photo-1518770660439-4636190af475?w=100&h=100&fit=crop",
       title: "Top 5 công nghệ Backend nổi bật 2024",
       category: "CÔNG NGHỆ BACKEND",
       author: "Khánh Linh",
@@ -49,7 +53,8 @@ const ArticleManage = () => {
     },
     {
       id: 5,
-      thumbnail: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=100&h=100&fit=crop",
+      thumbnail:
+        "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=100&h=100&fit=crop",
       title: "Tại sao bạn nên học TypeScript ngay bây giờ?",
       category: "CÔNG NGHỆ MỚI",
       author: "Văn Tùng",
@@ -65,9 +70,10 @@ const ArticleManage = () => {
   const totalPages = 12;
 
   // FILTERED ARTICLES
-  const filteredArticles = articles.filter((article) =>
-    article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.author.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredArticles = articles.filter(
+    (article) =>
+      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.author.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (

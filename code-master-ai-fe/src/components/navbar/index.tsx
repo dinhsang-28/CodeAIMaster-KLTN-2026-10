@@ -88,7 +88,7 @@ const Navbar = () => {
       }
     };
     getCountCart();
-  }, []);
+  }, [setQuantityCart]);
 
   const items: MenuProps["items"] = [
     {

@@ -144,7 +144,6 @@
 // export default RoleManage;
 
 import React, { useEffect, useState } from "react";
-import { useUserInfo } from "../../../store/user";
 import PermissionControl from "../../../components/permissionControl";
 import { GetRoles, CreateRole, UpdateRole, DeleteRole } from "../../../api/admin/role";
 
@@ -173,7 +172,7 @@ const RoleManage: React.FC = () => {
         } finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchRoles(); }, []);
+    useEffect(() => { fetchRoles(); }, [fetchRoles]);
 
     const handleSubmit = async () => {
         if (!formData.role_name.trim()) return showNotification("error", "Vui lòng nhập tên nhóm quyền!");

@@ -21,7 +21,8 @@ export class CategoriesService {
     createCategoryDto: CreateCategoryDto,
   ): Promise<ApiResponse<Category>> {
     const existing = await this.categoriesModel
-      .findOne({ categoryName: createCategoryDto.category_name })
+      // .findOne({ categoryName: createCategoryDto.category_name })
+      .findOne({ category_name: createCategoryDto.category_name })
       .lean();
 
     if (existing) {
@@ -33,29 +34,28 @@ export class CategoriesService {
     return new ApiResponse('Tạo thể loại thành công', newCategory.toObject());
   }
 
-
   async findAll(query: any, current: number, pageSize: number) {
     // const { filter, sort } = aqp(query);
     const { default: aqp } = await import('api-query-params');
     const { filter, sort } = aqp(query);
     if (filter.current) delete filter.current;
     if (filter.pageSize) delete filter.pageSize;
-    
+
     if (!current) current = 1;
     if (!pageSize) pageSize = 10;
-    
+
     // Tối ưu hiệu suất bằng countDocuments
     const totalItems = await this.categoriesModel.countDocuments(filter);
     const totalPages = Math.ceil(totalItems / pageSize);
-    const skip = (+current - 1) * (+pageSize);
-    
+    const skip = (+current - 1) * +pageSize;
+
     const results = await this.categoriesModel
       .find(filter)
       .limit(pageSize)
       .skip(skip)
-      .select("-password")
+      .select('-password')
       .sort(sort as any);
-      
+
     return { results, totalPages };
   }
   // async findAll(): Promise<ApiResponse<Category[]>> {

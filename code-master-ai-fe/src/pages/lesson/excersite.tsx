@@ -792,7 +792,7 @@ export default function ExercisePage() {
       }
     };
     fetchExercise();
-  }, [assignmentId]);
+  }, [assignmentId, language]);
 
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
@@ -890,7 +890,7 @@ export default function ExercisePage() {
     result !== null && result.submission?.status !== "ACCEPTED";
   const title = exercise?.title ?? "Xây dựng Component Greeting";
   const difficulty = exercise?.difficulty ?? "Dễ";
-  const diffStyle = DIFFICULTY_STYLE[difficulty];
+  // const diffStyle = DIFFICULTY_STYLE[difficulty];
 
   // filename badge
   const fileExt: Record<string, string> = {

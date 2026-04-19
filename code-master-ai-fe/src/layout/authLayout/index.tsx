@@ -33,6 +33,7 @@ export default function AuthLayout({
           <img
             src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1600&q=80"
             className="rounded-2xl shadow-lg border-4 border-gray-200"
+            alt=""
           />
           <img
             className="absolute bottom-3 left-12 shadow-sm"
