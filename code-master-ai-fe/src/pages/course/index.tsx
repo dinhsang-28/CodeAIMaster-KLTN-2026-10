@@ -108,7 +108,8 @@ export default function CoursesPage() {
                 {course.title}
               </span>
               <span className="text-xs text-slate-500">
-                {course.category?.category_name || "Đang tải"}
+                {/* {course.category.category_name} */}
+                {course.category?.category_name || "Chưa phân loại"}
               </span>
             </div>
 
@@ -134,6 +135,7 @@ export default function CoursesPage() {
   // 2. Lọc theo Category
   if (selectedCategory !== "Tất cả") {
     filteredCourses = filteredCourses.filter(
+      // (course) => course.category.category_name === selectedCategory,
       (course) => course.category?.category_name === selectedCategory,
     );
   }
@@ -166,6 +168,7 @@ export default function CoursesPage() {
           GetCourses(),
           GetCategoryNames(),
         ]);
+
         setCourses(coursesRes.data);
         setGlobalCourses(coursesRes.data);
         setCategories(["Tất cả", ...categoryNames]);

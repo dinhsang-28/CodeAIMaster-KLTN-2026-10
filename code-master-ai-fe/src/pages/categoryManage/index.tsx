@@ -70,6 +70,7 @@ const CategoryManage: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleAddCategory = () => {

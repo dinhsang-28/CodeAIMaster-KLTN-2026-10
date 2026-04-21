@@ -15,7 +15,6 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    
   ) {}
 
   async validateUser(username: string, pass: string): Promise<any> {
@@ -29,17 +28,27 @@ export class AuthService {
   async login(user: any, res: any) {
     const accessExpire = process.env.JWT_ACCESS_EXPIRE || '15m';
     const refreshExpire = process.env.JWT_REFRESH_EXPIRE || '7d';
-    const accessCookieAge = parseInt(process.env.COOKIE_ACCESS_MAX_AGE as string, 10) || 900000;
-    const refreshCookieAge = parseInt(process.env.COOKIE_REFRESH_MAX_AGE as string, 10) || 604800000;
+    const accessCookieAge =
+      parseInt(process.env.COOKIE_ACCESS_MAX_AGE as string, 10) || 900000;
+    const refreshCookieAge =
+      parseInt(process.env.COOKIE_REFRESH_MAX_AGE as string, 10) || 604800000;
 
     //lam quyen
-    const userInfo = await this.usersService.findOne(user._id);;
+    const userInfo = await this.usersService.findOne(user._id);
 
-    const payload = { username: user.email, sub: user._id.toString(),permissions: userInfo?.role_id?.['permissions'] || [] };
-    
+    const payload = {
+      username: user.email,
+      sub: user._id.toString(),
+      permissions: userInfo?.role_id?.['permissions'] || [],
+    };
+
     // Cấp token
-    const token = this.jwtService.sign(payload, { expiresIn: accessExpire as any });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: refreshExpire as any });
+    const token = this.jwtService.sign(payload, {
+      expiresIn: accessExpire as any,
+    });
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: refreshExpire as any,
+    });
 
     await this.usersService.updateRefreshToken(user._id, refreshToken);
 
@@ -47,7 +56,7 @@ export class AuthService {
     const cookieBase = {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'none' : 'lax' as const,
+      sameSite: isProd ? 'none' : ('lax' as const),
     };
 
     res.cookie('access_token', token, {
@@ -57,78 +66,91 @@ export class AuthService {
 
     res.cookie('refresh_token', refreshToken, {
       ...cookieBase,
-      path: '/', // Dùng '/' để dễ quản lý và xóa
-      maxAge: refreshCookieAge, 
+      path: '/',
+      maxAge: refreshCookieAge,
     });
 
     return res.status(HttpStatus.OK).json({
-      user: { email: user.email, _id: user._id, name: user.name ,permissions:payload.permissions,phone:user.phone,image:user.image},
+      user: {
+        email: user.email,
+        _id: user._id,
+        name: user.name,
+        permissions: payload.permissions,
+        phone: user.phone,
+        image: user.image,
+      },
       message: 'Đăng nhập thành công!',
     });
   }
 
   async refreshToken(req: any, res: any) {
-  const accessExpire = process.env.JWT_ACCESS_EXPIRE || '15m';
-  const accessCookieAge =
-    parseInt(process.env.COOKIE_ACCESS_MAX_AGE as string, 10) || 900000;
+    const accessExpire = process.env.JWT_ACCESS_EXPIRE || '15m';
+    const accessCookieAge =
+      parseInt(process.env.COOKIE_ACCESS_MAX_AGE as string, 10) || 900000;
 
-  const isProd = process.env.NODE_ENV === 'production';
-  const cookieBase = {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax' as const,
-  };
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieBase = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : ('lax' as const),
+    };
 
-  const refreshToken = req.cookies['refresh_token'];
+    const refreshToken = req.cookies['refresh_token'];
 
-  // Hàm dọn dẹp cookie
-  const clearAll = () => {
-    res.clearCookie('access_token', cookieBase);
-    res.clearCookie('refresh_token', { ...cookieBase, path: '/' });
-  };
-  if (!refreshToken) {
-    clearAll();
-    return res
-      .status(HttpStatus.UNAUTHORIZED)
-      .json({ message: 'Không tìm thấy Refresh Token. Vui lòng login lại!' });
-  }
-
-  try {
-    const decoded = this.jwtService.verify(refreshToken);
-
-    // Kiểm tra token có khớp DB không
-    const user = await this.usersService.refreshID(decoded.sub);
-    if (!user || user.refreshToken !== refreshToken) {
-      throw new UnauthorizedException('Refresh Token không hợp lệ hoặc đã bị thu hồi!');
+    // Hàm dọn dẹp cookie
+    const clearAll = () => {
+      res.clearCookie('access_token', cookieBase);
+      res.clearCookie('refresh_token', { ...cookieBase, path: '/' });
+    };
+    if (!refreshToken) {
+      clearAll();
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json({ message: 'Không tìm thấy Refresh Token. Vui lòng login lại!' });
     }
 
-    const payload = { username: user.email, sub: user._id };
-    const newAccessToken = this.jwtService.sign(payload, {
-      expiresIn: accessExpire as any,
-    });
+    try {
+      const decoded = this.jwtService.verify(refreshToken);
 
-    res.cookie('access_token', newAccessToken, {
-      ...cookieBase,
-      maxAge: accessCookieAge,
-    });
+      // Kiểm tra token có khớp DB không
+      const user = await this.usersService.refreshID(decoded.sub);
+      if (!user || user.refreshToken !== refreshToken) {
+        throw new UnauthorizedException(
+          'Refresh Token không hợp lệ hoặc đã bị thu hồi!',
+        );
+      }
 
-    return res
-      .status(HttpStatus.OK)
-      .json({ message: 'Làm mới Token thành công!' });
+      const payload = { username: user.email, sub: user._id };
+      const newAccessToken = this.jwtService.sign(payload, {
+        expiresIn: accessExpire as any,
+      });
 
-  } catch (error) {
-    const decoded = this.jwtService.decode(refreshToken) as any;
-    if (decoded?.sub) {
-      await this.usersService.updateRefreshToken(decoded.sub.toString(), null);
-      console.log(`[Refresh hết hạn] Đã xóa token DB của user: ${decoded.sub}`);
+      res.cookie('access_token', newAccessToken, {
+        ...cookieBase,
+        maxAge: accessCookieAge,
+      });
+
+      return res
+        .status(HttpStatus.OK)
+        .json({ message: 'Làm mới Token thành công!' });
+    } catch (error) {
+      const decoded = this.jwtService.decode(refreshToken) as any;
+      if (decoded?.sub) {
+        await this.usersService.updateRefreshToken(
+          decoded.sub.toString(),
+          null,
+        );
+        console.log(
+          `[Refresh hết hạn] Đã xóa token DB của user: ${decoded.sub}`,
+        );
+      }
+
+      clearAll();
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json({ message: 'Phiên đăng nhập hết hạn.' });
     }
-
-    clearAll();
-    return res
-      .status(HttpStatus.UNAUTHORIZED)
-      .json({ message: 'Phiên đăng nhập hết hạn.' });
   }
-}
 
   async logout(req: any, res: any) {
     try {
@@ -136,16 +158,19 @@ export class AuthService {
       const cookieBase = {
         httpOnly: true,
         secure: isProd,
-        sameSite: isProd ? 'none' : 'lax' as const,
+        sameSite: isProd ? 'none' : ('lax' as const),
       };
 
       const refreshToken = req.cookies['refresh_token'];
-      
+
       if (refreshToken) {
         try {
           const decoded = this.jwtService.decode(refreshToken) as any;
           if (decoded && decoded.sub) {
-            await this.usersService.updateRefreshToken(decoded.sub.toString(), null);
+            await this.usersService.updateRefreshToken(
+              decoded.sub.toString(),
+              null,
+            );
             console.log(`[Logout] Đã dọn sạch DB cho user: ${decoded.sub}`);
           }
         } catch (err) {
@@ -158,7 +183,7 @@ export class AuthService {
         ...cookieBase,
         path: '/',
       });
-      
+
       return res.status(HttpStatus.OK).json({
         statusCode: 200,
         message: 'Đăng xuất thành công. Hẹn gặp lại bạn!',
@@ -185,86 +210,14 @@ export class AuthService {
   retryPassword = async (email: string) => {
     return await this.usersService.retryPassword(email);
   };
+  verifyForgotOTP = async (data: { email: string; code: string }) => {
+    return await this.usersService.verifyForgotOTP(data);
+  };
 
   changePassword = async (data: changePasswordAuthDto) => {
     return await this.usersService.changePassword(data);
   };
-  //google,github
-  // async validateOAuthLogin(profile: any) {
-  //   let user = await this.usersService.findByEmail(profile.email);
 
-  //   if (!user) {
-  //     user = await this.usersService.createGoogleUser(profile);
-  //   }
-  //   const payload = { username: user.email, sub: user._id };
-  //   return {
-  //     user: {
-  //       email: user.email,
-  //       _id: user._id,
-  //       name: user.name,
-  //       image: user.image,
-  //     },
-  //     access_token: this.jwtService.sign(payload),
-  //   };
-  // }
-
-  //   async validateOAuthLogin(profile: any, res: any) {
-  //   const accessExpire = process.env.JWT_ACCESS_EXPIRE || '15m';
-  //   const refreshExpire = process.env.JWT_REFRESH_EXPIRE || '7d';
-  //   const accessCookieAge = parseInt(process.env.COOKIE_ACCESS_MAX_AGE as string, 10) || 900000;
-  //   const refreshCookieAge = parseInt(process.env.COOKIE_REFRESH_MAX_AGE as string, 10) || 604800000;
-  //   const isProd = process.env.NODE_ENV === 'production';
-
-  //   //  Dùng hàm chung cho cả Google lẫn GitHub
-  //   let user = await this.usersService.findByEmail(profile.email);
-  //   if (!user) {
-  //     user = await this.usersService.createOAuthUser(profile);
-  //   }
-
-  //   const payload = { username: user.email, sub: user._id };
-
-  //   const accessToken = this.jwtService.sign(payload, {
-  //     expiresIn: accessExpire as any,
-  //   });
-
-  //   // Có refresh token như login thường
-  //   const refreshToken = this.jwtService.sign(payload, {
-  //     expiresIn: refreshExpire as any,
-  //   });
-
-  //   await this.usersService.updateRefreshToken(user._id.toString(), refreshToken);
-
-  //   const cookieBase = {
-  //     httpOnly: true,
-  //     secure: isProd,
-  //     sameSite: 'none' as const,
-  //   };
-
-  //   //  Set cookie thay vì trả JSON
-  //   res.cookie('access_token', accessToken, {
-  //     ...cookieBase,
-  //     maxAge: accessCookieAge,
-  //   });
-
-  //   res.cookie('refresh_token', refreshToken, {
-  //     ...cookieBase,
-  //     path: '/',
-  //     maxAge: refreshCookieAge,
-  //   });
-  //   const userInfo = encodeURIComponent(JSON.stringify({
-  //     _id: user._id,
-  //     email: user.email,
-  //     name: user.name,
-  //     image: user.image,
-  //   }));
-
-  //   //  Redirect về trang chủ sau khi login OAuth thành công
-  //  const callbackUrl = profile.provider === 'github'
-  //     ? 'http://localhost:3000/auth/github/callback?user=${userInfo}'
-  //     : 'http://localhost:3000/auth/google/callback?user=${userInfo}';
-  //     return res.redirect(callbackUrl);
-  // }
-  //gogle+github
   async validateOAuthLogin(profile: any, res: any) {
     const accessExpire = process.env.JWT_ACCESS_EXPIRE || '15m';
     const refreshExpire = process.env.JWT_REFRESH_EXPIRE || '7d';
@@ -293,7 +246,7 @@ export class AuthService {
     const cookieBase = {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'none' : 'lax' as const,
+      sameSite: isProd ? 'none' : ('lax' as const),
     };
 
     res.cookie('access_token', accessToken, {

@@ -72,6 +72,12 @@ export class AuthController {
     return this.authService.retryPassword(email);
   }
 
+  @Post('verify-forgot-otp')
+   @Public()
+  verifyForgotOTP(@Body() data: { email: string; code: string }) {
+    return this.authService.verifyForgotOTP(data);
+  }
+
   @Post('change-password')
   @Public()
   changePassword(@Body() data: changePasswordAuthDto) {

@@ -3,22 +3,22 @@ import { ShoppingCartOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { createCartItem, GetCartLength } from "../../api/cart";
 import { useUserCart } from "../../store/cart";
-const getCategoryBadgeClass = (categoryName: string) => {
-  switch (categoryName) {
-    case "Frontend":
-      return "bg-brand-200 text-brand-900";
-    case "Backend":
-      return "bg-brand-700 text-white";
-    case "AI & Data":
-      return "bg-brand-400 text-white";
-    case "Mobile":
-      return "bg-brand-300 text-brand-900";
-    case "Cybersecurity":
-      return "bg-brand-600 text-white";
-    default:
-      return "bg-brand-400 text-white";
-  }
-};
+// const getCategoryBadgeClass = (categoryName: string) => {
+//   switch (categoryName) {
+//     case "Frontend":
+//       return "bg-brand-200 text-brand-900";
+//     case "Backend":
+//       return "bg-brand-700 text-white";
+//     case "AI & Data":
+//       return "bg-brand-400 text-white";
+//     case "Mobile":
+//       return "bg-brand-300 text-brand-900";
+//     case "Cybersecurity":
+//       return "bg-brand-600 text-white";
+//     default:
+//       return "bg-brand-400 text-white";
+//   }
+// };
 
 // const getLevelLabel = (level: string) => {
 //   switch (level) {
@@ -79,13 +79,13 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-brand-900/5 transition-all group-hover:bg-transparent" />
-        <span
+        {/* <span
           className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] shadow-lg 
              ${getCategoryBadgeClass(course.category.category_name)}
              `}
         >
           {course.category.category_name}
-        </span>
+        </span> */}
       </div>
 
       <div className="flex flex-1 flex-col p-6">

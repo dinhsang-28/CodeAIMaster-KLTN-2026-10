@@ -291,6 +291,18 @@ export class UsersService {
 
     return { _id: user._id, email: user.email };
   }
+  // kiem tra nhap otp dung hay sai
+  async verifyForgotOTP(data: { email: string; code: string }) {
+    const user = await this.userModel.findOne({ 
+      email: data.email, 
+      codeId: data.code 
+    });
+
+    if (!user) throw new BadRequestException("Mã OTP không hợp lệ hoặc tài khoản không tồn tại");
+    if (dayjs().isAfter(user.codeExpired)) throw new BadRequestException("Mã OTP đã hết hạn");
+
+    return { success: true, message: "Mã OTP hợp lệ" };
+  }
 
   async changePassword(data: changePasswordAuthDto) {
     if (data.password !== data.confirmPassword) {

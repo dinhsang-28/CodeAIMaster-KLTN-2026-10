@@ -16,7 +16,7 @@ import { ParseObjectIdPipe } from '@/common/pipes/parse-object-id.pipe';
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
-
+  @UseGuards(JwtAuthGuard)
   @Get()
   findAll(
     @Query() query: any,
@@ -25,6 +25,7 @@ export class OrdersController {
   ) {
     return this.ordersService.findAll(query, +current, +pageSize);
   }
+  @UseGuards(JwtAuthGuard)
   @Get('my-orders')
   @UseGuards(JwtAuthGuard)
   findMyOrders(
@@ -35,12 +36,13 @@ export class OrdersController {
   ) {
     return this.ordersService.findByUser(user._id, query, +current, +pageSize);
   }
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id', ParseObjectIdPipe) id: string) {
     return this.ordersService.findOne(id);
   }
-
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   updateStatus(
     @Param('id', ParseObjectIdPipe) id: string,
