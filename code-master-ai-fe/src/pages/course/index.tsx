@@ -108,7 +108,7 @@ export default function CoursesPage() {
                 {course.title}
               </span>
               <span className="text-xs text-slate-500">
-                {course.category.category_name}
+                {course.category?.category_name || "Đang tải"}
               </span>
             </div>
 
@@ -134,7 +134,7 @@ export default function CoursesPage() {
   // 2. Lọc theo Category
   if (selectedCategory !== "Tất cả") {
     filteredCourses = filteredCourses.filter(
-      (course) => course.category.category_name === selectedCategory,
+      (course) => course.category?.category_name === selectedCategory,
     );
   }
 
