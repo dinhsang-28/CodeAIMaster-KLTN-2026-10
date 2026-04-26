@@ -21,7 +21,12 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     //Bỏ qua các route auth — không refresh cho những URL này
-    const skipRefreshUrls = ["/auth/refresh", "/auth/login", "/auth/logout"];
+    const skipRefreshUrls = [
+      "/auth/refresh",
+      "/auth/login",
+      "/auth/logout",
+      "/",
+    ];
     const isSkipped = skipRefreshUrls.some((url) =>
       originalRequest.url?.includes(url),
     );

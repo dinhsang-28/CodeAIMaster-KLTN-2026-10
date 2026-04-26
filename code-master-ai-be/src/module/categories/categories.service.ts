@@ -34,36 +34,132 @@ export class CategoriesService {
     return new ApiResponse('Tạo thể loại thành công', newCategory.toObject());
   }
 
-  async findAll(query: any, current: number, pageSize: number) {
-    // const { filter, sort } = aqp(query);
-    const { default: aqp } = await import('api-query-params');
-    const { filter, sort } = aqp(query);
-    if (filter.current) delete filter.current;
-    if (filter.pageSize) delete filter.pageSize;
+  // async findAll(query: any, current: number, pageSize: number) {
+  //   // const { filter, sort } = aqp(query);
+  //   const { default: aqp } = await import('api-query-params');
+  //   const { filter, sort } = aqp(query);
+  //   if (filter.current) delete filter.current;
+  //   if (filter.pageSize) delete filter.pageSize;
 
-    if (!current) current = 1;
-    if (!pageSize) pageSize = 10;
+  //   if (!current) current = 1;
+  //   if (!pageSize) pageSize = 10;
 
-    // Tối ưu hiệu suất bằng countDocuments
-    const totalItems = await this.categoriesModel.countDocuments(filter);
-    const totalPages = Math.ceil(totalItems / pageSize);
-    const skip = (+current - 1) * +pageSize;
+  //   // Tối ưu hiệu suất bằng countDocuments
+  //   const totalItems = await this.categoriesModel.countDocuments(filter);
+  //   const totalPages = Math.ceil(totalItems / pageSize);
+  //   const skip = (+current - 1) * +pageSize;
 
-    const results = await this.categoriesModel
-      .find(filter)
-      .limit(pageSize)
-      .skip(skip)
-      .select('-password')
-      .sort(sort as any);
+  //   const results = await this.categoriesModel
+  //     .find(filter)
+  //     .limit(pageSize)
+  //     .skip(skip)
+  //     .select('-password')
+  //     .sort(sort as any);
 
-    return { results, totalPages };
-  }
-  // async findAll(): Promise<ApiResponse<Category[]>> {
-  //   const categories = await this.categoriesModel.find().lean().exec();
-
-  //   return new ApiResponse('Danh sách thể loại', categories);
+  //   return { results, totalPages };
   // }
 
+  async findAll(query: any, current = 1, pageSize = 10) {
+    const { default: aqp } = await import('api-query-params');
+    const { filter, sort } = aqp(query);
+
+    // loại bỏ param không cần
+    delete filter.current;
+    delete filter.pageSize;
+
+    current = Number(current) || 1;
+    pageSize = Number(pageSize) || 10;
+    const skip = (current - 1) * pageSize;
+
+    /**
+     * ✅ BUILD SORT (không lỗi TS)
+     */
+    const sortObj: Record<string, 1 | -1> = {};
+
+    if (sort && typeof sort === 'object') {
+      for (const [key, val] of Object.entries(sort)) {
+        const value = String(val).toLowerCase();
+        sortObj[key] = value === 'asc' || value === '1' ? 1 : -1;
+      }
+    } else {
+      sortObj.createdAt = -1;
+    }
+
+    /**
+     * ✅ AGGREGATE PIPELINE
+     */
+    const pipeline = [
+      { $match: filter },
+
+      // join course + count
+      {
+        $lookup: {
+          from: 'courses',
+          let: { categoryId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: [
+                    { $toString: '$category' }, // fix mismatch ObjectId vs string
+                    { $toString: '$$categoryId' },
+                  ],
+                },
+              },
+            },
+            {
+              $count: 'count',
+            },
+          ],
+          as: 'courseData',
+        },
+      },
+
+      // add field courseCount
+      {
+        $addFields: {
+          courseCount: {
+            $ifNull: [{ $arrayElemAt: ['$courseData.count', 0] }, 0],
+          },
+        },
+      },
+
+      // remove field dư
+      {
+        $project: {
+          courseData: 0,
+        },
+      },
+
+      // sort
+      {
+        $sort: sortObj,
+      },
+
+      // pagination + total
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: pageSize }],
+          totalCount: [{ $count: 'count' }],
+        },
+      },
+    ];
+
+    const result = await this.categoriesModel.aggregate(pipeline);
+
+    const data = result[0]?.data || [];
+    const totalItems = result[0]?.totalCount?.[0]?.count || 0;
+
+    return {
+      results: data,
+      meta: {
+        current,
+        pageSize,
+        totalItems,
+        totalPages: Math.ceil(totalItems / pageSize),
+      },
+    };
+  }
   async findOne(id: string): Promise<ApiResponse<Category>> {
     const category = await this.categoriesModel.findById(id).lean().exec();
 

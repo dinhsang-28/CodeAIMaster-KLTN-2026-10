@@ -33,6 +33,7 @@ import UserProfile from "../pages/profile";
 import ChangePassword from "../pages/profile/ChangePassword";
 import MyCourses from "../pages/profile/MyCourses";
 import PersonalInfo from "../pages/profile/PersonalInfo";
+import BlogDetail from "../pages/blogDetail";
 
 export const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
       {
         path: "/blog",
         element: <Blog />,
+      },
+      {
+        path: "/blog/:id",
+        element: <BlogDetail />,
       },
       {
         path: "/course",

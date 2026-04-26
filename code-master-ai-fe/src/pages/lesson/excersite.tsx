@@ -525,14 +525,14 @@ const DEFAULT_CODES: Record<string, string> = {
   cpp: `#include <iostream>\n#include <string>\nusing namespace std;\n\nstring greeting(string name = "Khách") {\n    return "Xin chào, " + name + "!";\n}\n\nint main() {\n    cout << greeting("An") << endl;\n    return 0;\n}`,
 };
 
-const DIFFICULTY_STYLE: Record<
-  string,
-  { bg: string; text: string; dot: string }
-> = {
-  Dễ: { bg: "#dcfce7", text: "#15803d", dot: "#22c55e" },
-  "Trung bình": { bg: "#fef9c3", text: "#a16207", dot: "#eab308" },
-  Khó: { bg: "#fee2e2", text: "#b91c1c", dot: "#ef4444" },
-};
+// const DIFFICULTY_STYLE: Record<
+//   string,
+//   { bg: string; text: string; dot: string }
+// > = {
+//   Dễ: { bg: "#dcfce7", text: "#15803d", dot: "#22c55e" },
+//   "Trung bình": { bg: "#fef9c3", text: "#a16207", dot: "#eab308" },
+//   Khó: { bg: "#fee2e2", text: "#b91c1c", dot: "#ef4444" },
+// };
 
 const STATUS_LABEL: Record<string, string> = {
   ACCEPTED: "Chấp nhận",
@@ -889,7 +889,7 @@ export default function ExercisePage() {
   const showAiTutorBtn =
     result !== null && result.submission?.status !== "ACCEPTED";
   const title = exercise?.title ?? "Xây dựng Component Greeting";
-  const difficulty = exercise?.difficulty ?? "Dễ";
+  // const difficulty = exercise?.difficulty ?? "Dễ";
   // const diffStyle = DIFFICULTY_STYLE[difficulty];
 
   // filename badge

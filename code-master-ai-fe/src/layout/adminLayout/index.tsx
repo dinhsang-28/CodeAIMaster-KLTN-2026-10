@@ -23,6 +23,7 @@ import {
   KeyOutlined,
 } from "@ant-design/icons";
 import { useUserInfo } from "../../store/user";
+import { PostLogout } from "../../api/auth";
 
 type MenuItem = {
   to: string;
@@ -198,9 +199,10 @@ const AdminLayout: React.FC = () => {
           ))}
 
           <button
-            onClick={() => {
+            onClick={async () => {
               clearUserInfo();
-              localStorage.removeItem("access_token");
+              // localStorage.removeItem("access_token");
+              await PostLogout();
               navigate("/login");
             }}
             className={`group flex w-full items-center rounded-2xl transition-all duration-200 text-brand-900 hover:bg-red-50 hover:text-red-600 ${collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-3"}`}

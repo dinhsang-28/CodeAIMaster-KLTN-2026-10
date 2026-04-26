@@ -37,7 +37,7 @@ const HomeBaner = () => {
                             </div>
                             <div
                                 onClick={() => navigate("/course")}
-                                className="font-medium shadow-sm bg-white text-brand-600 px-5 py-2 rounded-full cursor-pointer hover:bg-brand-100 text-sm sm:text-base"
+                                className="font-medium shadow-sm bg-white text-brand-600 px-5 py-2 rounded-full cursor-pointer hover:bg-gray-100 text-sm sm:text-base"
                             >
                                 Bắt đầu học ngay
                             </div>
