@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SearchOutlined,
   PlusOutlined,
@@ -7,272 +7,373 @@ import {
   LeftOutlined,
   RightOutlined,
 } from "@ant-design/icons";
+import axios from "axios";
 
 const ArticleManage = () => {
-  // ARTICLES DATA
-  const [articles] = useState([
-    {
-      id: 1,
-      thumbnail:
-        "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=100&h=100&fit=crop",
-      title: "Hướng dẫn làm chủ React Hooks trong năm 2024",
-      category: "LẬP TRÌNH FRONTEND",
-      author: "Admin Master",
-      createdDate: "12/10/2023",
-      status: "published",
-    },
-    {
-      id: 2,
-      thumbnail:
-        "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=100&h=100&fit=crop",
-      title: "Lộ trình học Web Frontend từ Zero đến Hero",
-      category: "CHĂM SÓC HỌC TẬP",
-      author: "Minh Anh",
-      createdDate: "15/10/2023",
-      status: "published",
-    },
-    {
-      id: 3,
-      thumbnail:
-        "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100&h=100&fit=crop",
-      title: "Tại sao Python là ngôn ngữ tốt nhất cho AI?",
-      category: "TRỊ THỨC NHÂN TẠO",
-      author: "Hoàng Nam",
-      createdDate: "18/10/2023",
-      status: "draft",
-    },
-    {
-      id: 4,
-      thumbnail:
-        "https://images.unsplash.com/photo-1518770660439-4636190af475?w=100&h=100&fit=crop",
-      title: "Top 5 công nghệ Backend nổi bật 2024",
-      category: "CÔNG NGHỆ BACKEND",
-      author: "Khánh Linh",
-      createdDate: "20/10/2023",
-      status: "published",
-    },
-    {
-      id: 5,
-      thumbnail:
-        "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=100&h=100&fit=crop",
-      title: "Tại sao bạn nên học TypeScript ngay bây giờ?",
-      category: "CÔNG NGHỆ MỚI",
-      author: "Văn Tùng",
-      createdDate: "08/10/2023",
-      status: "draft",
-    },
-  ]);
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // SEARCH & PAGINATION
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-  const totalPages = 12;
 
-  // FILTERED ARTICLES
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    title: "",
+    cover_image: "",
+    content: "",
+    author: "",
+  });
+
+  const generateSlug = (title: string) => {
+    return title.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
+  };
+
+  // FETCH
+  const fetchArticles = async () => {
+    try {
+      const res = await axios.get(
+        "https://codeaimaster-kltn-2026-10.onrender.com/api/v1/blogs",
+      );
+      setArticles(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  // FILTER
   const filteredArticles = articles.filter(
-    (article) =>
-      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.author.toLowerCase().includes(searchTerm.toLowerCase()),
+    (a) =>
+      a.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.author?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  return (
-    <div className="p-4 md:p-6 lg:p-8 min-h-screen">
-      {/* HEADER */}
-      <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-brand-700">
-              Quản lý bài viết
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Danh sách các bài viết trên hệ thống.
-            </p>
-          </div>
+  const indexOfLast = currentPage * itemsPerPage;
+  const currentArticles = filteredArticles.slice(
+    indexOfLast - itemsPerPage,
+    indexOfLast,
+  );
 
-          <button className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-lg font-semibold transition duration-200 self-start md:self-auto">
-            <PlusOutlined style={{ fontSize: 18 }} />
-            Viết bài mới
-          </button>
-        </div>
+  const totalPages = Math.ceil(filteredArticles.length / itemsPerPage);
+
+  // ===================== CREATE / UPDATE =====================
+  const handleSubmit = async () => {
+    try {
+      if (isEdit && editingId) {
+        await axios.patch(
+          `https://codeaimaster-kltn-2026-10.onrender.com/api/v1/blogs/${editingId}`,
+          formData,
+        );
+
+        alert("Cập nhật thành công!");
+      } else {
+        //CREATE
+        await axios.post(
+          "https://codeaimaster-kltn-2026-10.onrender.com/api/v1/blogs",
+          {
+            ...formData,
+            slug: generateSlug(formData.title),
+            short_description: formData.content.slice(0, 100),
+          },
+        );
+
+        alert("Thêm bài viết thành công!");
+      }
+
+      setIsModalOpen(false);
+      setIsEdit(false);
+      setEditingId(null);
+
+      setFormData({
+        title: "",
+        cover_image: "",
+        content: "",
+        author: "",
+      });
+
+      fetchArticles();
+    } catch (error: any) {
+      console.log(error.response?.data);
+      alert(error.response?.data?.message || "Có lỗi xảy ra!");
+    }
+  };
+
+  // ===================== EDIT =====================
+  const handleEdit = (item: any) => {
+    setIsEdit(true);
+    setEditingId(item._id);
+    setFormData({
+      title: item.title,
+      cover_image: item.cover_image,
+      content: item.content,
+      author: item.author,
+    });
+    setIsModalOpen(true);
+  };
+
+  // ===================== DELETE =====================
+  const handleDelete = async (id: string) => {
+    const confirmDelete = window.confirm("Bạn có muốn xóa bài viết này không?");
+
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(
+        `https://codeaimaster-kltn-2026-10.onrender.com/api/v1/blogs/${id}`,
+      );
+      alert("Xóa thành công!");
+      fetchArticles();
+    } catch (error: any) {
+      console.log(error.response?.data);
+      alert("Lỗi khi xóa!");
+    }
+  };
+
+  return (
+    <div className="p-6">
+      {/* HEADER */}
+      <div className="flex justify-between mb-6">
+        <h1 className="text-xl font-bold">Quản lý bài viết</h1>
+
+        <button
+          onClick={() => {
+            setIsModalOpen(true);
+            setIsEdit(false);
+            setEditingId(null);
+
+            setFormData({
+              title: "",
+              cover_image: "",
+              content: "",
+              author: "",
+            });
+          }}
+          className="bg-brand-600 text-white px-4 py-2 rounded"
+        >
+          <PlusOutlined /> Viết bài
+        </button>
       </div>
 
-      {/* SEARCH BAR */}
-      <div className="mb-6">
-        <div className="relative">
-          <SearchOutlined
-            style={{
-              fontSize: 16,
-              position: "absolute",
-              left: 16,
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#9ca3af",
-            }}
-          />
-          <input
-            type="text"
-            placeholder="Tìm kiếm bài viết..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-lg outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition"
-          />
-        </div>
+      {/* SEARCH */}
+      <div className="mb-4 relative">
+        <SearchOutlined className="absolute left-3 top-3 text-gray-400" />
+        <input
+          className="w-full pl-10 border p-2 rounded"
+          placeholder="Tìm kiếm..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
       {/* TABLE */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            {/* TABLE HEAD */}
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Thumbnail
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Tiêu đề
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Tác giả
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Ngày tạo
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Hành động
-                </th>
+      <table className="w-full border">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="p-3 text-left">Tiêu đề</th>
+            <th className="p-3">Tác giả</th>
+            <th className="p-3">Hành động</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {loading ? (
+            <tr>
+              <td colSpan={3} className="text-center p-4">
+                Đang tải...
+              </td>
+            </tr>
+          ) : (
+            currentArticles.map((item) => (
+              <tr key={item._id}>
+                <td className="p-3">{item.title}</td>
+                <td className="p-3 text-center">{item.author}</td>
+
+                <td className="p-3 text-center flex justify-center gap-3">
+                  <button onClick={() => handleEdit(item)}>
+                    <EditOutlined className="text-gray-500 hover:text-gray-800" />
+                  </button>
+
+                  <button onClick={() => handleDelete(item._id)}>
+                    <DeleteOutlined className="text-gray-500 hover:text-gray-800" />
+                  </button>
+                </td>
               </tr>
-            </thead>
-
-            {/* TABLE BODY */}
-            <tbody className="divide-y divide-gray-200">
-              {filteredArticles.length > 0 ? (
-                filteredArticles.slice(0, itemsPerPage).map((article) => (
-                  <tr key={article.id} className="hover:bg-gray-50 transition">
-                    {/* THUMBNAIL */}
-                    <td className="px-6 py-4">
-                      <img
-                        src={article.thumbnail}
-                        alt={article.title}
-                        className="w-12 h-12 rounded-lg object-cover"
-                      />
-                    </td>
-
-                    {/* TITLE & CATEGORY */}
-                    <td className="px-6 py-4">
-                      <h3 className="font-semibold text-gray-900 mb-1">
-                        {article.title}
-                      </h3>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide">
-                        {article.category}
-                      </p>
-                    </td>
-
-                    {/* AUTHOR */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-brand-600 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs font-semibold">
-                            {article.author.charAt(0)}
-                          </span>
-                        </div>
-                        <span className="text-sm text-gray-700">
-                          {article.author}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* DATE */}
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600">
-                        {article.createdDate}
-                      </span>
-                    </td>
-
-                    {/* STATUS */}
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                          article.status === "published"
-                            ? "bg-brand-100 text-brand-700"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {article.status === "published"
-                          ? "✓ XUẤT BẢN"
-                          : "⊘ BẢN NHÁP"}
-                      </span>
-                    </td>
-
-                    {/* ACTIONS */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-lg transition border border-e2e8f0">
-                          <EditOutlined style={{ fontSize: 14 }} />
-                        </button>
-                        <button className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition border border-red-100">
-                          <DeleteOutlined style={{ fontSize: 14 }} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <p className="text-gray-500 font-medium">
-                      Không tìm thấy bài viết nào
-                    </p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            ))
+          )}
+        </tbody>
+      </table>
 
       {/* PAGINATION */}
-      <div className="mt-6 flex items-center justify-between">
-        <p className="text-sm text-gray-600 font-medium">
-          TRANG {currentPage}/{totalPages}
-        </p>
+      <div className="flex justify-between mt-4">
+        <span>
+          Trang {currentPage}/{totalPages || 1}
+        </span>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="w-10 h-10 rounded-lg border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-gray-700 hover:bg-gray-50 transition"
-          >
-            <LeftOutlined style={{ fontSize: 14 }} />
+        <div className="flex gap-2">
+          <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}>
+            <LeftOutlined />
           </button>
-
-          {[currentPage].map((page) => (
-            <button
-              key={page}
-              className="w-10 h-10 rounded-lg bg-brand-700 text-white font-semibold"
-            >
-              {page}
-            </button>
-          ))}
 
           <button
             onClick={() =>
               setCurrentPage(Math.min(totalPages, currentPage + 1))
             }
-            disabled={currentPage === totalPages}
-            className="w-10 h-10 rounded-lg border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-gray-700 hover:bg-gray-50 transition"
           >
-            <RightOutlined style={{ fontSize: 14 }} />
+            <RightOutlined />
           </button>
         </div>
       </div>
+
+      {/* MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-white w-[900px] max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-8">
+            {/* HEADER */}
+            <div className="flex justify-between items-center mb-6 border-b pb-4">
+              <h2 className="text-2xl font-bold text-gray-800">
+                {isEdit ? "Chỉnh sửa bài viết" : "Tạo bài viết"}
+              </h2>
+
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-black hover:text-red-600 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* BODY */}
+            <div className="grid grid-cols-2 gap-6">
+              {/* LEFT FORM */}
+              <div className="space-y-4">
+                {/* TITLE */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Tiêu đề
+                  </label>
+                  <input
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none transition"
+                    placeholder="Nhập tiêu đề..."
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                  />
+                </div>
+
+                {/* AUTHOR */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Tác giả
+                  </label>
+                  <input
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none transition"
+                    placeholder="Tên tác giả..."
+                    value={formData.author}
+                    onChange={(e) =>
+                      setFormData({ ...formData, author: e.target.value })
+                    }
+                  />
+                </div>
+
+                {/* IMAGE */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Link ảnh
+                  </label>
+                  <input
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none transition"
+                    placeholder="https://..."
+                    value={formData.cover_image}
+                    onChange={(e) =>
+                      setFormData({ ...formData, cover_image: e.target.value })
+                    }
+                  />
+                </div>
+
+                {/* CONTENT */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Nội dung
+                  </label>
+                  <textarea
+                    rows={6}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none transition"
+                    placeholder="Nhập nội dung..."
+                    value={formData.content}
+                    onChange={(e) =>
+                      setFormData({ ...formData, content: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* RIGHT PREVIEW */}
+              <div className="flex flex-col gap-4">
+                <p className="text-sm font-semibold text-gray-700">
+                  Xem trước ảnh
+                </p>
+
+                <div className="w-full h-[220px] bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
+                  {formData.cover_image ? (
+                    <img
+                      src={formData.cover_image}
+                      alt="preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) =>
+                        (e.currentTarget.src =
+                          "https://via.placeholder.com/400x200")
+                      }
+                    />
+                  ) : (
+                    <span className="text-gray-400 text-sm">Chưa có ảnh</span>
+                  )}
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <p className="text-xs text-gray-500 mb-1">Preview tiêu đề</p>
+                  <h3 className="font-semibold text-gray-800 line-clamp-2">
+                    {formData.title || "Tiêu đề sẽ hiển thị ở đây"}
+                  </h3>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <p className="text-xs text-gray-500 mb-1">Preview nội dung</p>
+                  <p className="text-sm text-gray-600 line-clamp-3">
+                    {formData.content || "Nội dung preview..."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* FOOTER */}
+            <div className="flex justify-end gap-3 mt-8 border-t pt-4">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 transition font-medium"
+              >
+                Hủy
+              </button>
+
+              <button
+                onClick={handleSubmit}
+                className="px-6 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-lg"
+              >
+                {isEdit ? "Cập nhật" : "Đăng bài"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

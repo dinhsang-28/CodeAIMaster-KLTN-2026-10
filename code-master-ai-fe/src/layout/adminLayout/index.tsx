@@ -5,7 +5,7 @@ import {
   useNavigate,
   useLocation,
   Navigate,
-} from "react-router-dom"; // 🚨 Thêm Navigate
+} from "react-router-dom";
 import {
   AppstoreOutlined,
   DashboardOutlined,
@@ -60,6 +60,11 @@ const mainMenuItems: MenuItem[] = [
     label: "Quản lý phân quyền",
     icon: <KeyOutlined />,
   },
+  {
+    to: "/admin/leads",
+    label: "Quản lý khách hàng tiềm năng",
+    icon: <UsergroupAddOutlined />,
+  },
 ];
 
 const bottomMenuItems: MenuItem[] = [
@@ -100,6 +105,7 @@ const AdminLayout: React.FC = () => {
     if (path.includes("/roles")) return permissions.includes("roles_view");
     if (path.includes("/permissions"))
       return permissions.includes("permissions_view");
+    if (path.includes("/leads")) return permissions.includes("leads_view");
     // Tuỳ chỉnh nếu có quyền settings
     return true;
   };
@@ -124,6 +130,8 @@ const AdminLayout: React.FC = () => {
     if (location.pathname.includes("/articles")) return "Quản lý bài viết";
     if (location.pathname.includes("/users")) return "Quản lý người dùng";
     if (location.pathname.includes("/settings")) return "Settings";
+    if (location.pathname.includes("/leads"))
+      return "Quản lý khách hàng tiềm năng";
     return "Trang quản trị";
   };
 
@@ -200,9 +208,9 @@ const AdminLayout: React.FC = () => {
 
           <button
             onClick={async () => {
+              await PostLogout();
               clearUserInfo();
               // localStorage.removeItem("access_token");
-              await PostLogout();
               navigate("/login");
             }}
             className={`group flex w-full items-center rounded-2xl transition-all duration-200 text-brand-900 hover:bg-red-50 hover:text-red-600 ${collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-3"}`}

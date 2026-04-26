@@ -104,3 +104,32 @@ export const PostChangePassword = async (data: any) => {
   const res = await axiosInstance.post("/auth/change-password", data);
   return res.data;
 };
+// lay lai userinfo
+export const GetMe = async () => {
+  const response = await axiosInstance.get('/auth/me');
+  console.log("GetMe response: ", response.data);
+  return response.data;
+}
+
+// Moi  dang test (ae sua nho nhan sang hihi)
+// con chatbot tu van
+export const PostChatConsultant = async (data: { chatHistory: any[], newMessage: string }) => {
+  const res = await axiosInstance.post('/submissions/chat-consultant', data);
+  return res.data;
+};
+
+// Lấy danh sách khách hàng yêu cầu tư vấn (Dành cho Admin)
+export const GetLeadsAdvisories = async (page: number = 1, limit: number = 10, status: string = 'ALL') => {
+  const params: any = { page, limit };
+  if (status !== 'ALL') {
+    params.status = status; // Chỉ gửi status nếu khác ALL
+  }
+  const res = await axiosInstance.get('/submissions/leads/advisories', { params });
+  return res.data;
+};
+
+// Cập nhật trạng thái khách hàng tiềm năng
+export const UpdateLeadStatus = async (id: string, status: 'NEW' | 'CONTACTED' | 'RESOLVED') => {
+  const res = await axiosInstance.patch(`/submissions/leads/advisories/${id}/status`, { status });
+  return res.data;
+};

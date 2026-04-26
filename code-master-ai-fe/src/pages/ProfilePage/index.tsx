@@ -129,15 +129,10 @@ const ProfilePage: React.FC = () => {
                             <p className="mt-1 text-xs text-gray-400">Email là định danh duy nhất, không thể thay đổi.</p>
                         </div>
 
-                        <div>
+                        <div className="md:col-span-2">
                             <label className="mb-2 block text-sm font-semibold text-gray-700">Số điện thoại</label>
                             <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500" />
-                        </div>
-
-                        <div>
-                            <label className="mb-2 block text-sm font-semibold text-gray-700">Đổi mật khẩu mới</label>
-                            <input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="Để trống nếu không đổi" className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500" />
-                        </div>
+                        </div> 
                     </div>
 
                     <div className="mt-8 flex justify-end">

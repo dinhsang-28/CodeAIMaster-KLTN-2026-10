@@ -12,15 +12,20 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AiAssistantService } from '@/ai-assistant/ai-assistant.service';
 import { JUDGE0_LANGUAGES } from '@/common/constants/languages.constant';
+import { Course } from '../courses/entities/course.entity';
+import { Advisory } from './entities/advisory.entity';
 
 @Injectable()
 export class SubmissionsService {
   private readonly JUDGE0_URL = 'https://ce.judge0.com';
+  // courseModel: any;
 
   constructor(
     @InjectModel(Submission.name) private readonly submissionModel: Model<Submission>,
     @InjectModel(TestCase.name) private readonly testCaseModel: Model<TestCase>,
     @InjectModel(CodeAssignment.name) private readonly codeAssignmentModel: Model<CodeAssignment>,
+    @InjectModel('Course') private readonly courseModel: Model<Course>,
+    @InjectModel('Advisory') private readonly advisoryModel: Model<Advisory>,
     private readonly aiAssistantService: AiAssistantService,
     private readonly httpService: HttpService,
   ) {}
@@ -279,5 +284,138 @@ export class SubmissionsService {
     //   assignments: recommendedAssignments // Danh sách 5 bài tập trả về cho Frontend
     // };
   }
-}
+  async chatWithConsultant(
+    chatHistory: { role: 'user' | 'model'; text: string }[],
+    newMessage: string,
+  ) {
+    const courses = await this.courseModel.find({ status: 'active' })
+      .select('_id title level price')
+      .lean();
 
+    // 1. Chèn thêm "Lệnh mật" vào hệ thống AI để nó tự bẫy khách hàng
+    const systemInstruction = `
+      Bạn là AI Tư Vấn của CodeMaster. Khách hàng đang chat với bạn.
+      Danh sách khóa học: ${JSON.stringify(courses)}.
+      
+       LỆNH TỐI CAO VỀ THU THẬP THÔNG TIN: 
+      1. Nếu khách hàng muốn đặt khóa học nhưng chưa cho thông tin: Hãy hỏi xin Số điện thoại hoặc Email một cách lịch sự. TUYỆT ĐỐI KHÔNG SỬ DỤNG thẻ [LEAD].
+      2. CHỈ KHI NÀO khách hàng ĐÃ THỰC SỰ gõ ra Số điện thoại hoặc Email cụ thể, bạn mới được phép chèn đoạn mã này vào CUỐI câu: [LEAD: số_hoặc_email_của_khách]
+      3. Tuyệt đối không bao giờ được trả về đoạn mã mẫu chứa dấu ngoặc nhọn như [LEAD: <số_điện_thoại>].
+    `;
+
+    // Gọi AI (Gộp lệnh mật vào câu hỏi cuối cùng để ép AI tuân thủ)
+    let aiResponse = await this.aiAssistantService.chatWithConsultant(
+      chatHistory, 
+      newMessage + `\n\n(Hệ thống nhắc nhở AI: ${systemInstruction})`, 
+      courses
+    );
+
+    // 2. Dùng Regex để tìm mã ẩn [LEAD: ...]
+    const leadRegex = /\[LEAD:\s*(.+?)\]/;
+    const match = aiResponse.match(leadRegex);
+
+    if (match) {
+      //  BƯỚC QUAN TRỌNG: Chuẩn hóa dữ liệu (cắt khoảng trắng và đưa về chữ thường)
+      const contactInfo = match[1].trim().toLowerCase(); 
+
+      // Lưới lọc bảo vệ: Chống lưu chuỗi rác do AI bị "ảo giác" sinh ra
+      const isFakeData = contactInfo.includes('<') || contactInfo.includes('>');
+      const isValidLength = contactInfo.length >= 8;
+
+      if (!isFakeData && isValidLength) {
+        try {
+          // Lấy 2 câu chat gần nhất để làm Context
+          const context = chatHistory.slice(-2).map(msg => `${msg.role}: ${msg.text}`).join(' | ');
+          
+          // Tìm kiếm khách hàng bằng Regex để KHÔNG phân biệt chữ hoa/thường
+          const existingLead = await this.advisoryModel.findOne({ 
+            contact_info: { $regex: new RegExp(`^${contactInfo}$`, 'i') } 
+          });
+
+          if (existingLead) {
+            //  NẾU KHÁCH ĐÃ TỒN TẠI: Cập nhật dòng cũ thay vì tạo mới
+            existingLead.status = 'NEW'; // Đẩy về MỚI để Admin chú ý
+            existingLead.is_returning = true; // Đánh dấu đây là khách quay lại
+            
+            // Nối thêm lịch sử chat mới xuống dưới cùng
+            existingLead.chat_history = existingLead.chat_history + '\n\n--- [Nhắn tin lần sau] ---\n' + `${context} | user: ${newMessage}`;
+            
+            await existingLead.save();
+            console.log(` Đã cập nhật yêu cầu từ Khách cũ: ${contactInfo}`);
+            
+          } else {
+            //  NẾU KHÁCH MỚI TINH: Tạo một bản ghi hoàn toàn mới
+            await this.advisoryModel.create({
+              contact_info: contactInfo,
+              is_returning: false,
+              status: 'NEW',
+              chat_history: `${context} | user: ${newMessage}`
+            });
+            console.log(` Đã bắt được Khách hàng mới: ${contactInfo}`);
+          }
+        } catch (error) {
+          console.error('Lỗi khi xử lý Lead:', error);
+        }
+      }
+      //  Luôn luôn xóa mã ẩn đi trước khi trả kết quả về cho React
+      aiResponse = aiResponse.replace(leadRegex, '').trim();
+    }
+
+    return { success: true, reply: aiResponse };
+  }
+
+  // Lấy danh sách Leads có phân trang (Dành cho Admin)
+  async getAllLeadsAdvisories(page: number = 1, limit: number = 10, status?: string) {
+    const skip = (page - 1) * limit;
+
+    // 1. CHUẨN BỊ BỘ LỌC (Lọc theo Tab)
+    const query: any = {};
+    if (status && status !== 'ALL') {
+      query.status = status; 
+    }
+
+    const [leads, totalFiltered, totalAll, totalNew,totalContacted, totalResolved] = await Promise.all([
+      this.advisoryModel.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(), 
+      this.advisoryModel.countDocuments(query).exec(), 
+      
+      // Đếm riêng cho 3 Thẻ Thống kê
+      this.advisoryModel.countDocuments().exec(), 
+      this.advisoryModel.countDocuments({ status: 'NEW' }).exec(),
+      this.advisoryModel.countDocuments({ status: 'CONTACTED' }).exec(),
+      this.advisoryModel.countDocuments({ status: 'RESOLVED' }).exec(),
+    ]);
+
+    return {
+      data: leads,
+      meta: {
+        totalItems: totalFiltered, 
+        stats: { 
+          totalAll,
+          totalNew,
+          totalContacted,
+          totalResolved
+        }
+      },
+    };
+  }
+
+  // Cập nhật trạng thái Khách hàng tư vấn
+  async updateAdvisoryStatus(id: string, status: string) {
+    const validStatuses = ['NEW', 'CONTACTED', 'RESOLVED'];
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException('Trạng thái không hợp lệ');
+    }
+
+    const updatedLead = await this.advisoryModel.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedLead) {
+      throw new BadRequestException('Không tìm thấy yêu cầu tư vấn này');
+    }
+
+    return { success: true, message: 'Cập nhật trạng thái thành công', data: updatedLead };
+  }
+}

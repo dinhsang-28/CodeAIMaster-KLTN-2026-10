@@ -16,6 +16,7 @@ const permissionModules = [
   { label: "Quản lý Bài Viết", value: "articles" },
   { label: "Quản lý nhóm quyền", value: "roles" },
   { label: "Quản lý phân quyền", value: "permissions" },
+  {label:"Quản lý khách hàng tiềm năng", value:"leads"},
 ];
 
 const actions = [

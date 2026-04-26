@@ -5,14 +5,14 @@ import { useUserInfo } from "../store/user";
 //   baseURL: "https://codeaimaster-kltn-2026-10.onrender.com/api/v1",
 //   withCredentials: true,
 // });
-// export const axiosInstance = axios.create({
-//   baseURL: "http://localhost:3001/api/v1",
-//   withCredentials: true,
-// });
 export const axiosInstance = axios.create({
-  baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
+  baseURL: "http://localhost:3001/api/v1",
   withCredentials: true,
 });
+// export const axiosInstance = axios.create({
+//   baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
+//   withCredentials: true,
+// });
 
 axiosInstance.interceptors.response.use(
   (response) => {
@@ -42,7 +42,9 @@ axiosInstance.interceptors.response.use(
         return axiosInstance(originalRequest);
       } catch (error) {
         useUserInfo.getState().clearUserInfo();
-        window.location.href = "/login";
+       if (window.location.pathname !== '/login') {
+          window.location.href = "/login";
+        }
         return Promise.reject(error);
       }
     }

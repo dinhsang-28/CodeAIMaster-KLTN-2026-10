@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
+import mongoose, { Model, Types } from 'mongoose';
 import { User } from './entities/user.entity';
 import { generateVerificationCode, hashPasswordHelper } from '@/helpers/util';
 import { CodeAuthDto, CreateAuthDto, changePasswordAuthDto } from '@/auth/dto/create-auth.dto';
@@ -235,7 +235,7 @@ export class UsersService {
 }
 
   // lay id de kiem tra refresh token
-  async refreshID(id:string){
+  async refreshID(id:string | Types.ObjectId){
     return await this.userModel.findById(id);
   }
 

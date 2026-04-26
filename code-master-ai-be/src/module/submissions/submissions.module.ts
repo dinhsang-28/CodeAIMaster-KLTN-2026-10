@@ -8,6 +8,8 @@ import { Submission, SubmissionSchema } from './entities/submission.entity';
 import { CodeAssignment, CodeAssignmentSchema } from '../code-assignments/entities/code-assignment.entity'; 
 import { TestCase, TestCaseSchema } from '../testcases/entities/testcase.entity';
 import { AiAssistantModule } from '@/ai-assistant/ai-assistant.module';
+import { Course, CourseSchema } from '../courses/entities/course.entity';
+import { Advisory, AdvisorySchema } from './entities/advisory.entity';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { AiAssistantModule } from '@/ai-assistant/ai-assistant.module';
       { name: Submission.name, schema: SubmissionSchema },
       { name: CodeAssignment.name, schema: CodeAssignmentSchema },
       { name: TestCase.name, schema: TestCaseSchema },
+      {name:Course.name,schema:CourseSchema},
+      {name:Advisory.name, schema: AdvisorySchema}
     ]),
   ],
   controllers: [SubmissionsController],

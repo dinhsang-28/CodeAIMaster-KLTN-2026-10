@@ -19,6 +19,7 @@ const BlogDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     fetchBlogDetail();
     fetchRelatedBlogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps

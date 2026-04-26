@@ -109,4 +109,9 @@ export class AuthController {
     // const user = await this.userService.createGithubUser(req.user);
     return this.authService.validateOAuthLogin(req.user, res);
   }
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getMe(@Request() req: Request & { user: any }) {
+    return this.authService.getMe(req.user._id);
+  }
 }
