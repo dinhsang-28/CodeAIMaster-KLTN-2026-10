@@ -5,14 +5,14 @@ import { useUserInfo } from "../store/user";
 //   baseURL: "https://codeaimaster-kltn-2026-10.onrender.com/api/v1",
 //   withCredentials: true,
 // });
-export const axiosInstance = axios.create({
-  baseURL: "http://localhost:3001/api/v1",
-  withCredentials: true,
-});
 // export const axiosInstance = axios.create({
-//   baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
+//   baseURL: "http://localhost:3001/api/v1",
 //   withCredentials: true,
 // });
+export const axiosInstance = axios.create({
+  baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
+  withCredentials: true,
+});
 
 axiosInstance.interceptors.response.use(
   (response) => {
@@ -21,12 +21,7 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     //Bỏ qua các route auth — không refresh cho những URL này
-    const skipRefreshUrls = [
-      "/auth/refresh",
-      "/auth/login",
-      "/auth/logout",
-      "/",
-    ];
+    const skipRefreshUrls = ["/auth/refresh", "/auth/login", "/auth/logout"];
     const isSkipped = skipRefreshUrls.some((url) =>
       originalRequest.url?.includes(url),
     );
@@ -42,7 +37,7 @@ axiosInstance.interceptors.response.use(
         return axiosInstance(originalRequest);
       } catch (error) {
         useUserInfo.getState().clearUserInfo();
-       if (window.location.pathname !== '/login') {
+        if (window.location.pathname !== "/login") {
           window.location.href = "/login";
         }
         return Promise.reject(error);

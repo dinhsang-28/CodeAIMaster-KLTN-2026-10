@@ -30,6 +30,8 @@ import { StatisticsModule } from './module/statistics/statistics.module';
 import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { join } from 'path';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/adapters/handlebars.adapter';
+import { UserLessonProgressModule } from './module/user-lesson-progress/user-lesson-progress.module';
+import { ProgressModule } from './module/progress/progress.module';
 
 @Module({
   imports: [
@@ -51,6 +53,8 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/adapters/handlebars.ad
     RolesModule,
     SubmissionsModule,
     TestcasesModule,
+    UserLessonProgressModule,
+    ProgressModule,
     // nap bien cuc bo .env
     ConfigModule.forRoot({
       isGlobal: true,

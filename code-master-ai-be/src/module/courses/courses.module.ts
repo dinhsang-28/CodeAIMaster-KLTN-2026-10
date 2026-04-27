@@ -7,12 +7,26 @@ import { Course } from './entities/course.entity';
 import { CategoriesModule } from '../categories/categories.module';
 import { Lesson, LessonSchema } from '../lessons/entities/lesson.entity';
 import { UploadModule } from '@/upload/upload.module';
+import { Assignment, AssignmentSchema } from '../assignments/entities/assignment.entity';
+import { Quiz, QuizSchema } from '../quizzes/entities/quiz.entity';
+import { Question, QuestionSchema } from '../questions/entities/question.entity';
+import {
+  CodeAssignment,
+  CodeAssignmentSchema,
+} from '../code-assignments/entities/code-assignment.entity';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Course.name, schema: CourseSchema }, {name: Lesson.name, schema: LessonSchema }]),
+    MongooseModule.forFeature([
+      { name: Course.name, schema: CourseSchema },
+      { name: Lesson.name, schema: LessonSchema },
+      { name: Assignment.name, schema: AssignmentSchema },
+      { name: Quiz.name, schema: QuizSchema },
+      { name: Question.name, schema: QuestionSchema },
+      { name: CodeAssignment.name, schema: CodeAssignmentSchema },
+    ]),
     CategoriesModule,
-    UploadModule
+    UploadModule,
   ],
   controllers: [CoursesController],
   providers: [CoursesService],

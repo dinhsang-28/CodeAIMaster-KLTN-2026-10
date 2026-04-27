@@ -8,6 +8,7 @@ import { Submission, SubmissionSchema } from './entities/submission.entity';
 import { CodeAssignment, CodeAssignmentSchema } from '../code-assignments/entities/code-assignment.entity'; 
 import { TestCase, TestCaseSchema } from '../testcases/entities/testcase.entity';
 import { AiAssistantModule } from '@/ai-assistant/ai-assistant.module';
+import { UserLessonProgressModule } from '../user-lesson-progress/user-lesson-progress.module';
 import { Course, CourseSchema } from '../courses/entities/course.entity';
 import { Advisory, AdvisorySchema } from './entities/advisory.entity';
 
@@ -15,6 +16,7 @@ import { Advisory, AdvisorySchema } from './entities/advisory.entity';
   imports: [
     HttpModule,
     AiAssistantModule,
+    UserLessonProgressModule,
     //  3 bảng cần thiết cho luồng chấm bài
     MongooseModule.forFeature([
       { name: Submission.name, schema: SubmissionSchema },

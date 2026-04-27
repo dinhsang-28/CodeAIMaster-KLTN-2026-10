@@ -40,6 +40,11 @@ export class CoursesController {
     return this.coursesService.searchCourses(search);
   }
 
+  @Get(':id/info')
+  getCourseInfo(@Param('id') id: string) {
+    return this.coursesService.getCourseInfo(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.coursesService.findOne(id);

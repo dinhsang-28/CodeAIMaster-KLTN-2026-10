@@ -15,6 +15,16 @@ import { Lesson, LessonDocument } from '../lessons/entities/lesson.entity';
 import { SearchCourse } from './dto/search-course.dto';
 import { filter } from 'rxjs';
 import { UploadService } from '@/upload/upload.service';
+import {
+  Assignment,
+  AssignmentDocument,
+} from '../assignments/entities/assignment.entity';
+import { Quiz, QuizDocument } from '../quizzes/entities/quiz.entity';
+import { Question, QuestionDocument } from '../questions/entities/question.entity';
+import {
+  CodeAssignment,
+  CodeAssignmentDocument,
+} from '../code-assignments/entities/code-assignment.entity';
 
 @Injectable()
 export class CoursesService {
@@ -27,6 +37,19 @@ export class CoursesService {
 
     @InjectModel(Lesson.name)
     private readonly lessonModel: Model<LessonDocument>,
+
+    @InjectModel(Assignment.name)
+    private readonly assignmentModel: Model<AssignmentDocument>,
+
+    @InjectModel(Quiz.name)
+    private readonly quizModel: Model<QuizDocument>,
+
+    @InjectModel(Question.name)
+    private readonly questionModel: Model<QuestionDocument>,
+
+    @InjectModel(CodeAssignment.name)
+    private readonly codeAssignmentModel: Model<CodeAssignmentDocument>,
+
     private readonly uploadService: UploadService,
   ) {}
   async create(
@@ -88,6 +111,102 @@ export class CoursesService {
     return new ApiResponse('Chi tiết khóa học', {
       ...course,
       lessons,
+    });
+  }
+
+  async getCourseInfo(id: string): Promise<ApiResponse<any>> {
+    const course = await this.courseModel
+      .findById(id)
+      .populate('category', 'category_name')
+      .lean()
+      .exec();
+
+    if (!course) {
+      throw new NotFoundException('Không tìm thấy khóa học');
+    }
+
+    const lessons = await this.lessonModel
+      .find({ course_id: id })
+      .sort({ lesson_order: 1 })
+      .lean()
+      .exec();
+
+    const lessonIds = lessons.map((lesson) => lesson._id);
+    const assignments = await this.assignmentModel
+      .find({ lesson_id: { $in: lessonIds } })
+      .lean()
+      .exec();
+
+    const assignmentIds = assignments.map((assignment) => assignment._id);
+
+    const [quizzes, codeAssignments] = await Promise.all([
+      this.quizModel.find({ assignment_id: { $in: assignmentIds } }).lean().exec(),
+      this.codeAssignmentModel
+        .find({ assignment_id: { $in: assignmentIds } })
+        .lean()
+        .exec(),
+    ]);
+
+    const quizIds = quizzes.map((quiz) => quiz._id);
+    const questions = await this.questionModel
+      .find({ quiz_id: { $in: quizIds } })
+      .lean()
+      .exec();
+
+    const questionsByQuizId = new Map<string, any[]>();
+    for (const question of questions) {
+      const key = String(question.quiz_id);
+      if (!questionsByQuizId.has(key)) {
+        questionsByQuizId.set(key, []);
+      }
+      questionsByQuizId.get(key)!.push(question);
+    }
+
+    const quizzesByAssignmentId = new Map<string, any[]>();
+    for (const quiz of quizzes) {
+      const quizWithQuestions = {
+        ...quiz,
+        questions: questionsByQuizId.get(String(quiz._id)) || [],
+      };
+      const key = String(quiz.assignment_id);
+      if (!quizzesByAssignmentId.has(key)) {
+        quizzesByAssignmentId.set(key, []);
+      }
+      quizzesByAssignmentId.get(key)!.push(quizWithQuestions);
+    }
+
+    const codeAssignmentByAssignmentId = new Map<string, any>();
+    for (const codeAssignment of codeAssignments) {
+      codeAssignmentByAssignmentId.set(
+        String(codeAssignment.assignment_id),
+        codeAssignment,
+      );
+    }
+
+    const assignmentsByLessonId = new Map<string, any[]>();
+    for (const assignment of assignments) {
+      const assignmentId = String(assignment._id);
+      const enrichedAssignment = {
+        ...assignment,
+        quizzes: quizzesByAssignmentId.get(assignmentId) || [],
+        codeAssignment: codeAssignmentByAssignmentId.get(assignmentId) || null,
+      };
+
+      const lessonKey = String(assignment.lesson_id);
+      if (!assignmentsByLessonId.has(lessonKey)) {
+        assignmentsByLessonId.set(lessonKey, []);
+      }
+      assignmentsByLessonId.get(lessonKey)!.push(enrichedAssignment);
+    }
+
+    const lessonDetails = lessons.map((lesson) => ({
+      ...lesson,
+      assignments: assignmentsByLessonId.get(String(lesson._id)) || [],
+    }));
+
+    return new ApiResponse('Thông tin đầy đủ khóa học', {
+      ...course,
+      lessons: lessonDetails,
     });
   }
 
