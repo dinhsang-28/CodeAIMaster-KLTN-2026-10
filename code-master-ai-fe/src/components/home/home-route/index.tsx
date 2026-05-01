@@ -39,7 +39,7 @@ const featureList: FeatureItem[] = [
 const HomeRoute = () => {
     return (
         <AnimateOnScroll>
-            <div className="bg-brand-50 py-10 sm:py-12 px-4 sm:px-8 flex flex-col gap-8 sm:gap-12">
+            <div id="tour-home-route" className="bg-brand-50 py-10 sm:py-12 px-4 sm:px-8 flex flex-col gap-8 sm:gap-12">
 
                 {/* Header */}
                 <div className="flex flex-col items-center justify-center gap-2 text-center">

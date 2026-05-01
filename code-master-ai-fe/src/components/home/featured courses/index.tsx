@@ -5,7 +5,7 @@ import AnimateOnScroll from "../../../utils/animateOnScroll";
 
 const FeaturedCourses = () => {
     return (
-        <section className="w-full py-10 sm:py-16 bg-brand-50">
+        <section id="tour-featured-courses" className="w-full py-10 sm:py-16 bg-brand-50">
             <AnimateOnScroll>
                 <div className="w-full mx-auto px-4 sm:px-8 lg:px-12 flex flex-col gap-6 sm:gap-8">
 

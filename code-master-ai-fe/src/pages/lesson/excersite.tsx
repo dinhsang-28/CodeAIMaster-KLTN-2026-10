@@ -3,7 +3,7 @@
 // import { useParams, useNavigate } from "react-router-dom";
 
 // // 🚨 ĐÃ THÊM: Import axiosInstance để tự động lo vụ Cookie
-// import { axiosInstance } from "../../utils/axios";
+// import { axiosInstance } from "../../utils/axios"; 
 
 // // =============================================
 // // TYPES
@@ -94,7 +94,7 @@
 //   const editorRef = useRef<any>(null);
 
 //   // =============================================
-//   // FETCH ĐỀ BÀI
+//   // FETCH ĐỀ BÀI 
 //   // =============================================
 //   useEffect(() => {
 //     if (!assignmentId) return;
@@ -463,7 +463,6 @@
 //     </div>
 //   );
 // }
-
 import { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -471,7 +470,7 @@ import { axiosInstance } from "../../utils/axios";
 import { Select } from "antd";
 
 // =============================================
-// TYPES (giữ nguyên)
+// TYPES
 // =============================================
 interface SubmissionResult {
   message: string;
@@ -507,7 +506,7 @@ interface ExerciseData {
 }
 
 // =============================================
-// CONFIG (giữ nguyên)
+// CONFIG
 // =============================================
 const LANGUAGES = [
   { value: "javascript", label: "JavaScript", monaco: "javascript" },
@@ -525,15 +524,7 @@ const DEFAULT_CODES: Record<string, string> = {
   cpp: `#include <iostream>\n#include <string>\nusing namespace std;\n\nstring greeting(string name = "Khách") {\n    return "Xin chào, " + name + "!";\n}\n\nint main() {\n    cout << greeting("An") << endl;\n    return 0;\n}`,
 };
 
-// const DIFFICULTY_STYLE: Record<
-//   string,
-//   { bg: string; text: string; dot: string }
-// > = {
-//   Dễ: { bg: "#dcfce7", text: "#15803d", dot: "#22c55e" },
-//   "Trung bình": { bg: "#fef9c3", text: "#a16207", dot: "#eab308" },
-//   Khó: { bg: "#fee2e2", text: "#b91c1c", dot: "#ef4444" },
-// };
-
+// Status display helpers (kept as maps since they're data, not styles)
 const STATUS_LABEL: Record<string, string> = {
   ACCEPTED: "Chấp nhận",
   WRONG_ANSWER: "Sai đáp án",
@@ -542,13 +533,21 @@ const STATUS_LABEL: Record<string, string> = {
   RUNTIME_ERROR: "Lỗi runtime",
 };
 
-const STATUS_COLOR: Record<string, { bg: string; text: string }> = {
-  ACCEPTED: { bg: "#dcfce7", text: "#15803d" },
-  WRONG_ANSWER: { bg: "#fee2e2", text: "#b91c1c" },
-  COMPILATION_ERROR: { bg: "#fef9c3", text: "#a16207" },
-  TIME_LIMIT_EXCEEDED: { bg: "#ffedd5", text: "#c2410c" },
-  RUNTIME_ERROR: { bg: "#fee2e2", text: "#b91c1c" },
+// Status badge classes (Tailwind)
+const STATUS_CLASS: Record<string, string> = {
+  ACCEPTED: "bg-green-100 text-green-700",
+  WRONG_ANSWER: "bg-red-100 text-red-700",
+  COMPILATION_ERROR: "bg-yellow-100 text-yellow-700",
+  TIME_LIMIT_EXCEEDED: "bg-orange-100 text-orange-700",
+  RUNTIME_ERROR: "bg-red-100 text-red-700",
 };
+
+// Progress bar color
+function pctColor(pct: number) {
+  if (pct === 100) return "bg-green-500";
+  if (pct > 50) return "bg-yellow-400";
+  return "bg-red-500";
+}
 
 // =============================================
 // AI TUTOR MODAL
@@ -566,92 +565,32 @@ function AiTutorModal({
 }) {
   if (!isOpen) return null;
   return (
+    /* Backdrop */
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 50,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.45)",
-        backdropFilter: "blur(4px)",
-      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm"
       onClick={onClose}
     >
+      {/* Modal */}
       <div
-        style={{
-          width: "100%",
-          maxWidth: 520,
-          margin: "0 16px",
-          background: "white",
-          borderRadius: 16,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-          overflow: "hidden",
-        }}
+        className="w-full max-w-[520px] mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "16px 20px",
-            borderBottom: "1px solid #f1f5f9",
-          }}
-        >
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: "#ede9fe",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+          <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c3aed">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
           </div>
-          <div style={{ flex: 1 }}>
-            <p
-              style={{
-                fontWeight: 600,
-                fontSize: 14,
-                color: "#0f172a",
-                margin: 0,
-              }}
-            >
-              Gia Sư AI
-            </p>
-            <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>
-              Phân tích lỗi và gợi ý cải thiện
-            </p>
+          <div className="flex-1">
+            <p className="font-semibold text-sm text-slate-900 m-0">Gia Sư AI</p>
+            <p className="text-[11px] text-slate-400 m-0">Phân tích lỗi và gợi ý cải thiện</p>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "#94a3b8",
-              padding: 4,
-              borderRadius: 6,
-              display: "flex",
-            }}
+            className="bg-transparent border-0 cursor-pointer text-slate-400 p-1 rounded-md flex items-center hover:text-slate-600"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -659,85 +598,33 @@ function AiTutorModal({
         </div>
 
         {/* Body */}
-        <div style={{ padding: "20px", maxHeight: "55vh", overflowY: "auto" }}>
+        <div className="p-5 max-h-[55vh] overflow-y-auto">
           {isLoading ? (
             <div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginBottom: 16,
-                }}
-              >
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: "#7c3aed",
-                    display: "inline-block",
-                    animation: "pulse 1.5s infinite",
-                  }}
-                />
-                <span style={{ fontSize: 12, color: "#7c3aed" }}>
-                  Gia sư AI đang phân tích code của bạn...
-                </span>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-2 h-2 rounded-full bg-violet-600 inline-block animate-pulse" />
+                <span className="text-xs text-violet-600">Gia sư AI đang phân tích code của bạn...</span>
               </div>
               {[100, 80, 95, 65].map((w, i) => (
                 <div
                   key={i}
-                  style={{
-                    height: 10,
-                    background: "#f1f5f9",
-                    borderRadius: 4,
-                    marginBottom: 10,
-                    width: `${w}%`,
-                    animation: "pulse 1.5s infinite",
-                  }}
+                  className="h-2.5 bg-slate-100 rounded mb-2.5 animate-pulse"
+                  style={{ width: `${w}%` }}
                 />
               ))}
             </div>
           ) : aiHint ? (
-            <p
-              style={{
-                fontSize: 13,
-                color: "#334155",
-                lineHeight: 1.7,
-                whiteSpace: "pre-wrap",
-                margin: 0,
-              }}
-            >
-              {aiHint}
-            </p>
+            <p className="text-[13px] text-slate-700 leading-relaxed whitespace-pre-wrap m-0">{aiHint}</p>
           ) : (
-            <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>
-              Không có gợi ý.
-            </p>
+            <p className="text-[13px] text-slate-400 m-0">Không có gợi ý.</p>
           )}
         </div>
 
         {!isLoading && (
-          <div
-            style={{
-              padding: "12px 20px",
-              borderTop: "1px solid #f1f5f9",
-              display: "flex",
-              justifyContent: "flex-end",
-            }}
-          >
+          <div className="px-5 py-3 border-t border-slate-100 flex justify-end">
             <button
               onClick={onClose}
-              style={{
-                fontSize: 12,
-                padding: "7px 18px",
-                borderRadius: 8,
-                border: "1px solid #e2e8f0",
-                background: "white",
-                color: "#64748b",
-                cursor: "pointer",
-                fontWeight: 500,
-              }}
+              className="text-xs px-[18px] py-[7px] rounded-lg border border-slate-200 bg-white text-slate-500 cursor-pointer font-medium hover:bg-slate-50"
             >
               Đóng
             </button>
@@ -760,12 +647,9 @@ export default function ExercisePage() {
   const [language, setLanguage] = useState("javascript");
   const [code, setCode] = useState(DEFAULT_CODES.javascript);
   const [activeTab, setActiveTab] = useState<"console" | "result">("console");
-  // "Mô tả" | "Gợi ý" | "Thảo luận"
   const [leftTab, setLeftTab] = useState<"desc" | "hint" | "discuss">("desc");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [consoleOutput, setConsoleOutput] = useState(
-    'Nhấn "Nộp bài" để chạy và chấm bài...',
-  );
+  const [consoleOutput, setConsoleOutput] = useState('Nhấn "Nộp bài" để chạy và chấm bài...');
   const [result, setResult] = useState<SubmissionResult | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const editorRef = useRef<any>(null);
@@ -774,14 +658,11 @@ export default function ExercisePage() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiHint, setAiHint] = useState<string | null>(null);
 
-  // Fetch đề bài (giữ nguyên logic)
   useEffect(() => {
     if (!assignmentId) return;
     const fetchExercise = async () => {
       try {
-        const res = await axiosInstance.get(
-          `/code-assignments/65e000000000000000000001`,
-        );
+        const res = await axiosInstance.get(`/code-assignments/65e000000000000000000001`);
         const data: ExerciseData = res.data;
         setExercise(data);
         if (data.default_code?.[language]) setCode(data.default_code[language]);
@@ -792,7 +673,7 @@ export default function ExercisePage() {
       }
     };
     fetchExercise();
-  }, [assignmentId, language]);
+  }, [assignmentId]);
 
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
@@ -804,7 +685,6 @@ export default function ExercisePage() {
     else setCode(DEFAULT_CODES[language] || "");
   };
 
-  // Submit (giữ nguyên logic)
   const handleSubmit = async () => {
     const sourceCode = code.trim();
     if (!sourceCode) {
@@ -831,11 +711,11 @@ export default function ExercisePage() {
       const ts2 = new Date().toLocaleTimeString();
       if (data.compileError) {
         setConsoleOutput(
-          `[${ts2}] Compiling project...\n✗ Compilation failed\n\n${data.compileError}`,
+          `[${ts2}] Compiling project...\n✗ Compilation failed\n\n${data.compileError}`
         );
       } else {
         setConsoleOutput(
-          `[${ts2}] Compiling project...\n✓ Compiled successfully\n✓ All tests passed (${data.passedCases}/${data.totalCases})`,
+          `[${ts2}] Compiling project...\n✓ Compiled successfully\n✓ All tests passed (${data.passedCases}/${data.totalCases})`
         );
       }
       setResult(data);
@@ -843,15 +723,12 @@ export default function ExercisePage() {
       if (data.submission?.ai_hint) setAiHint(data.submission.ai_hint);
       if (data.submission?.status === "ACCEPTED") setIsSuccess(true);
     } catch (err: any) {
-      setConsoleOutput(
-        `Lỗi từ server: ${err.response?.data?.message || err.message}`,
-      );
+      setConsoleOutput(`Lỗi từ server: ${err.response?.data?.message || err.message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Hỏi AI
   const handleAskAiTutor = async () => {
     setIsAiModalOpen(true);
     if (aiHint) return;
@@ -859,16 +736,14 @@ export default function ExercisePage() {
     const subId = result?.submission?._id || (result?.submission as any)?.id;
     if (!subId) {
       setAiHint(
-        "Không tìm thấy ID bài nộp (có thể API giả lập hoặc hệ thống chưa trả về ID). Vui lòng nộp bài lại.",
+        "Không tìm thấy ID bài nộp (có thể API giả lập hoặc hệ thống chưa trả về ID). Vui lòng nộp bài lại."
       );
       return;
     }
 
     setIsAiLoading(true);
     try {
-      const res = await axiosInstance.post(
-        `/submissions/${subId}/ask-ai-tutor`,
-      );
+      const res = await axiosInstance.post(`/submissions/${subId}/ask-ai-tutor`);
       const data: AiTutorResult = res.data;
       setAiHint(
         data.ai_hint || data.message || "Gia sư AI không đưa ra gợi ý nào.",
@@ -886,13 +761,9 @@ export default function ExercisePage() {
     result && result.totalCases > 0
       ? Math.round((result.passedCases / result.totalCases) * 100)
       : 0;
-  const showAiTutorBtn =
-    result !== null && result.submission?.status !== "ACCEPTED";
+  const showAiTutorBtn = result !== null && result.submission?.status !== "ACCEPTED";
   const title = exercise?.title ?? "Xây dựng Component Greeting";
-  // const difficulty = exercise?.difficulty ?? "Dễ";
-  // const diffStyle = DIFFICULTY_STYLE[difficulty];
 
-  // filename badge
   const fileExt: Record<string, string> = {
     javascript: "jsx",
     typescript: "tsx",
@@ -900,6 +771,16 @@ export default function ExercisePage() {
     java: "java",
     cpp: "cpp",
   };
+
+  // Console line colors
+  function consoleLineClass(line: string) {
+    if (line.includes("✓") || line.includes("successfully") || line.includes("passed"))
+      return "text-green-400";
+    if (line.includes("✗") || line.includes("failed") || line.includes("Lỗi"))
+      return "text-red-400";
+    if (line.includes("Compiling") || line.includes("Đang")) return "text-blue-400";
+    return "text-slate-500";
+  }
 
   return (
     <>
@@ -910,63 +791,25 @@ export default function ExercisePage() {
         isLoading={isAiLoading}
       />
 
+      {/* Root layout */}
       <div
-        style={{
-          display: "flex",
-          height: "100vh",
-          background: "#f8fafc",
-          fontFamily: "'Geist', 'DM Sans', system-ui, sans-serif",
-          fontSize: 13,
-          overflow: "hidden",
-          userSelect: "none",
-        }}
+        className="flex h-screen bg-slate-50 select-none overflow-hidden"
+        style={{ fontFamily: "'Geist', 'DM Sans', system-ui, sans-serif", fontSize: 13 }}
       >
-        {/* ===== LEFT PANEL: ĐỀ BÀI ===== */}
-        <div
-          style={{
-            width: "36%",
-            minWidth: 300,
-            background: "white",
-            borderRight: "1px solid #e8edf2",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
+        {/* ===== LEFT PANEL ===== */}
+        <div className="w-[36%] min-w-[300px] bg-white border-r border-[#e8edf2] flex flex-col overflow-hidden">
           {/* Title area */}
-          <div style={{ padding: "20px 22px 0" }}>
-            <h1
-              style={{
-                fontSize: 17,
-                fontWeight: 700,
-                color: "#0f172a",
-                lineHeight: 1.35,
-                marginBottom: 10,
-              }}
-            >
+          <div className="px-[22px] pt-5">
+            <h1 className="text-[17px] font-bold text-slate-900 leading-snug mb-[10px]">
               {loadingExercise ? (
-                <div
-                  style={{
-                    height: 20,
-                    background: "#f1f5f9",
-                    borderRadius: 6,
-                    width: "75%",
-                    animation: "pulse 1.5s infinite",
-                  }}
-                />
+                <div className="h-5 bg-slate-100 rounded-md w-3/4 animate-pulse" />
               ) : (
                 `Bài tập: ${title}`
               )}
             </h1>
 
             {/* Tabs */}
-            <div
-              style={{
-                display: "flex",
-                gap: 0,
-                borderBottom: "1.5px solid #f1f5f9",
-              }}
-            >
+            <div className="flex border-b-[1.5px] border-slate-100">
               {(["desc", "hint", "discuss"] as const).map((t, i) => {
                 const labels = ["Mô tả", "Gợi ý", "Thảo luận"];
                 const active = leftTab === t;
@@ -974,20 +817,13 @@ export default function ExercisePage() {
                   <button
                     key={t}
                     onClick={() => setLeftTab(t)}
-                    style={{
-                      fontSize: 12,
-                      fontWeight: active ? 600 : 500,
-                      color: active ? "#16a34a" : "#94a3b8",
-                      padding: "8px 14px 9px",
-                      background: "none",
-                      border: "none",
-                      borderBottom: active
-                        ? "2px solid #16a34a"
-                        : "2px solid transparent",
-                      marginBottom: -1.5,
-                      cursor: "pointer",
-                      transition: "color 0.15s",
-                    }}
+                    className={[
+                      "text-xs font-medium px-[14px] pb-[9px] pt-2 bg-transparent border-0 cursor-pointer transition-colors -mb-[1.5px]",
+                      "border-b-2",
+                      active
+                        ? "font-semibold text-brand-400 border-brand-400"
+                        : "text-slate-400 border-transparent hover:text-slate-600",
+                    ].join(" ")}
                   >
                     {labels[i]}
                   </button>
@@ -997,66 +833,31 @@ export default function ExercisePage() {
           </div>
 
           {/* Scrollable content */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "18px 22px" }}>
+          <div className="flex-1 overflow-y-auto px-[22px] py-[18px]">
+            {/* DESC TAB */}
             {leftTab === "desc" &&
               (loadingExercise ? (
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                >
+                <div className="flex flex-col gap-2">
                   {[75, 55, 85, 45, 65].map((w, i) => (
                     <div
                       key={i}
-                      style={{
-                        height: 11,
-                        background: "#f1f5f9",
-                        borderRadius: 4,
-                        width: `${w}%`,
-                      }}
+                      className="h-[11px] bg-slate-100 rounded"
+                      style={{ width: `${w}%` }}
                     />
                   ))}
                 </div>
               ) : (
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 18 }}
-                >
-                  {/* Difficulty badge removed */}
-
+                <div className="flex flex-col gap-[18px]">
                   {/* Description */}
-                  <p
-                    style={{
-                      fontSize: 13,
-                      color: "#475569",
-                      lineHeight: 1.7,
-                      margin: 0,
-                    }}
-                  >
+                  <p className="text-[13px] text-slate-500 leading-[1.7] m-0">
                     {exercise?.description ?? (
                       <>
-                        Trong bài tập này, bạn sẽ tạo một functional component
-                        đơn giản có tên là{" "}
-                        <code
-                          style={{
-                            background: "#f1f5f9",
-                            padding: "1px 6px",
-                            borderRadius: 4,
-                            fontSize: 12,
-                            color: "#0891b2",
-                            fontFamily: "monospace",
-                          }}
-                        >
+                        Trong bài tập này, bạn sẽ tạo một functional component đơn giản có tên là{" "}
+                        <code className="bg-slate-100 px-1.5 py-px rounded text-xs text-cyan-600 font-mono">
                           Greeting
                         </code>
                         . Component này sẽ nhận vào một prop là{" "}
-                        <code
-                          style={{
-                            background: "#f1f5f9",
-                            padding: "1px 6px",
-                            borderRadius: 4,
-                            fontSize: 12,
-                            color: "#0891b2",
-                            fontFamily: "monospace",
-                          }}
-                        >
+                        <code className="bg-slate-100 px-1.5 py-px rounded text-xs text-cyan-600 font-mono">
                           name
                         </code>{" "}
                         và hiển thị lời chào tương ứng.
@@ -1066,28 +867,10 @@ export default function ExercisePage() {
 
                   {/* Requirements */}
                   <div>
-                    <p
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        letterSpacing: "0.06em",
-                        color: "#94a3b8",
-                        textTransform: "uppercase",
-                        marginBottom: 10,
-                      }}
-                    >
+                    <p className="text-[11px] font-bold tracking-[0.06em] text-slate-400 uppercase mb-[10px]">
                       Yêu cầu:
                     </p>
-                    <ul
-                      style={{
-                        listStyle: "none",
-                        margin: 0,
-                        padding: 0,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 8,
-                      }}
-                    >
+                    <ul className="list-none m-0 p-0 flex flex-col gap-2">
                       {(
                         exercise?.requirements ?? [
                           "Component phải được đặt tên là Greeting",
@@ -1096,38 +879,9 @@ export default function ExercisePage() {
                           'Nếu không có prop name, mặc định sẽ hiển thị "Xin chào, Khách!"',
                         ]
                       ).map((req, i) => (
-                        <li
-                          key={i}
-                          style={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: 8,
-                            fontSize: 13,
-                            color: "#475569",
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: 18,
-                              height: 18,
-                              borderRadius: "50%",
-                              background: "#dcfce7",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                              marginTop: 1,
-                            }}
-                          >
-                            <svg
-                              width="9"
-                              height="9"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="#16a34a"
-                              strokeWidth="3"
-                            >
+                        <li key={i} className="flex items-start gap-2 text-[13px] text-slate-500 leading-snug">
+                          <span className="w-[18px] h-[18px] rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-[1px]">
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
                           </span>
@@ -1139,72 +893,26 @@ export default function ExercisePage() {
 
                   {/* Examples */}
                   <div>
-                    <p
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        letterSpacing: "0.06em",
-                        color: "#94a3b8",
-                        textTransform: "uppercase",
-                        marginBottom: 10,
-                      }}
-                    >
+                    <p className="text-[11px] font-bold tracking-[0.06em] text-slate-400 uppercase mb-[10px]">
                       Ví dụ:
                     </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 8,
-                      }}
-                    >
+                    <div className="flex flex-col gap-2">
                       {(
                         exercise?.examples ?? [
-                          {
-                            input: '<Greeting name="An" />',
-                            output: "<h1>Xin chào, An!</h1>",
-                          },
-                          {
-                            input: "<Greeting />",
-                            output: "<h1>Xin chào, Khách!</h1>",
-                          },
+                          { input: '<Greeting name="An" />', output: "<h1>Xin chào, An!</h1>" },
+                          { input: "<Greeting />", output: "<h1>Xin chào, Khách!</h1>" },
                         ]
                       ).map((ex, i) => (
                         <div
                           key={i}
-                          style={{
-                            background: "#f8fafc",
-                            border: "1px solid #e8edf2",
-                            borderRadius: 10,
-                            padding: "10px 14px",
-                            fontFamily: "monospace",
-                            fontSize: 12,
-                          }}
+                          className="bg-slate-50 border border-[#e8edf2] rounded-[10px] px-[14px] py-[10px] font-mono text-xs"
                         >
-                          <div style={{ color: "#0891b2", marginBottom: 4 }}>
-                            <span
-                              style={{
-                                color: "#94a3b8",
-                                fontSize: 10,
-                                fontFamily: "sans-serif",
-                                marginRight: 6,
-                              }}
-                            >
-                              INPUT
-                            </span>
+                          <div className="text-cyan-600 mb-1">
+                            <span className="text-slate-400 text-[10px] font-sans mr-1.5">INPUT</span>
                             {ex.input}
                           </div>
-                          <div style={{ color: "#64748b" }}>
-                            <span
-                              style={{
-                                color: "#94a3b8",
-                                fontSize: 10,
-                                fontFamily: "sans-serif",
-                                marginRight: 6,
-                              }}
-                            >
-                              OUTPUT
-                            </span>
+                          <div className="text-slate-500">
+                            <span className="text-slate-400 text-[10px] font-sans mr-1.5">OUTPUT</span>
                             {ex.output}
                           </div>
                         </div>
@@ -1213,79 +921,28 @@ export default function ExercisePage() {
                   </div>
 
                   {/* Note */}
-                  {(exercise?.note || true) && (
-                    <div
-                      style={{
-                        background: "#fffbeb",
-                        border: "1px solid #fde68a",
-                        borderRadius: 10,
-                        padding: "10px 14px",
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: 12,
-                          color: "#92400e",
-                          margin: 0,
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {exercise?.note ??
-                          "Phải sử dụng cú pháp JSX hợp lệ. Không được dùng class component."}
-                      </p>
-                    </div>
-                  )}
+                  <div className="bg-amber-50 border border-amber-200 rounded-[10px] px-[14px] py-[10px]">
+                    <p className="text-xs text-amber-800 m-0 leading-relaxed">
+                      {exercise?.note ??
+                        "Phải sử dụng cú pháp JSX hợp lệ. Không được dùng class component."}
+                    </p>
+                  </div>
                 </div>
               ))}
 
+            {/* HINT TAB */}
             {leftTab === "hint" && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 12,
-                  paddingTop: 32,
-                  color: "#94a3b8",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: "50%",
-                    background: "#ede9fe",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="#7c3aed"
-                  >
+              <div className="flex flex-col items-center gap-3 pt-8 text-slate-400 text-center">
+                <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="#7c3aed">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                 </div>
-                <p style={{ fontSize: 13, color: "#475569", margin: 0 }}>
-                  Nộp bài trước để nhận gợi ý từ AI
-                </p>
+                <p className="text-[13px] text-slate-500 m-0">Nộp bài trước để nhận gợi ý từ AI</p>
                 {showAiTutorBtn && (
                   <button
                     onClick={handleAskAiTutor}
-                    style={{
-                      fontSize: 12,
-                      padding: "8px 20px",
-                      borderRadius: 8,
-                      background: "#7c3aed",
-                      color: "white",
-                      border: "none",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                    }}
+                    className="text-xs px-5 py-2 rounded-lg bg-violet-700 text-white border-0 cursor-pointer font-semibold hover:bg-violet-800 transition-colors"
                   >
                     Hỏi Gia Sư AI
                   </button>
@@ -1293,151 +950,73 @@ export default function ExercisePage() {
               </div>
             )}
 
+            {/* DISCUSS TAB */}
             {leftTab === "discuss" && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 8,
-                  paddingTop: 32,
-                  color: "#94a3b8",
-                  textAlign: "center",
-                }}
-              >
-                <svg
-                  width="36"
-                  height="36"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#cbd5e1"
-                  strokeWidth="1.5"
-                >
+              <div className="flex flex-col items-center gap-2 pt-8 text-slate-400 text-center">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
-                <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>
-                  Chưa có thảo luận nào
-                </p>
+                <p className="text-[13px] text-slate-400 m-0">Chưa có thảo luận nào</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* ===== RIGHT PANEL: STRUCTURE CONFORMS TO DESIGN ===== */}
-        <div
-          className="px-2"
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-            overflow: "hidden",
-            background: "white",
-          }}
-        >
-          {/* Editor block rounded */}
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              background: "white",
-              borderRadius: 16,
-              overflow: "hidden",
-              border: "1px solid #e2e8f0",
-              minHeight: 0,
-            }}
-          >
+        {/* ===== RIGHT PANEL ===== */}
+        <div className="flex-1 flex flex-col gap-4 overflow-hidden bg-white px-2">
+          {/* Editor block */}
+          <div className="flex-1 flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-200 min-h-0">
             {/* Dark editor header */}
             <div
-              className="shadow-lg"
-              style={{
-                background: "#252526",
-                height: 42,
-                display: "flex",
-                alignItems: "center",
-                padding: "0 16px",
-                flexShrink: 0,
-              }}
+              className="shadow-lg flex items-center px-4 shrink-0"
+              style={{ background: "#252526", height: 42 }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#61dafb"
-                  strokeWidth="2"
-                >
+              <div className="flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#61dafb" strokeWidth="2">
                   <polyline points="16 18 22 12 16 6" />
                   <polyline points="8 6 2 12 8 18" />
                 </svg>
                 <span
-                  style={{
-                    fontSize: 13,
-                    color: "#d4d4d4",
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}
+                  className="text-[13px] text-[#d4d4d4]"
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 >
                   greeting.{fileExt[language] ?? "jsx"}
                 </span>
 
-                {/* Language Selector in Light Theme */}
-                <div
-                  style={{
-                    marginLeft: 16,
-                    height: 24,
-                    borderLeft: "1px solid #3f3f46",
-                    paddingLeft: 14,
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
+                {/* Language Selector */}
+                <div className="ml-4 h-6 border-l border-[#3f3f46] pl-[14px] flex items-center">
                   <Select
                     value={language}
                     onChange={(val) => setLanguage(val)}
                     size="small"
                     style={{ minWidth: 120 }}
-                    options={LANGUAGES.map((l) => ({
-                      label: l.label,
-                      value: l.value,
-                    }))}
+                    options={LANGUAGES.map((l) => ({ label: l.label, value: l.value }))}
                   />
                 </div>
               </div>
-              <div style={{ flex: 1 }} />
-              {/* Traffic lights on RIGHT */}
-              <div style={{ display: "flex", gap: 6 }}>
+
+              <div className="flex-1" />
+
+              {/* Traffic lights */}
+              <div className="flex gap-1.5">
                 {["#ed6a5e", "#f4bf4f", "#61c554"].map((c, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: "50%",
-                      background: c,
-                    }}
-                  />
+                  <div key={i} className="w-3 h-3 rounded-full" style={{ background: c }} />
                 ))}
               </div>
             </div>
 
-            {/* Monaco Editor (Light Theme) */}
-            <div className="shadow-lg" style={{ flex: 1, minHeight: 0 }}>
+            {/* Monaco Editor */}
+            <div className="shadow-lg flex-1 min-h-0">
               <Editor
                 height="100%"
-                language={
-                  LANGUAGES.find((l) => l.value === language)?.monaco ??
-                  "javascript"
-                }
+                language={LANGUAGES.find((l) => l.value === language)?.monaco ?? "javascript"}
                 value={code}
                 onChange={(val) => setCode(val || "")}
                 onMount={handleEditorDidMount}
                 theme="light"
                 options={{
                   fontSize: 13,
-                  fontFamily:
-                    "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+                  fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
                   fontLigatures: true,
                   minimap: { enabled: false },
                   scrollBeyondLastLine: false,
@@ -1460,71 +1039,26 @@ export default function ExercisePage() {
           </div>
 
           {/* Action Bar */}
-          <div
-            className="shadow-lg"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "white",
-              borderRadius: 999,
-              padding: "10px 24px",
-              border: "1px solid #e2e8f0",
-              flexShrink: 0,
-              boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+          <div className="shadow-lg flex items-center justify-between bg-white rounded-full px-6 py-[10px] border border-slate-200 shrink-0">
+            <div className="flex items-center gap-8">
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: "none",
-                  border: "none",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "#475569",
-                  cursor: isSubmitting ? "not-allowed" : "pointer",
-                  opacity: isSubmitting ? 0.5 : 1,
-                }}
+                className={[
+                  "flex items-center gap-2 bg-transparent border-0 text-sm font-semibold text-slate-600",
+                  isSubmitting ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:text-slate-900",
+                ].join(" ")}
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
                 Chạy thử
               </button>
               <button
                 onClick={handleReset}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: "none",
-                  border: "none",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "#475569",
-                  cursor: "pointer",
-                }}
+                className="flex items-center gap-2 bg-transparent border-0 text-sm font-semibold text-slate-600 cursor-pointer hover:text-slate-900"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polyline points="1 4 1 10 7 10" />
                   <path d="M3.51 15a9 9 0 1 0 .49-4.9" />
                 </svg>
@@ -1535,47 +1069,22 @@ export default function ExercisePage() {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                fontSize: 14,
-                padding: "10px 28px",
-                borderRadius: 999,
-                border: "none",
-                background: "#4e7c5e",
-                color: "white",
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-                fontWeight: 600,
-                opacity: isSubmitting ? 0.7 : 1,
-                transition: "background 0.15s",
-              }}
+              className={[
+                "flex items-center gap-2 text-sm px-7 py-[10px] rounded-full border-0",
+                "bg-brand-600 text-white font-semibold transition-colors",
+                isSubmitting
+                  ? "cursor-not-allowed opacity-70"
+                  : "cursor-pointer hover:bg-brand-700",
+              ].join(" ")}
             >
               {isSubmitting ? (
                 <>
-                  <span
-                    style={{
-                      width: 12,
-                      height: 12,
-                      border: "2px solid rgba(255,255,255,0.3)",
-                      borderTopColor: "white",
-                      borderRadius: "50%",
-                      animation: "spin 0.7s linear infinite",
-                      display: "inline-block",
-                    }}
-                  />
+                  <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />
                   Đang chấm...
                 </>
               ) : (
                 <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <polyline points="22 2 11 13" />
                     <polygon points="22 2 15 22 11 13 2 9 22 2" />
                   </svg>
@@ -1587,56 +1096,20 @@ export default function ExercisePage() {
 
           {/* Console Card */}
           <div
-            className="shadow-lg"
-            style={{
-              height: 180,
-              display: "flex",
-              flexDirection: "column",
-              background: "#111827",
-              borderRadius: 16,
-              overflow: "hidden",
-              flexShrink: 0,
-            }}
+            className="shadow-lg flex flex-col rounded-2xl overflow-hidden shrink-0"
+            style={{ height: 180, background: "#111827" }}
           >
+            {/* Console header */}
             <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                background: "#1e2530",
-                borderBottom: "1px solid #2d3748",
-                padding: "0 16px",
-                height: 42,
-                flexShrink: 0,
-              }}
+              className="flex items-center px-4 shrink-0 border-b"
+              style={{ background: "#1e2530", borderColor: "#2d3748", height: 42 }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginRight: 24,
-                }}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#64748b"
-                  strokeWidth="2"
-                >
+              <div className="flex items-center gap-2 mr-6">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
                   <polyline points="4 17 10 11 4 5" />
                   <line x1="12" y1="19" x2="20" y2="19" />
                 </svg>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    color: "#64748b",
-                    textTransform: "uppercase",
-                  }}
-                >
+                <span className="text-[11px] font-bold tracking-[0.08em] text-slate-500 uppercase">
                   Console output
                 </span>
               </div>
@@ -1645,42 +1118,22 @@ export default function ExercisePage() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  style={{
-                    fontSize: 13,
-                    padding: "0 16px",
-                    height: "100%",
-                    background: "none",
-                    border: "none",
-                    borderBottom:
-                      activeTab === tab
-                        ? "2px solid #22c55e"
-                        : "2px solid transparent",
-                    color: activeTab === tab ? "#f1f5f9" : "#64748b",
-                    cursor: "pointer",
-                    fontWeight: activeTab === tab ? 600 : 500,
-                    transition: "color 0.15s",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
+                  className={[
+                    "text-[13px] px-4 h-full bg-transparent border-0 border-b-2 cursor-pointer font-medium transition-colors flex items-center gap-2",
+                    activeTab === tab
+                      ? "border-green-500 text-slate-100 font-semibold"
+                      : "border-transparent text-slate-500 hover:text-slate-300",
+                  ].join(" ")}
                 >
                   {tab === "console" ? "Output" : "Kết quả"}
                   {tab === "result" && result && (
                     <span
-                      style={{
-                        fontSize: 11,
-                        padding: "2px 6px",
-                        borderRadius: 10,
-                        background:
-                          result.submission?.status === "ACCEPTED"
-                            ? "#dcfce7"
-                            : "#fee2e2",
-                        color:
-                          result.submission?.status === "ACCEPTED"
-                            ? "#15803d"
-                            : "#b91c1c",
-                        fontWeight: 700,
-                      }}
+                      className={[
+                        "text-[11px] px-1.5 py-0.5 rounded-[10px] font-bold",
+                        result.submission?.status === "ACCEPTED"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700",
+                      ].join(" ")}
                     >
                       {result.submission?.status === "ACCEPTED" ? "AC" : "WA"}
                     </span>
@@ -1693,26 +1146,9 @@ export default function ExercisePage() {
               {showAiTutorBtn && (
                 <button
                   onClick={handleAskAiTutor}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontSize: 12,
-                    padding: "6px 14px",
-                    borderRadius: 8,
-                    background: "rgba(124,58,237,0.15)",
-                    border: "1px solid rgba(124,58,237,0.4)",
-                    color: "#a78bfa",
-                    cursor: "pointer",
-                    fontWeight: 500,
-                  }}
+                  className="flex items-center gap-1.5 text-xs px-[14px] py-1.5 rounded-lg cursor-pointer font-medium text-violet-400 border border-violet-500/40 bg-violet-500/15 hover:bg-violet-500/25 transition-colors"
                 >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                   Hỏi Gia Sư AI
@@ -1721,200 +1157,88 @@ export default function ExercisePage() {
             </div>
 
             {/* Console content */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+            <div className="flex-1 overflow-y-auto px-4 py-3">
               {activeTab === "console" && (
                 <pre
-                  style={{
-                    fontFamily:
-                      "'JetBrains Mono', 'Fira Code', Consolas, monospace",
-                    fontSize: 12,
-                    lineHeight: 1.8,
-                    margin: 0,
-                    whiteSpace: "pre-wrap",
-                  }}
+                  className="m-0 whitespace-pre-wrap leading-[1.8]"
+                  style={{ fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace", fontSize: 12 }}
                 >
-                  {consoleOutput.split("\n").map((line, i) => {
-                    let color = "#64748b";
-                    if (
-                      line.includes("✓") ||
-                      line.includes("successfully") ||
-                      line.includes("passed")
-                    )
-                      color = "#4ade80";
-                    else if (
-                      line.includes("✗") ||
-                      line.includes("failed") ||
-                      line.includes("Lỗi")
-                    )
-                      color = "#f87171";
-                    else if (
-                      line.includes("Compiling") ||
-                      line.includes("Đang")
-                    )
-                      color = "#60a5fa";
-                    return (
-                      <span key={i} style={{ color, display: "block" }}>
-                        {line || " "}
-                      </span>
-                    );
-                  })}
+                  {consoleOutput.split("\n").map((line, i) => (
+                    <span key={i} className={`block ${consoleLineClass(line)}`}>
+                      {line || " "}
+                    </span>
+                  ))}
                 </pre>
               )}
+
               {activeTab === "result" && (
-                <div style={{ color: "#f1f5f9" }}>
+                <div className="text-slate-100">
                   {!result ? (
-                    <span style={{ fontSize: 12, color: "#475569" }}>
-                      Chưa có kết quả.
-                    </span>
+                    <span className="text-xs text-slate-500">Chưa có kết quả.</span>
                   ) : (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 12,
-                      }}
-                    >
+                    <div className="flex flex-col gap-3">
                       {/* Status + Score */}
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                          }}
-                        >
-                          <span style={{ fontSize: 11, color: "#64748b" }}>
-                            Trạng thái:
-                          </span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-slate-500">Trạng thái:</span>
                           <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 700,
-                              padding: "3px 10px",
-                              borderRadius: 20,
-                              background:
-                                STATUS_COLOR[result.submission?.status]?.bg ??
-                                "#f1f5f9",
-                              color:
-                                STATUS_COLOR[result.submission?.status]?.text ??
-                                "#64748b",
-                            }}
+                            className={[
+                              "text-[11px] font-bold px-[10px] py-[3px] rounded-[20px]",
+                              STATUS_CLASS[result.submission?.status] ?? "bg-slate-100 text-slate-500",
+                            ].join(" ")}
                           >
                             {STATUS_LABEL[result.submission?.status] ??
                               result.submission?.status?.replace(/_/g, " ")}
                           </span>
                         </div>
-                        <div style={{ fontSize: 12, color: "#64748b" }}>
+                        <div className="text-xs text-slate-500">
                           Điểm:{" "}
-                          <span
-                            style={{
-                              fontSize: 16,
-                              fontWeight: 700,
-                              color: "#f1f5f9",
-                            }}
-                          >
+                          <span className="text-base font-bold text-slate-100">
                             {result.submission?.score?.toFixed(1)}
                           </span>
-                          <span style={{ fontSize: 11, color: "#475569" }}>
-                            /10
-                          </span>
+                          <span className="text-[11px] text-slate-500">/10</span>
                         </div>
                       </div>
+
                       {/* Progress bar */}
                       <div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            marginBottom: 5,
-                            fontSize: 11,
-                            color: "#64748b",
-                          }}
-                        >
+                        <div className="flex justify-between mb-[5px] text-[11px] text-slate-500">
                           <span>Test cases</span>
                           <span>
-                            <span style={{ color: "#f1f5f9", fontWeight: 600 }}>
-                              {result.passedCases}
-                            </span>
+                            <span className="text-slate-100 font-semibold">{result.passedCases}</span>
                             /{result.totalCases} ({pct}%)
                           </span>
                         </div>
-                        <div
-                          style={{
-                            height: 6,
-                            background: "#1e2530",
-                            borderRadius: 4,
-                            overflow: "hidden",
-                          }}
-                        >
+                        <div className="h-1.5 rounded bg-[#1e2530] overflow-hidden">
                           <div
-                            style={{
-                              height: "100%",
-                              borderRadius: 4,
-                              transition: "width 0.7s ease",
-                              width: `${pct}%`,
-                              background:
-                                pct === 100
-                                  ? "#22c55e"
-                                  : pct > 50
-                                    ? "#eab308"
-                                    : "#ef4444",
-                            }}
+                            className={`h-full rounded transition-all duration-700 ${pctColor(pct)}`}
+                            style={{ width: `${pct}%` }}
                           />
                         </div>
                       </div>
-                      {/* Test cases list */}
+
+                      {/* Test case list */}
                       <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          gap: "4px 12px",
-                          borderTop: "1px solid #1e2530",
-                          paddingTop: 8,
-                        }}
+                        className="grid gap-x-3 gap-y-1 border-t pt-2"
+                        style={{ gridTemplateColumns: "1fr 1fr", borderColor: "#1e2530" }}
                       >
-                        {Array.from({ length: result.totalCases }).map(
-                          (_, i) => {
-                            const passed = i < result.passedCases;
-                            return (
-                              <div
-                                key={i}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 6,
-                                  fontSize: 11,
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    width: 7,
-                                    height: 7,
-                                    borderRadius: "50%",
-                                    flexShrink: 0,
-                                    background: passed ? "#22c55e" : "#ef4444",
-                                  }}
-                                />
-                                <span style={{ color: "#64748b" }}>
-                                  Test #{i + 1}:{" "}
-                                  <span
-                                    style={{
-                                      color: passed ? "#4ade80" : "#f87171",
-                                    }}
-                                  >
-                                    {passed ? "Passed" : "Failed"}
-                                  </span>
+                        {Array.from({ length: result.totalCases }).map((_, i) => {
+                          const passed = i < result.passedCases;
+                          return (
+                            <div key={i} className="flex items-center gap-1.5 text-[11px]">
+                              <span
+                                className={`w-[7px] h-[7px] rounded-full shrink-0 ${passed ? "bg-green-500" : "bg-red-500"
+                                  }`}
+                              />
+                              <span className="text-slate-500">
+                                Test #{i + 1}:{" "}
+                                <span className={passed ? "text-green-400" : "text-red-400"}>
+                                  {passed ? "Passed" : "Failed"}
                                 </span>
-                              </div>
-                            );
-                          },
-                        )}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -1925,76 +1249,21 @@ export default function ExercisePage() {
 
           {/* Success banner */}
           {isSuccess && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "12px 20px",
-                background: "#f0fdf4",
-                border: "1px solid #bbf7d0",
-                borderRadius: 100,
-                flexShrink: 0,
-              }}
-            >
-              <div
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: "50%",
-                  background: "#22c55e",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="3"
-                >
+            <div className="flex items-center gap-3 px-5 py-3 bg-green-50 border border-green-200 rounded-full shrink-0">
+              <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>
-              <span
-                style={{
-                  fontSize: 14,
-                  color: "#15803d",
-                  flex: 1,
-                  fontWeight: 600,
-                }}
-              >
+              <span className="text-sm text-green-700 flex-1 font-semibold">
                 Tuyệt vời! Bạn đã hoàn thành bài tập này.
               </span>
               <button
                 onClick={() => navigate(-1)}
-                style={{
-                  fontSize: 13,
-                  padding: "8px 20px",
-                  borderRadius: 100,
-                  background: "#16a34a",
-                  color: "white",
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
+                className="flex items-center gap-1.5 text-[13px] px-5 py-2 rounded-full bg-green-600 text-white border-0 cursor-pointer font-semibold hover:bg-green-700 transition-colors"
               >
                 Bài tiếp theo
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
                 </svg>
@@ -2003,11 +1272,6 @@ export default function ExercisePage() {
           )}
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-      `}</style>
     </>
   );
 }
