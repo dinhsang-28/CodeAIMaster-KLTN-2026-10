@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../../utils/axios"; 
 
 interface Blog {
   _id: string;
@@ -27,8 +27,8 @@ const BlogDetail = () => {
 
   const fetchBlogDetail = async () => {
     try {
-      const res = await axios.get(
-        `https://codeaimaster-kltn-2026-10.onrender.com/api/v1/blogs/${id}`,
+      const res = await axiosInstance.get(
+        `/blogs/${id}`
       );
       setBlog(res.data.data);
     } catch (error) {
@@ -40,10 +40,7 @@ const BlogDetail = () => {
 
   const fetchRelatedBlogs = async () => {
     try {
-      const res = await axios.get(
-        "https://codeaimaster-kltn-2026-10.onrender.com/api/v1/blogs",
-      );
-
+      const res = await axiosInstance.get("/blogs");
       const data: Blog[] = res.data.data || [];
 
       const filtered = data.filter((item) => item._id !== id).slice(0, 3);

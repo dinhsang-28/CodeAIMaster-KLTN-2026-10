@@ -53,33 +53,7 @@ export class UsersService {
     return { _id: user._id ,image:user.image};
   }
 
-  // async findAll(query: any, current: number, pageSize: number) {
-  //   // const { filter, sort } = aqp(query);
-  //   const { default: aqp } = await import('api-query-params');
-  //   const options = { ...query };
-  //   delete options.current;
-  //   delete options.pageSize;
-
-  //   const { filter, sort } = aqp(options);
-    
-  //   if (!current) current = 1;
-  //   if (!pageSize) pageSize = 10;
-    
-  //   // Tối ưu hiệu suất bằng countDocuments
-  //   const totalItems = await this.userModel.countDocuments(filter);
-  //   const totalPages = Math.ceil(totalItems / pageSize);
-  //   const skip = (+current - 1) * (+pageSize);
-    
-  //   const results = await this.userModel
-  //     .find(filter)
-  //     .limit(pageSize)
-  //     .skip(skip)
-  //     .populate('role_id')
-  //     .select("-password")
-  //     .sort(sort as any);
-      
-  //   return { results, totalPages };
-  // }
+  // quản lý admin bên hệ thống
   async findAll(query: any, current: number, pageSize: number) {
 
     // 1. Tạm thời bỏ qua aqp để test
@@ -119,6 +93,66 @@ export class UsersService {
       results 
     };
 }
+
+// quản lý học viên
+  async findOnlyRoleUser(query: any, current: number, pageSize: number) {
+    const userRole = await this.roleModel.findOne({ role_name: 'user' });
+    if (!userRole) {
+      return { 
+        meta: { current: current || 1, pageSize: pageSize || 10, pages: 0, total: 0 }, 
+        results: [] 
+      };
+    }
+    const limit = pageSize ? Number(pageSize) : 10;
+    const offset = ((current ? Number(current) : 1) - 1) * limit;
+    const filter: any = { role_id: userRole._id }; 
+    if (query.search) {
+      filter.$or = [
+        { name: { $regex: query.search, $options: 'i' } },
+        { email: { $regex: query.search, $options: 'i' } }
+      ];
+    }
+    const [results, totalItems] = await Promise.all([
+      this.userModel
+        .find(filter)
+        .limit(limit)
+        .skip(offset)
+        .populate('role_id', 'role_name')
+        .select("-password")
+        .sort({ createdAt: -1 })
+        .exec(),
+      this.userModel.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return { 
+      meta: {
+        current: current ? Number(current) : 1,
+        pageSize: limit,
+        pages: totalPages,
+        total: totalItems
+      },
+      results 
+    };
+  }
+// khoá tài khoản học viên.
+  async toggleUserStatus(userId: string, status: 'active' | 'banned'){
+    if(!mongoose.isValidObjectId(userId)){
+      throw new BadRequestException("ID nguoi dung khong hop le");
+    }
+    const targetUser = await this.userModel.findById(userId);
+    if(!targetUser){
+      throw new BadRequestException("Không tìm thấy người dùng");
+    }
+    const userRole = await this.roleModel.findById(targetUser.role_id);
+    if(userRole?.role_name !== 'user'){
+      throw new BadRequestException("Chỉ có thể thay đổi trạng thái của tài khoản học viên");
+    }
+    targetUser.status = status;
+    await targetUser.save();
+    return { success: true, message: `Tài khoản đã được ${status === 'active' ? 'mở khóa' : 'khóa'} thành công` };
+  }
 
   async findOne(id: string) {
     if (!mongoose.isValidObjectId(id)) {

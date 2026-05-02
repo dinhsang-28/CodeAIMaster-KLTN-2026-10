@@ -5,8 +5,8 @@ export type SubmissionDocument = HydratedDocument<Submission>;
 
 @Schema({ timestamps: true })
 export class Submission {
-  @Prop({ type: Types.ObjectId, ref: 'Assignment', required: true })
-  assignment_id!: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'CodeAssignment', required: true })
+  codeAssignment_id!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user_id!: Types.ObjectId;

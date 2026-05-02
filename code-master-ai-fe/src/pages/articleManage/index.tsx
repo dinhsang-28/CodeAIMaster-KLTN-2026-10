@@ -7,7 +7,8 @@ import {
   LeftOutlined,
   RightOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
+import PermissionControl from "../../components/permissionControl";
+import axiosInstance from "../../utils/axios"; 
 
 const ArticleManage = () => {
   const [articles, setArticles] = useState<any[]>([]);
@@ -35,9 +36,7 @@ const ArticleManage = () => {
   // FETCH
   const fetchArticles = async () => {
     try {
-      const res = await axios.get(
-        "https://codeaimaster-kltn-2026-10.onrender.com/api/v1/blogs",
-      );
+      const res = await axiosInstance.get("/blogs");
       setArticles(res.data.data || []);
     } catch (err) {
       console.error(err);
@@ -69,16 +68,16 @@ const ArticleManage = () => {
   const handleSubmit = async () => {
     try {
       if (isEdit && editingId) {
-        await axios.patch(
-          `https://codeaimaster-kltn-2026-10.onrender.com/api/v1/blogs/${editingId}`,
-          formData,
+        await axiosInstance.patch(
+          `/blogs/${editingId}`,
+          formData
         );
 
         alert("Cập nhật thành công!");
       } else {
         //CREATE
-        await axios.post(
-          "https://codeaimaster-kltn-2026-10.onrender.com/api/v1/blogs",
+        await axiosInstance.post(
+          "/blogs",
           {
             ...formData,
             slug: generateSlug(formData.title),
@@ -127,9 +126,7 @@ const ArticleManage = () => {
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(
-        `https://codeaimaster-kltn-2026-10.onrender.com/api/v1/blogs/${id}`,
-      );
+      await axiosInstance.delete(`/blogs/${id}`);
       alert("Xóa thành công!");
       fetchArticles();
     } catch (error: any) {
@@ -143,7 +140,7 @@ const ArticleManage = () => {
       {/* HEADER */}
       <div className="flex justify-between mb-6">
         <h1 className="text-xl font-bold">Quản lý bài viết</h1>
-
+        <PermissionControl permission="articles_create">
         <button
           onClick={() => {
             setIsModalOpen(true);
@@ -161,6 +158,7 @@ const ArticleManage = () => {
         >
           <PlusOutlined /> Viết bài
         </button>
+        </PermissionControl>
       </div>
 
       {/* SEARCH */}
@@ -198,13 +196,16 @@ const ArticleManage = () => {
                 <td className="p-3 text-center">{item.author}</td>
 
                 <td className="p-3 text-center flex justify-center gap-3">
+                  <PermissionControl permission="articles_edit">
                   <button onClick={() => handleEdit(item)}>
                     <EditOutlined className="text-gray-500 hover:text-gray-800" />
                   </button>
-
+                  </PermissionControl>
+                  <PermissionControl permission="articles_delete">
                   <button onClick={() => handleDelete(item._id)}>
                     <DeleteOutlined className="text-gray-500 hover:text-gray-800" />
                   </button>
+                  </PermissionControl>
                 </td>
               </tr>
             ))

@@ -7,6 +7,7 @@ import { Public } from '@/decorator/customize';
 import { JwtAuthGuard } from '@/auth/passport/jwt-auth.guard';
 import { PermissionsGuard } from '@/auth/passport/permissions.guard';
 import { RequirePermissions } from '@/auth/decorators/permisions.decorator';
+import { use } from 'passport';
 
 @Controller('users')
 export class UsersController {
@@ -18,6 +19,7 @@ export class UsersController {
   create(@Body() createUserDto: CreateUserDto,@UploadedFile() file: Express.Multer.File) {
     return this.usersService.create(createUserDto,file);
   }
+  //api lay (nguoi dung ben admin)
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('users_view')
   @Get()
@@ -28,6 +30,18 @@ export class UsersController {
   ) {
     return this.usersService.findAll(query, +current, +pageSize);
   }
+  // api lay hoc vien
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('students_view')
+  @Get('students')
+  async getOnlyUsers(
+    @Query() query: any,
+    @Query('current') current: string,
+    @Query('pageSize') pageSize: string,
+  ) {
+    return this.usersService.findOnlyRoleUser(query, +current, +pageSize);
+  }
+
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('users_view')
   @Get(':id')
@@ -41,6 +55,16 @@ export class UsersController {
   @UseInterceptors(FileInterceptor('image'))
   update(@Body() updateUserDto: UpdateUserDto,@UploadedFile() file: Express.Multer.File) {
     return this.usersService.update(updateUserDto,file);
+  }
+  // api khoa hoc vien
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('students_edit')
+  @Patch('students/:id/status')
+  async toggleStudentStatus(
+    @Param('id') id: string,
+    @Body('status') status: 'active' | 'banned',
+  ) {
+    return this.usersService.toggleUserStatus(id, status);
   }
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('users_delete')

@@ -2,9 +2,32 @@ import React from "react";
 import codeEditorImg from "../../../assets/Code Editor.png";
 import { useNavigate } from "react-router-dom";
 import AnimateOnScroll from "../../../utils/animateOnScroll";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 
 const HomeBaner = () => {
     const navigate = useNavigate();
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            animate: true,
+            nextBtnText: 'Tiếp tục',
+            prevBtnText: 'Quay lại',
+            doneBtnText: 'Hoàn thành',
+            steps: [
+                { element: '#tour-banner-title', popover: { title: 'CodeMaster AI', description: 'Nền tảng học tập lập trình AI thế hệ mới, giúp bạn nâng tầm kỹ năng từ con số 0.', align: 'start' } },
+                { element: '#tour-nav-links', popover: { title: 'Thanh Điều Hướng', description: 'Chuyển đổi giữa các trang: Trang chủ, Giới thiệu, Khóa học nhanh chóng.', align: 'start', side: "bottom" } },
+                { element: '#tour-search', popover: { title: 'Tìm Kiếm Khóa Học', description: 'Gõ từ khóa để tìm các khóa học bạn quan tâm.', align: 'start', side: "bottom" } },
+                { element: '#tour-auth', popover: { title: 'Tài khoản & Giỏ Hàng', description: 'Quản lý thông tin cá nhân và xem giỏ hàng của bạn.', align: 'start', side: "bottom" } },
+                { element: '#tour-start-learning', popover: { title: 'Bắt Đầu Ngay', description: 'Nhấn vào đây để xem trực tiếp danh sách khóa học.', align: 'start', side: "right" } },
+                { element: '#tour-featured-courses', popover: { title: 'Khóa Học Nổi Bật', description: 'Các khóa học được nhiều học viên đăng ký nhất.', align: 'start', side: "top" } },
+                { element: '#tour-home-route', popover: { title: 'Lộ Trình Học Tập', description: 'Khám phá quy trình học khép kín từ Lý thuyết đến Thực hành code.', align: 'start', side: "top" } },
+            ]
+        });
+        driverObj.drive();
+    };
+
     return (
         <section className="min-h-[90vh] w-full bg-gradient-to-r from-brand-50 to-brand-200 flex items-center">
             <div className="w-full px-6 sm:px-10 lg:px-14 flex flex-col-reverse sm:flex-row items-center gap-8 py-12 sm:py-0">
@@ -17,7 +40,7 @@ const HomeBaner = () => {
                             NỀN TẢNG HỌC TẬP AI THẾ HỆ MỚI
                         </div>
 
-                        <div className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-brand-700 mt-2">
+                        <div id="tour-banner-title" className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-brand-700 mt-2">
                             Nâng tầm kỹ năng
                             lập trình cùng
                             <p className="text-brand-600">CodeMaster AI</p>
@@ -30,12 +53,13 @@ const HomeBaner = () => {
 
                         <div className="flex justify-center sm:justify-start space-x-3 mt-6">
                             <div
-                                onClick={() => navigate("/course")}
+                                onClick={startTour}
                                 className="font-medium shadow-sm bg-brand-600 text-white px-5 py-2 rounded-full cursor-pointer hover:bg-brand-700 text-sm sm:text-base"
                             >
-                                Xem khóa học
+                                Xem hướng dẫn
                             </div>
                             <div
+                                id="tour-start-learning"
                                 onClick={() => navigate("/course")}
                                 className="font-medium shadow-sm bg-white text-brand-600 px-5 py-2 rounded-full cursor-pointer hover:bg-gray-100 text-sm sm:text-base"
                             >

@@ -6,6 +6,7 @@ import {
   UpdateCategory,
   DeleteCategory,
 } from "../../api/admin/category";
+import PermissionControl from "../../components/permissionControl";
 
 type CategoryItem = {
   _id: string;
@@ -198,7 +199,7 @@ const CategoryManage: React.FC = () => {
                 {notification.msg}
               </span>
             )}
-
+            <PermissionControl permission="categories_create">
             <button
               onClick={handleAddCategory}
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[#23422a] to-[#3a5a40] px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02] active:scale-95"
@@ -206,6 +207,7 @@ const CategoryManage: React.FC = () => {
               <Plus className="h-5 w-5" />
               Thêm thể loại mới
             </button>
+            </PermissionControl>
           </div>
         </div>
 
@@ -257,6 +259,7 @@ const CategoryManage: React.FC = () => {
                     </span>
 
                     <div className="flex items-center gap-2">
+                      <PermissionControl permission="categories_edit">
                       <button
                         onClick={() => handleEdit(category)}
                         className="rounded-lg p-2 transition hover:bg-[#beecb9]"
@@ -264,7 +267,8 @@ const CategoryManage: React.FC = () => {
                       >
                         <Pencil className="h-5 w-5 text-[#23422a]" />
                       </button>
-
+                      </PermissionControl>
+                      <PermissionControl permission="categories_delete">
                       <button
                         onClick={() =>
                           handleDelete(category._id, category.category_name)
@@ -274,6 +278,7 @@ const CategoryManage: React.FC = () => {
                       >
                         <Trash2 className="h-5 w-5 text-red-600" />
                       </button>
+                      </PermissionControl>
 
                       <ArrowRight className="h-5 w-5 text-[#23422a]/40 transition-transform group-hover:translate-x-1" />
                     </div>
@@ -282,7 +287,7 @@ const CategoryManage: React.FC = () => {
               </div>
             ))
           )}
-
+         <PermissionControl permission="categories_create">
           <button
             onClick={handleAddCategory}
             className="flex min-h-[320px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#c2c8bf] p-8 text-center transition hover:border-[#23422a]/50"
@@ -297,6 +302,7 @@ const CategoryManage: React.FC = () => {
               Mở rộng danh mục đào tạo của bạn
             </p>
           </button>
+          </PermissionControl>
         </div>
       </div>
 

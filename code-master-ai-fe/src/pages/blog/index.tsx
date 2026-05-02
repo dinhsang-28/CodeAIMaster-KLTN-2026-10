@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Footer from "../../components/footer";
 import { Link } from "react-router-dom";
 import AnimateOnScroll from "../../utils/animateOnScroll";
-import axios from "axios";
+import axiosInstance from "../../utils/axios"; 
 
 // TYPE
 interface IBlog {
@@ -44,9 +44,7 @@ const Blog = () => {
 
   const fetchBlogs = async () => {
     try {
-      const res = await axios.get(
-        "https://codeaimaster-kltn-2026-10.onrender.com/api/v1/blogs",
-      );
+      const res = await axiosInstance.get("/blogs");
       const data: IBlog[] = res.data.data || [];
 
       setBlogs(data);

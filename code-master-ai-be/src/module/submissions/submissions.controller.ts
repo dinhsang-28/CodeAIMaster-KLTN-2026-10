@@ -5,6 +5,7 @@ import { UpdateSubmissionDto } from './dto/update-submission.dto';
 import { JwtAuthGuard } from '@/auth/passport/jwt-auth.guard';
 import { Public } from '@/decorator/customize';
 import { RequirePermissions } from '@/auth/decorators/permisions.decorator';
+import { PermissionsGuard } from '@/auth/passport/permissions.guard';
 
 @Controller('submissions')
 export class SubmissionsController {
@@ -14,14 +15,14 @@ export class SubmissionsController {
   @UseGuards(JwtAuthGuard) 
   async submitCode(
     @Req() req,
-    @Body('assignmentId') assignmentId: string,
+    @Body('codeassignmentId')  codeassignmentId: string,
     @Body('language') language: string, 
     @Body('sourceCode') sourceCode: string,
   ){
     const userId = req.user._id;
     return this.submissionsService.submitCode(
       userId,
-      assignmentId,
+      codeassignmentId,
       language,
       sourceCode,
     );
@@ -35,25 +36,28 @@ export class SubmissionsController {
     return await this.submissionsService.requestAiTutor(submissionId);
   }
   // API Đề xuất bài tập cho User
-  @UseGuards(JwtAuthGuard) // Bắt buộc phải có Token đăng nhập
-  @Get('recommendations/:userId')
-  async getRecommendations(@Param('userId') userId: string) {
-    return await this.submissionsService.getRecommendationsForUser(userId);
-  }
+  // @UseGuards(JwtAuthGuard) // Bắt buộc phải có Token đăng nhập
+  // @Get('recommendations/:userId')
+  // async getRecommendations(@Param('userId') userId: string) {
+  //   return await this.submissionsService.getRecommendationsForUser(userId);
+  // }
   // API chat hoi khoa
   @Post('chat-consultant')
   async chatWithConsultant(
+    @Req() req: any,
     @Body('chatHistory') chatHistory: { role: 'user' | 'model'; text: string }[],
     @Body('newMessage') newMessage: string,
+    @Body('currentUser') currentUser: any,
   ) {
     return await this.submissionsService.chatWithConsultant(
       chatHistory, 
-      newMessage
+      newMessage,
+      currentUser
     );
   }
 
   // API nguoi dung dang ki khoa hoc chat
-  @UseGuards(JwtAuthGuard) 
+  @UseGuards(JwtAuthGuard,PermissionsGuard) 
    @RequirePermissions("leads_view")
   @Get('leads/advisories')
   async getAllLeads(
@@ -74,7 +78,7 @@ export class SubmissionsController {
   }
 
   // API cập nhật trạng thái Lead (Dành cho Admin)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
   @RequirePermissions("leads_edit")
   @Patch('leads/advisories/:id/status')
   async updateAdvisoryStatus(
