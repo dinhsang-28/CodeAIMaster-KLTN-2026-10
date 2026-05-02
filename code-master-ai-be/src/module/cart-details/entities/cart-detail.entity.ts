@@ -9,6 +9,6 @@ export class CartDetail {
   cart_id!: Types.ObjectId;
   @Prop({ type: Types.ObjectId, ref: 'Course', required: true })
   course_id!: Types.ObjectId;
-  @Prop({ required: true }) price!: number;
+  // @Prop({ required: true }) price!: number;
 }
 export const CartDetailSchema = SchemaFactory.createForClass(CartDetail);

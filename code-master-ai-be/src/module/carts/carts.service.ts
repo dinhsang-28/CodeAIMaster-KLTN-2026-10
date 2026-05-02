@@ -59,12 +59,22 @@ export class CartsService {
       throw new NotFoundException('Giỏ hàng không tồn tại');
     }
 
+    // const cartDetails = await this.cartDetailModel
+    //   .find({ cart_id: cart._id })
+    //   .populate('course_id')
+    //   .lean();
+
+    // const totalPrice = cartDetails.reduce((sum, item) => sum + item.price, 0);
+
     const cartDetails = await this.cartDetailModel
       .find({ cart_id: cart._id })
       .populate('course_id')
       .lean();
 
-    const totalPrice = cartDetails.reduce((sum, item) => sum + item.price, 0);
+    const totalPrice = cartDetails.reduce(
+      (sum, item: any) => sum + item.course_id.price,
+      0,
+    );
 
     return {
       ...cart,
@@ -163,7 +173,6 @@ export class CartsService {
       throw new NotFoundException('Khóa học không tồn tại');
     }
 
-    cartDetail.price = course.price;
     await cartDetail.save();
 
     const cartResponse = await this.buildCartResponse(cart._id);
