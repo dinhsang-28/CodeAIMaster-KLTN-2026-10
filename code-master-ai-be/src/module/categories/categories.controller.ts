@@ -14,17 +14,20 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { ParseObjectIdPipe } from '@/common/pipes/parse-object-id.pipe';
 import { JwtAuthGuard } from '@/auth/passport/jwt-auth.guard';
+import { PermissionsGuard } from '@/auth/passport/permissions.guard';
+import { RequirePermissions } from '@/auth/decorators/permisions.decorator';
 
 @Controller('category')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('categories_create')
   @Post()
   create(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.create(createCategoryDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @Get()
   findAll(
     @Query() query: any,
@@ -38,7 +41,8 @@ export class CategoriesController {
   findOne(@Param('id', ParseObjectIdPipe) id: string) {
     return this.categoriesService.findOne(id);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('categories_edit')
   @Patch(':id')
   update(
     @Param('id', ParseObjectIdPipe) id: string,
@@ -46,7 +50,8 @@ export class CategoriesController {
   ) {
     return this.categoriesService.update(id, updateCategoryDto);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('categories_delete')
   @Delete(':id')
   remove(@Param('id', ParseObjectIdPipe) id: string) {
     return this.categoriesService.remove(id);

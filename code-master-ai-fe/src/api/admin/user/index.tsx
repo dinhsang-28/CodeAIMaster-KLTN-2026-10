@@ -27,3 +27,17 @@ export const UpdateMyProfile = async (data: any) => {
     });
     return response.data;
 };
+// Lấy danh sách Học viên 
+export const GetStudentsList = async (current: number = 1, pageSize: number = 10, search: string = '') => {
+  const params: any = { current, pageSize };
+  if (search) {
+    params.search = search; 
+  }
+  const res = await axiosInstance.get('/users/students', { params });
+  return res.data; 
+};
+// khoa hoc vieen
+export const ToggleStudentStatus = async (userId: string, status: 'active' | 'banned') => {
+  const res = await axiosInstance.patch(`/users/students/${userId}/status`, { status });
+  return res.data;
+};

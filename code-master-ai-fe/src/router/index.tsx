@@ -35,6 +35,7 @@ import MyCourses from "../pages/profile/MyCourses";
 import PersonalInfo from "../pages/profile/PersonalInfo";
 import BlogDetail from "../pages/blogDetail";
 import AdminLeads from "../pages/admin/AdminLeads";
+import AdminStudents from "../pages/admin/AdminStudents";
 
 export const router = createBrowserRouter([
   {
@@ -164,13 +165,14 @@ export const router = createBrowserRouter([
       { path: "courses", element: <CourseManage /> },
       { path: "exercises", element: <ExerciseManage /> },
       { path: "users", element: <UserManage /> },
+       { path: "students", element: <AdminStudents /> },
       { path: "categories", element: <CategoryManage /> },
       { path: "roles", element: <RoleManage /> },
       { path: "permissions", element: <PermissionManage /> },
       {path: "leads", element: <AdminLeads />},
       {
         path: "profile",
-        element: <ProfilePage />, // Component Profile ta vừa làm ở bước trước
+        element: <ProfilePage />,
       },
     ],
   },

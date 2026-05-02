@@ -54,6 +54,10 @@ const mainMenuItems: MenuItem[] = [
     label: "Quản lý người dùng",
     icon: <UsergroupAddOutlined />,
   },
+  { to: "/admin/students", 
+    label: "Quản lý học viên", 
+    icon: <UsergroupAddOutlined /> 
+  },
   { to: "/admin/roles", label: "Quản lý nhóm quyền", icon: <IdcardOutlined /> },
   {
     to: "/admin/permissions",
@@ -89,7 +93,6 @@ const AdminLayout: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  // 🚨 3. HÀM KIỂM TRA QUYỀN TRUY CẬP ROUTE VÀ MENU
   const checkPermission = (path: string) => {
     if (path === "/admin") return true;
     if (path.includes("/courses")) return permissions.includes("courses_view");
@@ -106,6 +109,7 @@ const AdminLayout: React.FC = () => {
     if (path.includes("/permissions"))
       return permissions.includes("permissions_view");
     if (path.includes("/leads")) return permissions.includes("leads_view");
+    if (path.includes("/students")) return permissions.includes("students_view");
     // Tuỳ chỉnh nếu có quyền settings
     return true;
   };
@@ -132,6 +136,7 @@ const AdminLayout: React.FC = () => {
     if (location.pathname.includes("/settings")) return "Settings";
     if (location.pathname.includes("/leads"))
       return "Quản lý khách hàng tiềm năng";
+    if (location.pathname.includes("/students")) return "Quản lý học viên";
     return "Trang quản trị";
   };
 

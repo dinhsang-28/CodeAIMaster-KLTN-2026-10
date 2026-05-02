@@ -34,13 +34,13 @@ export class SubmissionsService {
 
  async submitCode(
     userId: string,
-    assignmentId: string,
+    codeassignmentId: string,
     language: string,
     sourceCode: string,
   ) {
     try {
       //  Ép kiểu assignmentId sang ObjectId
-      const objectId = new Types.ObjectId(assignmentId);
+      const objectId = new Types.ObjectId(codeassignmentId);
       console.log("-===",objectId);
 
       // Tìm cấu hình chấm code
@@ -105,7 +105,7 @@ export class SubmissionsService {
         //  Polling - Vòng lặp hỏi kết quả liên tục
         while (statusId === 1 || statusId === 2) {
           await delay(1000); // Nghỉ 1 giây để Judge0 kịp chayvà chấm bài
-          
+          // lay ket qua khi judge0 chấm xong
           const checkResponse = await firstValueFrom(
             this.httpService.get(
               `${this.JUDGE0_URL}/submissions/${token}?base64_encoded=true`
@@ -119,6 +119,7 @@ export class SubmissionsService {
         //  Có kết quả cuối cùng thì trả về
         return result;
       });
+      
 
       const judgeResults = await Promise.all(judgePromises);
       
@@ -153,7 +154,7 @@ export class SubmissionsService {
       // Lưu Submission 
       const newSubmission = await this.submissionModel.create({
         user_id: userId,        
-        assignment_id: assignmentId, 
+        codeAssignment_id:  codeassignmentId, 
         language: language,
         code: sourceCode,       
         status: finalStatus,
@@ -161,11 +162,11 @@ export class SubmissionsService {
         ai_hint: null
       });
 
-      await this.userLessonProgressService.handleAssignmentGraded(
-        userId,
-        assignmentId,
-        finalStatus === 'ACCEPTED',
-      );
+      // await this.userLessonProgressService.handleAssignmentGraded(
+      //   userId,
+      //   codeassignmentId,
+      //   finalStatus === 'ACCEPTED',
+      // );
 
       return {
         message: 'Chấm bài hoàn tất',
@@ -187,7 +188,7 @@ export class SubmissionsService {
     if(!submission){
       throw new BadRequestException('khong tim thay lich su bai nop')
     }
-    if(submission.status === 'ACCEPTED'){
+    if(submission.status === 'ACCEPTED' &&submission.score === 10){
       return { message: 'Bài của bạn đã hoàn hảo, không cần gia sư nữa nhé!' };
     }
     if(submission.ai_hint){
@@ -198,7 +199,8 @@ export class SubmissionsService {
         submission.language,
         submission.code,
         submission.status,
-        null
+        null,
+        submission.score
       )
       // luu cau tra loi vao data
       submission.ai_hint=aiHint;
@@ -212,105 +214,119 @@ export class SubmissionsService {
   }
 
   // HÀM LẤY BÀI TẬP ĐỀ XUẤT CHO USER
-  async getRecommendationsForUser(userId: string) {
-    //  Tìm các bài user đã nộp nhưng bị sai (WRONG_ANSWER, COMPILATION_ERROR)
-    const failedSubmissions = await this.submissionModel
-      .find({ user_id: userId, status: { $ne: 'ACCEPTED' } })
-      .populate('assignment_id') // Join bảng để lấy thông tin bài tập
-      .exec();
+  // async getRecommendationsForUser(userId: string) {
+  //   //  Tìm các bài user đã nộp nhưng bị sai (WRONG_ANSWER, COMPILATION_ERROR)
+  //   const failedSubmissions = await this.submissionModel
+  //     .find({ user_id: userId, status: { $ne: 'ACCEPTED' } })
+  //     .populate('assignment_id') // Join bảng để lấy thông tin bài tập
+  //     .exec();
 
-    // Gom tất cả các Tags mà user hay làm sai lại
-    let weakTags: string[] = [];
-    failedSubmissions.forEach(sub => {
-      const assignment = sub.assignment_id as any;
-      if (assignment && assignment.tags) {
-        weakTags.push(...assignment.tags);
-      }
-    });
+  //   // Gom tất cả các Tags mà user hay làm sai lại
+  //   let weakTags: string[] = [];
+  //   failedSubmissions.forEach(sub => {
+  //     const assignment = sub.assignment_id as any;
+  //     if (assignment && assignment.tags) {
+  //       weakTags.push(...assignment.tags);
+  //     }
+  //   });
 
-    // Nếu user chưa sai bài nào, trả về các bài dễ mặc định
-    if (weakTags.length === 0) {
-      const easyAssignments = await this.codeAssignmentModel.find({ difficulty: 'EASY' }).limit(5).exec();
-      return {weakFocus: [], assignments: easyAssignments};
-    }
-     try {
-      // lay toan bo bai tap trong dv de gui sang python phan tich
-      const allAssignmentsRaw = await this.codeAssignmentModel.find().select('_id tags difficulty').lean().exec();
-      // dinh dang lai data cho khop format ma python cho
-      const allAssignments = allAssignmentsRaw.map(a=>({
-        id:a._id.toString(),
-        tags: a.tags || [],
-        difficulty: a.difficulty || 'EASY'
-      }))
-      //GỌI SANG MICROSERVICE PYTHON BẰNG HTTP POST
-      const pythonResponse = await firstValueFrom(
-        this.httpService.post('http://localhost:8000/recommend', {
-          weak_tags: weakTags,
-          all_assignments: allAssignments
-        })
-      );
+  //   // Nếu user chưa sai bài nào, trả về các bài dễ mặc định
+  //   if (weakTags.length === 0) {
+  //     const easyAssignments = await this.codeAssignmentModel.find({ difficulty: 'EASY' }).limit(5).exec();
+  //     return {weakFocus: [], assignments: easyAssignments};
+  //   }
+  //    try {
+  //     // lay toan bo bai tap trong dv de gui sang python phan tich
+  //     const allAssignmentsRaw = await this.codeAssignmentModel.find().select('_id tags difficulty').lean().exec();
+  //     // dinh dang lai data cho khop format ma python cho
+  //     const allAssignments = allAssignmentsRaw.map(a=>({
+  //       id:a._id.toString(),
+  //       tags: a.tags || [],
+  //       difficulty: a.difficulty || 'EASY'
+  //     }))
+  //     //GỌI SANG MICROSERVICE PYTHON BẰNG HTTP POST
+  //     const pythonResponse = await firstValueFrom(
+  //       this.httpService.post('http://localhost:8000/recommend', {
+  //         weak_tags: weakTags,
+  //         all_assignments: allAssignments
+  //       })
+  //     );
 
-      const recommendedIds = pythonResponse.data.recommended_ids;
+  //     const recommendedIds = pythonResponse.data.recommended_ids;
 
-      // Nếu Python không tìm được bài nào phù hợp (hoặc báo lỗi logic)
-      if(!recommendedIds || recommendedIds.length === 0){
-        const backupAssignments = await this.codeAssignmentModel.find({ difficulty: 'EASY' }).limit(5).exec();
-        return { weakFocus: weakTags, assignments: backupAssignments };
-      }
-      //. Query lại Database MongoDB để lấy thông tin chi tiết (tên bài, đề bài...) của các ID được gợi ý
-      const finalRecommendations = await this.codeAssignmentModel
-        .find({ _id: { $in: recommendedIds } })
-        .exec();
-        return {
-          weakFocus: weakTags, // Báo cho frontend biết user đang yếu tag nào
-        assignments: finalRecommendations // Trả danh sách bài tập ra
-        }
+  //     // Nếu Python không tìm được bài nào phù hợp (hoặc báo lỗi logic)
+  //     if(!recommendedIds || recommendedIds.length === 0){
+  //       const backupAssignments = await this.codeAssignmentModel.find({ difficulty: 'EASY' }).limit(5).exec();
+  //       return { weakFocus: weakTags, assignments: backupAssignments };
+  //     }
+  //     //. Query lại Database MongoDB để lấy thông tin chi tiết (tên bài, đề bài...) của các ID được gợi ý
+  //     const finalRecommendations = await this.codeAssignmentModel
+  //       .find({ _id: { $in: recommendedIds } })
+  //       .exec();
+  //       return {
+  //         weakFocus: weakTags, // Báo cho frontend biết user đang yếu tag nào
+  //       assignments: finalRecommendations // Trả danh sách bài tập ra
+  //       }
       
-     } catch (e) {
-      console.error('Lỗi khi gọi Microservice Python AI:',);
-      // Fallback: Nếu sập server Python hoặc lỗi mạng, hệ thống không được chết mà tự động trả về bài dễ
-      const fallbackAssignments = await this.codeAssignmentModel.find({ difficulty: 'EASY' }).limit(5).exec();
-      return { weakFocus: weakTags, assignments: fallbackAssignments };
+  //    } catch (e) {
+  //     console.error('Lỗi khi gọi Microservice Python AI:',);
+  //     // Fallback: Nếu sập server Python hoặc lỗi mạng, hệ thống không được chết mà tự động trả về bài dễ
+  //     const fallbackAssignments = await this.codeAssignmentModel.find({ difficulty: 'EASY' }).limit(5).exec();
+  //     return { weakFocus: weakTags, assignments: fallbackAssignments };
       
-     }
+  //    }
 
-    // // 3. Nhờ AI phân tích xem yếu phần nào nhất
-    // const recommendedTags = await this.aiAssistantService.recommendTags(weakTags);
+  //   // // 3. Nhờ AI phân tích xem yếu phần nào nhất
+  //   // const recommendedTags = await this.aiAssistantService.recommendTags(weakTags);
 
-    // // 4. Tìm trong Database các bài tập có Tag trùng với AI gợi ý
-    // // Lấy ưu tiên các bài dễ (EASY) hoặc trung bình (MEDIUM)
-    // const recommendedAssignments = await this.codeAssignmentModel
-    //   .find({ 
-    //     tags: { $in: recommendedTags }, // Tìm bài có chứa tag AI đề xuất
-    //     difficulty: { $in: ['EASY', 'MEDIUM'] }
-    //   })
-    //   .limit(5)
-    //   .exec();
+  //   // // 4. Tìm trong Database các bài tập có Tag trùng với AI gợi ý
+  //   // // Lấy ưu tiên các bài dễ (EASY) hoặc trung bình (MEDIUM)
+  //   // const recommendedAssignments = await this.codeAssignmentModel
+  //   //   .find({ 
+  //   //     tags: { $in: recommendedTags }, // Tìm bài có chứa tag AI đề xuất
+  //   //     difficulty: { $in: ['EASY', 'MEDIUM'] }
+  //   //   })
+  //   //   .limit(5)
+  //   //   .exec();
 
-    // return {
-    //   weakFocus: recommendedTags, // Ví dụ: ['Array', 'For Loop']
-    //   assignments: recommendedAssignments // Danh sách 5 bài tập trả về cho Frontend
-    // };
-  }
+  //   // return {
+  //   //   weakFocus: recommendedTags, // Ví dụ: ['Array', 'For Loop']
+  //   //   assignments: recommendedAssignments // Danh sách 5 bài tập trả về cho Frontend
+  //   // };
+  // }
   async chatWithConsultant(
     chatHistory: { role: 'user' | 'model'; text: string }[],
     newMessage: string,
+    currentUser?: any
   ) {
     const courses = await this.courseModel.find({ status: 'active' })
       .select('_id title level price')
       .lean();
-
-    // 1. Chèn thêm "Lệnh mật" vào hệ thống AI để nó tự bẫy khách hàng
-    const systemInstruction = `
+    let systemInstruction = `
       Bạn là AI Tư Vấn của CodeMaster. Khách hàng đang chat với bạn.
       Danh sách khóa học: ${JSON.stringify(courses)}.
-      
-       LỆNH TỐI CAO VỀ THU THẬP THÔNG TIN: 
-      1. Nếu khách hàng muốn đặt khóa học nhưng chưa cho thông tin: Hãy hỏi xin Số điện thoại hoặc Email một cách lịch sự. TUYỆT ĐỐI KHÔNG SỬ DỤNG thẻ [LEAD].
-      2. CHỈ KHI NÀO khách hàng ĐÃ THỰC SỰ gõ ra Số điện thoại hoặc Email cụ thể, bạn mới được phép chèn đoạn mã này vào CUỐI câu: [LEAD: số_hoặc_email_của_khách]
-      3. Tuyệt đối không bao giờ được trả về đoạn mã mẫu chứa dấu ngoặc nhọn như [LEAD: <số_điện_thoại>].
     `;
 
+    // 2. PHÂN NHÁNH LỆNH MẬT THEO TRẠNG THÁI ĐĂNG NHẬP
+    if (currentUser && currentUser.email) {
+      // TRƯỜNG HỢP 1: KHÁCH ĐÃ ĐĂNG NHẬP
+      systemInstruction += `
+         LỆNH TỐI CAO: 
+        Khách hàng này ĐÃ ĐĂNG NHẬP (Email của họ là: ${currentUser.email}).
+        Nếu khách hàng có ý định đăng ký khóa học, muốn mua, hoặc nhờ tư vấn: 
+        1. TUYỆT ĐỐI KHÔNG ĐƯỢC HỎI xin thông tin liên hệ của họ nữa.
+        2. Hãy tự động chèn đoạn mã này vào CUỐI câu trả lời của bạn: [LEAD: ${currentUser.email}]
+        3. Tuyệt đối không để lộ mã [LEAD] này trong câu văn.
+      `;
+    } else {
+      // TRƯỜNG HỢP 2: KHÁCH VÃNG LAI (CHƯA ĐĂNG NHẬP)
+      systemInstruction += `
+         LỆNH TỐI CAO VỀ THU THẬP THÔNG TIN: 
+        1. Nếu khách hàng muốn đặt khóa học nhưng chưa cho thông tin: Hãy hỏi xin Số điện thoại hoặc Email một cách lịch sự. TUYỆT ĐỐI KHÔNG SỬ DỤNG thẻ [LEAD].
+        2. CHỈ KHI NÀO khách hàng ĐÃ THỰC SỰ gõ ra Số điện thoại hoặc Email cụ thể, bạn mới được phép chèn đoạn mã này vào CUỐI câu: [LEAD: số_hoặc_email_của_khách]
+        3. Tuyệt đối không bao giờ được trả về đoạn mã mẫu chứa dấu ngoặc nhọn.
+      `;
+    }
     // Gọi AI (Gộp lệnh mật vào câu hỏi cuối cùng để ép AI tuân thủ)
     let aiResponse = await this.aiAssistantService.chatWithConsultant(
       chatHistory, 
@@ -383,7 +399,7 @@ export class SubmissionsService {
     }
 
     const [leads, totalFiltered, totalAll, totalNew,totalContacted, totalResolved] = await Promise.all([
-      this.advisoryModel.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(), 
+      this.advisoryModel.find(query).sort({ updatedAt: -1 }).skip(skip).limit(limit).exec(), 
       this.advisoryModel.countDocuments(query).exec(), 
       
       // Đếm riêng cho 3 Thẻ Thống kê

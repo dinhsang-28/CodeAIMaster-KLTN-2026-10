@@ -88,6 +88,7 @@ const Navbar = () => {
       }
     }
     getCountCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const items: MenuProps['items'] = [

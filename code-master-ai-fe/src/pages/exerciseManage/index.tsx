@@ -3,8 +3,7 @@ import { Input, Button, Modal as AntdModal, message, Spin, Pagination } from "an
 import {
   SearchOutlined, PlusOutlined, EditOutlined, MoreOutlined, DeleteOutlined,
   FilterOutlined, DownloadOutlined, CalendarOutlined, RocketOutlined,
-  MailOutlined, BellOutlined, BarChartOutlined, LeftOutlined, RightOutlined,
-  RobotOutlined
+  MailOutlined, BellOutlined, RobotOutlined
 } from "@ant-design/icons";
 
 import { 
@@ -65,6 +64,7 @@ const ExerciseManage: React.FC = () => {
 
   useEffect(() => {
     fetchCourses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -79,6 +79,7 @@ const ExerciseManage: React.FC = () => {
       setAssignments([]);
       setTotal(0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, debouncedKeyword, activeTab]);
 
   const fetchCourses = async () => {
@@ -121,11 +122,11 @@ const ExerciseManage: React.FC = () => {
     setAsgModalVisible(true);
   };
 
-  const handleView = (record: any) => {
-    setCurrentAsg(record);
-    setAsgModalMode("view");
-    setAsgModalVisible(true);
-  };
+  // const handleView = (record: any) => {
+  //   setCurrentAsg(record);
+  //   setAsgModalMode("view");
+  //   setAsgModalVisible(true);
+  // };
 
   const handleManageTestcases = async (assignment: any) => {
     setLoading(true);

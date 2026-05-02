@@ -106,14 +106,16 @@ export const PostChangePassword = async (data: any) => {
 };
 // lay lai userinfo
 export const GetMe = async () => {
-  const response = await axiosInstance.get('/auth/me');
+  const response = await axiosInstance.get('/auth/me',{
+    _silent: true, 
+  } as any);
   console.log("GetMe response: ", response.data);
   return response.data;
 }
 
 // Moi  dang test (ae sua nho nhan sang hihi)
 // con chatbot tu van
-export const PostChatConsultant = async (data: { chatHistory: any[], newMessage: string }) => {
+export const PostChatConsultant = async (data: { chatHistory: any[], newMessage: string,currentUser?: any }) => {
   const res = await axiosInstance.post('/submissions/chat-consultant', data);
   return res.data;
 };

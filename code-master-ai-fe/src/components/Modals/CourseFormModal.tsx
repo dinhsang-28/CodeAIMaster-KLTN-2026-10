@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, InputNumber, Select, Upload, Button, Space, message, Spin } from "antd";
-import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from "@ant-design/icons";
+import { Modal, Form, Input, InputNumber, Select, Button, Space, message, Spin } from "antd";
+import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
 import { 
   createCourse, 
   updateCourse, 

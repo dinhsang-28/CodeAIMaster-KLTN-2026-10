@@ -181,10 +181,12 @@ const CourseManage: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     fetchCourses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, debouncedKeyword, filterCategory]);
 
   const fetchCategories = async () => {

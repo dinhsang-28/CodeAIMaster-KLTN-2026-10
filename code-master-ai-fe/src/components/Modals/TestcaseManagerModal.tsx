@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Table, Button, Form, Input, Checkbox, message, Space, Popconfirm, Spin, InputNumber } from "antd";
+import { Modal, Table, Button, Form, Input, Checkbox, message, Space, Popconfirm, Spin } from "antd";
 import { 
   getTestcasesByCodeAssignmentId, 
   updateTestcase, 
@@ -33,6 +33,7 @@ const TestcaseManagerModal: React.FC<TestcaseManagerModalProps> = ({
     } else {
       setTestcases([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, codeAssignmentId]);
 
   const fetchTestcases = async () => {

@@ -13,6 +13,7 @@ interface Advisory {
   status: 'NEW' | 'CONTACTED' | 'RESOLVED';
   chat_history: string;
   createdAt: string;
+  updatedAt: string;
   is_returning?: boolean; 
 }
 
@@ -107,8 +108,8 @@ export default function AdminLeads() {
   const columns = [
     {
       title: 'Hoạt động cuối',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
       width: '15%',
       render: (date: string) => (
         <div>
