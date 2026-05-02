@@ -1,58 +1,21 @@
-import { getMyCourses, ICourse } from "@/api/enrollment";
+import { getMyCourses, ICourse } from "../../api/enrollment";
 import React, { useEffect, useState } from "react";
 
-const courses = [
-  {
-    id: 1,
-    title: "Fullstack Web Development",
-    instructor: "Trần Anh Quân",
-    progress: 65,
-    lessons: "12/18 bài học",
-    category: "FULLSTACK",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuC2XBwH1yZvjSgAUWH75UleiZ_T2h-g_AMhsF3xk7ysFMxkoSQUU54uUaDU8qrETFf2oXFwPwFXc3Tlk3qp5IClXYJkgixJRNaeesUNuvlNbnNsnzQ-17X2icwWO25T5d593IySdahQO1K3NK7Pa--ZS_-XSIlHVBqb3dteXRuir9WfeSi95VT-jX9cOOkd6XGwzuNYJ9x_WEpDX14T_v1hi3IcK_Hww1Vmp7OG1tQD-XfLZITqYij2Ncqtj-DAE5m4Wcd7dHvPTu2H",
-  },
-  {
-    id: 2,
-    title: "Python for AI & Machine Learning",
-    instructor: "Lê Minh Tâm",
-    progress: 32,
-    lessons: "8/25 bài học",
-    category: "AI",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCyfblfVYEaSFSDqGE36ksdvbVa2FBr_UGxKJS3QOgldOb30O7htMVFXwvm45wDUyyFoobJtCRv1aNYrTyxZS_7bupek17unvG5720rzaOX6myTOqdzaxwikrsDvgESfyXMV6N8NoJd9R8pJ3EVIZO94OSuVjZmb4jfsb8NFZ_uxWdkHyO5uBDA2PY1kD0ZR-bAruA-5DwQQ9MiUzwnp60weNFHDSSLX4fyCk_xPdf8yqctXT-JpG1Yu-AZLO5TQXwJ-6YMcLpTf7tB",
-  },
-  {
-    id: 3,
-    title: "Advanced UI/UX Masterclass",
-    instructor: "Nguyễn Thu Hà",
-    progress: 95,
-    lessons: "19/20 bài học",
-    category: "UI/UX",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDAzF6tJ4u1KtjzqWVzzS-oEIRBY6qqy6eKIIG9aONG6iz-LL_d2MlL7vM_S4n0FuQ6WVT2P4ikPRJfR206tuI-jyQz0EmCpd-Jv4LI3zliHLLaD6lvfAWW17MjJTgDxx4VUkHuWVFSmBDVfkPbSeZL2Q4f4a4UXbD8pkeP6pHPnB55akTCkrQXV3dz5oGU7VUhxRobBa5F5-45eKYh0gQDv1VaMydE_1Ifmu9xxRoqSBNEPLCxBF8hYNh3UcjBjueiocx_oqpJPBLO",
-  },
-];
-
-const MyCourses: React.FC = () => {
+const MyEnrollment: React.FC = () => {
   const [coursesData, setCourses] = useState<ICourse[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      // setLoading(true);
       try {
-        const myCourseRes = await getMyCourses();
-        setCourses(myCourseRes);
-        console.log(myCourseRes);
-        setCourses(myCourseRes.data);
+        const data = await getMyCourses();
+        setCourses(data);
       } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu:", error);
-      } finally {
-        // setLoading(false);
+        console.error("Lỗi:", error);
       }
     };
+
     fetchData();
-  }, [getMyCourses]);
+  }, []);
   return (
     <main className="min-h-screen">
       {/* Hero */}
@@ -121,12 +84,12 @@ const MyCourses: React.FC = () => {
                     <span>Tiến độ:65%</span>
                     <span>"12/18 bài học",</span>
                   </div>
-                  {/* <div className="w-full h-2 bg-gray-200 rounded-full">
+                  <div className="w-full h-2 bg-gray-200 rounded-full">
                     <div
                       className="h-full bg-green-700 rounded-full"
-                      // style={{ width: `${course.progress}%` }}
+                      style={{ width: `${10}%` }}
                     />
-                  </div> */}
+                  </div>
                 </div>
 
                 {/* Button */}
@@ -142,4 +105,4 @@ const MyCourses: React.FC = () => {
   );
 };
 
-export default MyCourses;
+export default MyEnrollment;

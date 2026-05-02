@@ -36,6 +36,7 @@ import PersonalInfo from "../pages/profile/PersonalInfo";
 import BlogDetail from "../pages/blogDetail";
 import AdminLeads from "../pages/admin/AdminLeads";
 import AdminStudents from "../pages/admin/AdminStudents";
+import MyEnrollment from "../pages/myCourses";
 
 export const router = createBrowserRouter([
   {
@@ -68,7 +69,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "/myCourses",
-        element: <MyCourses />,
+        element: <MyEnrollment />,
       },
       {
         path: "/cart",
