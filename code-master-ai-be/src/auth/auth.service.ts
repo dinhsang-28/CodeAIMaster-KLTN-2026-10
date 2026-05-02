@@ -35,7 +35,11 @@ export class AuthService {
 
     //lam quyen
     const userInfo = await this.usersService.findOne(user._id);
-
+    if (userInfo?.status !== 'active') {
+      throw new UnauthorizedException(
+        'Tài khoản của bạn đang bị khóa. Vui lòng liên hệ quản trị viên!',
+      );
+    }
     const payload = {
       username: user.email,
       sub: user._id.toString(),
@@ -121,10 +125,10 @@ export class AuthService {
       }
       const userInfo = await this.usersService.findOne(user._id.toString());
 
-      const payload = { 
-        username: user.email, 
+      const payload = {
+        username: user.email,
         sub: user._id,
-        permissions: userInfo?.role_id?.['permissions'] || [], 
+        permissions: userInfo?.role_id?.['permissions'] || [],
       };
       const newAccessToken = this.jwtService.sign(payload, {
         expiresIn: accessExpire as any,
@@ -287,14 +291,14 @@ export class AuthService {
   }
   async getMe(userId: string) {
     const user = await this.usersService.findOne(userId);
-    console.log("GetMe user: ", user);
+    console.log('GetMe user: ', user);
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
     return {
       email: user.email,
       _id: user._id,
-      name:user.name,
+      name: user.name,
       permissions: user.role_id?.['permissions'] || [],
       phone: user.phone,
       image: user.image,
