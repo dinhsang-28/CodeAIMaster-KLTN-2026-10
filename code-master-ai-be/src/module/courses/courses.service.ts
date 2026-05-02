@@ -20,11 +20,15 @@ import {
   AssignmentDocument,
 } from '../assignments/entities/assignment.entity';
 import { Quiz, QuizDocument } from '../quizzes/entities/quiz.entity';
-import { Question, QuestionDocument } from '../questions/entities/question.entity';
+import {
+  Question,
+  QuestionDocument,
+} from '../questions/entities/question.entity';
 import {
   CodeAssignment,
   CodeAssignmentDocument,
 } from '../code-assignments/entities/code-assignment.entity';
+import { CartDetailDocument } from '../cart-details/entities/cart-detail.entity';
 
 @Injectable()
 export class CoursesService {
@@ -46,6 +50,9 @@ export class CoursesService {
 
     @InjectModel(Question.name)
     private readonly questionModel: Model<QuestionDocument>,
+
+    @InjectModel(Question.name)
+    private readonly cartDetailModel: Model<CartDetailDocument>,
 
     @InjectModel(CodeAssignment.name)
     private readonly codeAssignmentModel: Model<CodeAssignmentDocument>,
@@ -140,7 +147,10 @@ export class CoursesService {
     const assignmentIds = assignments.map((assignment) => assignment._id);
 
     const [quizzes, codeAssignments] = await Promise.all([
-      this.quizModel.find({ assignment_id: { $in: assignmentIds } }).lean().exec(),
+      this.quizModel
+        .find({ assignment_id: { $in: assignmentIds } })
+        .lean()
+        .exec(),
       this.codeAssignmentModel
         .find({ assignment_id: { $in: assignmentIds } })
         .lean()
@@ -235,7 +245,7 @@ export class CoursesService {
       thumbnailUrl = uploadResult.url;
       updateCourseDto.thumbnail = thumbnailUrl;
     }
-    // >>>>>>> 7a09b174f54336764d48cfc516c4821069271587
+
     const updated = await this.courseModel.findByIdAndUpdate(
       id,
       updateCourseDto,
@@ -247,6 +257,14 @@ export class CoursesService {
     if (!updated) {
       throw new NotFoundException('Course not found');
     }
+
+    if (updateCourseDto.price !== undefined) {
+      await this.cartDetailModel.updateMany(
+        { course_id: new Types.ObjectId(id) },
+        { $set: { price: updateCourseDto.price } },
+      );
+    }
+
     return updated;
   }
 

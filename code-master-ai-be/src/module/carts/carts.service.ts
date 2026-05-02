@@ -49,6 +49,40 @@ export class CartsService {
     return cart;
   }
 
+  // private async buildCartResponse(cartId: Types.ObjectId | string) {
+  //   const cart = await this.cartModel
+  //     .findById(cartId)
+  //     .populate('user_id')
+  //     .lean();
+
+  //   if (!cart) {
+  //     throw new NotFoundException('Giỏ hàng không tồn tại');
+  //   }
+
+  //   // const cartDetails = await this.cartDetailModel
+  //   //   .find({ cart_id: cart._id })
+  //   //   .populate('course_id')
+  //   //   .lean();
+
+  //   // const totalPrice = cartDetails.reduce((sum, item) => sum + item.price, 0);
+
+  //   const cartDetails = await this.cartDetailModel
+  //     .find({ cart_id: cart._id })
+  //     .populate('course_id')
+  //     .exec();
+
+  //   const totalPrice = cartDetails.reduce(
+  //     (sum, item: any) => sum + item.course_id.price,
+  //     0,
+  //   );
+
+  //   return {
+  //     ...cart,
+  //     items: cartDetails,
+  //     totalPrice,
+  //   };
+  // }
+
   private async buildCartResponse(cartId: Types.ObjectId | string) {
     const cart = await this.cartModel
       .findById(cartId)
@@ -59,22 +93,24 @@ export class CartsService {
       throw new NotFoundException('Giỏ hàng không tồn tại');
     }
 
-    // const cartDetails = await this.cartDetailModel
-    //   .find({ cart_id: cart._id })
-    //   .populate('course_id')
-    //   .lean();
-
-    // const totalPrice = cartDetails.reduce((sum, item) => sum + item.price, 0);
-
     const cartDetails = await this.cartDetailModel
       .find({ cart_id: cart._id })
       .populate('course_id')
-      .lean();
+      .exec(); // ❗ không dùng lean
 
-    const totalPrice = cartDetails.reduce(
-      (sum, item: any) => sum + item.course_id.price,
-      0,
-    );
+    let totalPrice = 0;
+
+    for (const item of cartDetails) {
+      const course: any = item.course_id;
+
+      // 🔥 SYNC GIÁ
+      if (item.price !== course.price) {
+        item.price = course.price;
+        await item.save();
+      }
+
+      totalPrice += item.price;
+    }
 
     return {
       ...cart,
@@ -173,6 +209,7 @@ export class CartsService {
       throw new NotFoundException('Khóa học không tồn tại');
     }
 
+    cartDetail.price = course.price;
     await cartDetail.save();
 
     const cartResponse = await this.buildCartResponse(cart._id);
