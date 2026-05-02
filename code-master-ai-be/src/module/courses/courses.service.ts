@@ -139,8 +139,17 @@ export class CoursesService {
       .exec();
 
     const lessonIds = lessons.map((lesson) => lesson._id);
+    const lessonIdStrings = lessonIds.map((id) => String(id));
+    const lessonObjectIds = lessonIdStrings
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
     const assignments = await this.assignmentModel
-      .find({ lesson_id: { $in: lessonIds } })
+      .find({
+        $or: [
+          { lesson_id: { $in: lessonObjectIds } },
+          { lesson_id: { $in: lessonIdStrings } },
+        ],
+      })
       .lean()
       .exec();
 
@@ -209,10 +218,15 @@ export class CoursesService {
       assignmentsByLessonId.get(lessonKey)!.push(enrichedAssignment);
     }
 
-    const lessonDetails = lessons.map((lesson) => ({
-      ...lesson,
-      assignments: assignmentsByLessonId.get(String(lesson._id)) || [],
-    }));
+    const lessonDetails = lessons.map((lesson) => {
+      const lessonAssignments =
+        assignmentsByLessonId.get(String(lesson._id)) || [];
+      return {
+        ...lesson,
+        assignments: lessonAssignments,
+        assignment_ids: lessonAssignments.map((item) => item._id),
+      };
+    });
 
     return new ApiResponse('Thông tin đầy đủ khóa học', {
       ...course,

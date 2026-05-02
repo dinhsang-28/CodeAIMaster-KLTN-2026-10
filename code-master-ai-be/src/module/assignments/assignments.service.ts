@@ -11,6 +11,11 @@ import { Model } from 'mongoose';
 import { Lesson, LessonDocument } from '../lessons/entities/lesson.entity';
 import { AssignmentType } from './enums/types.enum';
 import { SearchAssignmentDto } from './dto/search-assigment.dto';
+import { Quiz, QuizDocument } from '../quizzes/entities/quiz.entity';
+import {
+  CodeAssignment,
+  CodeAssignmentDocument,
+} from '../code-assignments/entities/code-assignment.entity';
 
 @Injectable()
 export class AssignmentsService {
@@ -20,6 +25,12 @@ export class AssignmentsService {
 
     @InjectModel(Lesson.name)
     private readonly lessonModel: Model<LessonDocument>,
+
+    @InjectModel(Quiz.name)
+    private readonly quizModel: Model<QuizDocument>,
+
+    @InjectModel(CodeAssignment.name)
+    private readonly codeAssignmentModel: Model<CodeAssignmentDocument>,
   ) {}
 
   async create(createAssignmentDto: CreateAssignmentDto): Promise<Assignment> {
@@ -31,10 +42,36 @@ export class AssignmentsService {
       throw new NotFoundException('Lesson not found');
     }
 
+    const assignmentType = createAssignmentDto.type ?? AssignmentType.QUIZ;
+
     const assignment = await this.assigmentModel.create({
       ...createAssignmentDto,
-      type: AssignmentType.QUIZ,
+      type: assignmentType,
     });
+
+    if (assignmentType === AssignmentType.QUIZ) {
+      await this.quizModel.create({
+        assignment_id: assignment._id,
+        title: assignment.title,
+        total_score: assignment.max_score ?? 10,
+        time_limit: 15,
+      });
+    }
+
+    if (assignmentType === AssignmentType.CODEASSIGNMENT) {
+      await this.codeAssignmentModel.create({
+        assignment_id: assignment._id,
+        title: assignment.title,
+        problem_description: assignment.description || assignment.title,
+        input_format: '',
+        output_format: '',
+        time_limit: 2,
+        memory_limit: 128000,
+        starter_code: 'function solve() {\n  \n}',
+        language_support: 'javascript',
+      });
+    }
+
     return assignment;
   }
 
