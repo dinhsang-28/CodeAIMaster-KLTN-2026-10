@@ -67,6 +67,10 @@ export const router = createBrowserRouter([
         element: <CourseDetailPage />,
       },
       {
+        path: "/myCourses",
+        element: <MyCourses />,
+      },
+      {
         path: "/cart",
         element: <Cart />,
       },
@@ -165,11 +169,11 @@ export const router = createBrowserRouter([
       { path: "courses", element: <CourseManage /> },
       { path: "exercises", element: <ExerciseManage /> },
       { path: "users", element: <UserManage /> },
-       { path: "students", element: <AdminStudents /> },
+      { path: "students", element: <AdminStudents /> },
       { path: "categories", element: <CategoryManage /> },
       { path: "roles", element: <RoleManage /> },
       { path: "permissions", element: <PermissionManage /> },
-      {path: "leads", element: <AdminLeads />},
+      { path: "leads", element: <AdminLeads /> },
       {
         path: "profile",
         element: <ProfilePage />,

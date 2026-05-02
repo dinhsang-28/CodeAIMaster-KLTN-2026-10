@@ -1,135 +1,72 @@
-import React, { useState } from "react";
-// import { Progress, Tag, Typography } from "antd";
-import { Typography } from "antd";
-import { BookOutlined } from "@ant-design/icons";
-
-const { Text } = Typography;
-
-const courses = [
-  { id: 1, title: "Python cơ bản đến nâng cao", tag: "Đang học", progress: 65, lessons: 24, total: 36 },
-  { id: 2, title: "Machine Learning với Scikit-learn", tag: "Đang học", progress: 40, lessons: 12, total: 30 },
-  { id: 3, title: "HTML & CSS hiện đại", tag: "Hoàn thành", progress: 100, lessons: 20, total: 20 },
-  { id: 4, title: "JavaScript ES6+", tag: "Hoàn thành", progress: 100, lessons: 28, total: 28 },
-  { id: 5, title: "React & Next.js", tag: "Đang học", progress: 30, lessons: 9, total: 30 },
-  { id: 6, title: "Deep Learning với PyTorch", tag: "Chưa bắt đầu", progress: 0, lessons: 0, total: 40 },
-];
-
-const tagStyle: Record<string, { bg: string; color: string }> = {
-  "Đang học": { bg: "#e8f0eb", color: "#2f5438" },
-  "Hoàn thành": { bg: "#dff2e5", color: "#1a5c30" },
-  "Chưa bắt đầu": { bg: "#f0f0f0", color: "#888" },
-};
-
-const progressColor: Record<string, string> = {
-  "Đang học": "#4a7c59",
-  "Hoàn thành": "#2f5438",
-  "Chưa bắt đầu": "#ccc",
-};
-
-type Filter = "all" | "active" | "done";
-
-const MyCourses = () => {
-  const [filter, setFilter] = useState<Filter>("all");
-
-  const filtered = courses.filter((c) => {
-    if (filter === "active") return c.tag === "Đang học";
-    if (filter === "done") return c.tag === "Hoàn thành";
-    return true;
-  });
-
+import React from "react";
+export default function MyCourses() {
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-2xl font-bold text-brand-900">Khóa học của tôi</h2>
-        <div className="flex gap-2">
-          {(["all", "active", "done"] as Filter[]).map((f) => {
-            const label = f === "all" ? "Tất cả" : f === "active" ? "Đang học" : "Hoàn thành";
-            const active = filter === f;
-            return (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                style={{
-                  background: active ? "#3d6b4a" : "white",
-                  color: active ? "white" : "#3d6b4a",
-                  border: active ? "none" : "0.5px solid #d4d1c3",
-                  borderRadius: 10,
-                  padding: "7px 16px",
-                  fontSize: 12,
-                  cursor: "pointer",
-                  fontWeight: active ? 500 : 400,
-                  transition: "all 0.15s",
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
+    <div className="bg-[#fdf9ef] min-h-screen px-12 py-16">
+      {/* Title */}
+      <div className="mb-10">
+        <h1 className="text-5xl font-bold text-[#23422a] mb-3">
+          Khóa học của tôi
+        </h1>
+        <p className="text-lg text-[#424842]">
+          Chào mừng bạn quay trở lại, hãy tiếp tục hành trình chinh phục tri thức.
+        </p>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        {filtered.map((course) => (
+      {/* Tabs */}
+      <div className="flex gap-3 mb-12 bg-[#e6e2d8] p-1 rounded-xl w-fit">
+        <button className="px-6 py-2 rounded-lg bg-white shadow text-[#23422a] font-semibold">
+          Tất cả
+        </button>
+        <button className="px-6 py-2 text-[#424842]">Đang học</button>
+        <button className="px-6 py-2 text-[#424842]">Hoàn thành</button>
+      </div>
+
+      {/* Cards */}
+      <div className="grid grid-cols-3 gap-8">
+        {[1, 2, 3].map((item) => (
           <div
-            key={course.id}
-            className="bg-white rounded-2xl border border-gray-100 p-5 cursor-pointer hover:border-brand-200 transition-all"
+            key={item}
+            className="bg-[#ffffff] rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition"
           >
-            <div className="flex justify-between items-start mb-3">
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  background: "#e8f0eb",
-                  borderRadius: 10,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <BookOutlined style={{ color: "#3d6b4a", fontSize: 16 }} />
-              </div>
-              <span
-                style={{
-                  fontSize: 10,
-                  padding: "3px 10px",
-                  borderRadius: 20,
-                  background: tagStyle[course.tag]?.bg,
-                  color: tagStyle[course.tag]?.color,
-                  fontWeight: 500,
-                }}
-              >
-                {course.tag}
+            {/* Image */}
+            <div className="relative">
+              <img
+                src="https://images.unsplash.com/photo-1498050108023-c5249f4df085"
+                className="w-full h-52 object-cover"
+              />
+
+              <span className="absolute top-4 left-4 bg-[#ccead8] text-[#23422a] text-xs font-bold px-3 py-1 rounded-full">
+                FULLSTACK
               </span>
             </div>
 
-            <p className="text-sm font-semibold text-brand-900 mb-2 leading-snug">
-              {course.title}
-            </p>
-            <p className="text-xs text-gray-400 mb-2.5">
-              {course.lessons}/{course.total} bài học
-            </p>
+            {/* Content */}
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-[#23422a] mb-1">
+                Fullstack Web Development
+              </h3>
 
-            <div style={{ background: "#e8e6da", borderRadius: 4, height: 5, overflow: "hidden" }}>
-              <div
-                style={{
-                  background: progressColor[course.tag],
-                  width: `${course.progress}%`,
-                  height: "100%",
-                  borderRadius: 4,
-                  transition: "width 0.6s ease",
-                }}
-              />
-            </div>
-            <div className="text-right mt-1">
-              <Text className="text-xs text-gray-400">{course.progress}%</Text>
+              <p className="text-sm text-[#424842] mb-4">
+                Giảng viên: Trần Anh Quân
+              </p>
+
+              {/* Progress */}
+              <div className="flex justify-between text-sm mb-1 text-[#23422a] font-medium">
+                <span>Tiến độ: 65%</span>
+                <span>12/18 bài học</span>
+              </div>
+
+              <div className="w-full h-2 bg-[#e6e2d8] rounded-full mb-6">
+                <div className="w-[65%] h-full bg-[#23422a] rounded-full"></div>
+              </div>
+
+              <button className="w-full py-3 rounded-xl text-white font-semibold bg-gradient-to-r from-[#23422a] to-[#3a5a40]">
+                Vào học ngay
+              </button>
             </div>
           </div>
         ))}
       </div>
     </div>
   );
-};
-
-export default MyCourses;
+}

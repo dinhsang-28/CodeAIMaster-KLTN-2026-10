@@ -4,7 +4,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { Course } from './entities/course.entity';
 import { Model, Types } from 'mongoose';
 import { CourseDocument } from './entities/course.entity';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CourseLevel } from './enums/courseLevel.enum';
 import { CourseStatus } from './enums/courseStatus.enum';
 import { NotFoundException } from '@nestjs/common';
@@ -28,7 +28,14 @@ import {
   CodeAssignment,
   CodeAssignmentDocument,
 } from '../code-assignments/entities/code-assignment.entity';
-import { CartDetailDocument } from '../cart-details/entities/cart-detail.entity';
+import {
+  CartDetail,
+  CartDetailDocument,
+} from '../cart-details/entities/cart-detail.entity';
+import {
+  Enrollment,
+  EnrollmentDocument,
+} from '../enrollments/entities/enrollment.entity';
 
 @Injectable()
 export class CoursesService {
@@ -51,11 +58,14 @@ export class CoursesService {
     @InjectModel(Question.name)
     private readonly questionModel: Model<QuestionDocument>,
 
-    @InjectModel(Question.name)
+    @InjectModel(CartDetail.name)
     private readonly cartDetailModel: Model<CartDetailDocument>,
 
     @InjectModel(CodeAssignment.name)
     private readonly codeAssignmentModel: Model<CodeAssignmentDocument>,
+
+    @InjectModel(Enrollment.name)
+    private readonly enrollmentModel: Model<EnrollmentDocument>,
 
     private readonly uploadService: UploadService,
   ) {}
@@ -319,5 +329,29 @@ export class CoursesService {
       total,
       sumPage,
     };
+  }
+
+  async getCourseEnrollment(userId: string) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('userId không hợp lệ');
+    }
+
+    const enrollments = await this.enrollmentModel
+      .find({
+        user_id: new Types.ObjectId(userId),
+        status: 'active',
+      })
+      .populate({
+        path: 'course_id',
+        populate: {
+          path: 'category',
+          select: 'category_name',
+        },
+      })
+      .lean();
+
+    const courses = enrollments.map((e) => e.course_id);
+
+    return new ApiResponse('Danh sách khóa học đã đăng ký', courses);
   }
 }

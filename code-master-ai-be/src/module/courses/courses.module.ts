@@ -24,6 +24,10 @@ import {
   CartDetail,
   CartDetailSchema,
 } from '../cart-details/entities/cart-detail.entity';
+import {
+  Enrollment,
+  EnrollmentSchema,
+} from '../enrollments/entities/enrollment.entity';
 
 @Module({
   imports: [
@@ -35,6 +39,7 @@ import {
       { name: Question.name, schema: QuestionSchema },
       { name: CodeAssignment.name, schema: CodeAssignmentSchema },
       { name: CartDetail.name, schema: CartDetailSchema },
+      { name: Enrollment.name, schema: EnrollmentSchema },
     ]),
     CategoriesModule,
     UploadModule,
