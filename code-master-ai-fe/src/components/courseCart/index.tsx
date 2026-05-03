@@ -143,7 +143,11 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
               type="button"
               className="rounded-xl bg-brand-700 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-800"
               onClick={() => {
-                course.price === 0 ? "" : navigate(`/checkout/${course._id}`);
+                if (course.price === 0) {
+                  navigate(`/course/${course._id}`);
+                } else {
+                  navigate(`/checkout/${course._id}`);
+                }
               }}
             >
               {course.price === 0 ? "Học" : "Mua"}
