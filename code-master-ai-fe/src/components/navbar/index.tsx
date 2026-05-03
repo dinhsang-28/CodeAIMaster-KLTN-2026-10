@@ -97,7 +97,7 @@ const Navbar = () => {
         console.error(err);
       }
     };
-     // eslint-disable-next-line 
+    // eslint-disable-next-line
     getCountCart();
   }, [setQuantityCart]);
 
@@ -220,7 +220,7 @@ const Navbar = () => {
               onClick={() => navigate("/login")}
               className="bg-brand-600 text-white px-4 py-1 rounded-full"
             >
-              Login
+              Đăng nhập
             </button>
           )}
 
