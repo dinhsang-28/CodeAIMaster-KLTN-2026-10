@@ -47,6 +47,15 @@ const CheckoutPage = () => {
           setCheckoutItems([item]);
           setTotalPrice(item.price);
 
+          const resUser = await getCartListQuick(); // dùng tạm API này
+          const user = resUser?.data?.user_id;
+
+          setFormData((prev) => ({
+            ...prev,
+            fullName: user?.name || "",
+            email: user?.email || "",
+            phone: user?.phone || "",
+          }));
           return;
         }
 
