@@ -1,31 +1,42 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { CodeOutlined, SearchOutlined } from "@ant-design/icons";
+import React, { useEffect, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import {
+  CodeOutlined,
+  BookFilled,
+  SearchOutlined,
+  UserOutlined,
+  ShoppingCartOutlined,
+  LogoutOutlined,
+  ShoppingOutlined,
+  MenuOutlined,
+  CloseOutlined,
+} from "@ant-design/icons";
+import { Dropdown, MenuProps, AutoComplete } from "antd";
+
 import { useUserInfo } from "../../store/user";
-import { UserOutlined } from "@ant-design/icons";
-import { ShoppingCartOutlined } from "@ant-design/icons";
-import { Dropdown, MenuProps } from "antd";
-import { LogoutOutlined, ShoppingOutlined } from "@ant-design/icons";
-import { GetCartLength } from "../../api/cart";
 import { useUserCart } from "../../store/cart";
-import { PostLogout } from "../../api/auth";
-import { AutoComplete } from "antd";
 import { useCourseStore } from "../../store/course";
-import { CloseOutlined } from "@ant-design/icons";
+
+import { GetCartLength } from "../../api/cart";
+import { PostLogout } from "../../api/auth";
+
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
   const [navSelected, setNavSelected] = useState(location.pathname);
+  const [isOpen, setIsOpen] = useState(false);
+
   const { userInfo, clearUserInfo } = useUserInfo();
   const { setQuantityCart, countQuantityCart } = useUserCart();
   const { globalCourses, setGlobalSearchKeyword } = useCourseStore();
+
   const [searchValue, setSearchValue] = useState("");
   const [options, setOptions] = useState<
     { value: string; label: React.ReactNode }[]
   >([]);
 
+  // ===== SEARCH =====
   const handleSearch = (value: string) => {
     setSearchValue(value);
 
@@ -35,25 +46,29 @@ const Navbar = () => {
     }
 
     const filtered = globalCourses
-      .filter((course) =>
-        course.title.toLowerCase().includes(value.toLowerCase())
+      ?.filter((course) =>
+        course.title.toLowerCase().includes(value.toLowerCase()),
       )
       .map((course) => ({
         value: course.title,
         label: (
-          <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+          <div
+            className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+            onClick={() => {
+              navigate(`/course/${course._id}`);
+              setIsOpen(false);
+            }}
+          >
             <img
               src={course.thumbnail}
               alt=""
               className="w-10 h-10 object-cover rounded-lg"
             />
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-slate-800">
-                {course.title}
-              </span>
-              <span className="text-xs text-slate-500">
-                {course.category.category_name}
-              </span>
+            <div>
+              <div className="text-sm font-semibold">{course.title}</div>
+              <div className="text-xs text-gray-500">
+                {course.category?.category_name}
+              </div>
             </div>
           </div>
         ),
@@ -68,57 +83,54 @@ const Navbar = () => {
     navigate("/course");
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      setGlobalSearchKeyword(searchValue);
-      navigate("/course");
-    }
-  };
+  // ===== EFFECT =====
   useEffect(() => {
     setNavSelected(location.pathname);
   }, [location]);
+
   useEffect(() => {
     const getCountCart = async () => {
       try {
         const data = await GetCartLength();
-        console.log("Số lượng cart:", data.data);
         setQuantityCart(data.data);
-      } catch (error) {
-        console.error("Lỗi lấy số lượng cart:", error);
+      } catch (err) {
+        console.error(err);
       }
-    }
+    };
+    // eslint-disable-next-line
     getCountCart();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [setQuantityCart]);
 
-  const items: MenuProps['items'] = [
+  // ===== MENU USER =====
+  const items: MenuProps["items"] = [
     {
-      key: '1',
+      key: "1",
       label: (
-        <div onClick={() => navigate("/profile")} className="font-medium text-brand-600 flex gap-3">{<UserOutlined />}Thông tin cá nhân</div>
+        <div onClick={() => navigate("/profile")} className="flex gap-2">
+          <UserOutlined /> Thông tin
+        </div>
       ),
     },
     {
-      key: '2',
+      key: "2",
       label: (
-        <div onClick={() => navigate('/history-order')} className="font-medium text-brand-600 flex gap-3">{<ShoppingOutlined />}Lịch sử đơn hàng</div>
+        <div onClick={() => navigate("/history-order")} className="flex gap-2">
+          <ShoppingOutlined /> Đơn hàng
+        </div>
       ),
     },
     {
-      key: '3',
-      onClick: async () => {
-        try {
-          await PostLogout();
-        } catch (error) {
-          console.error("Lỗi khi đăng xuất:", error);
-        } finally {
-          clearUserInfo();
-          window.location.href = '/login';
-        }
-      },
+      key: "3",
       label: (
-        <div className="font-medium text-brand-600 flex gap-3">
-          <LogoutOutlined />Đăng xuất
+        <div
+          onClick={async () => {
+            await PostLogout();
+            clearUserInfo();
+            window.location.href = "/login";
+          }}
+          className="flex gap-2"
+        >
+          <LogoutOutlined /> Đăng xuất
         </div>
       ),
     },
@@ -126,84 +138,136 @@ const Navbar = () => {
 
   return (
     <header className="bg-brand-50 shadow-md sticky top-0 z-50">
-      <div className="container mx-auto px-14 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <div className="flex space-x-8">
-          <div className="flex items-center">
-            <h1 className="text-2xl font-bold text-brand-700 ">
-              <NavLink to="/" className="flex items-center space-x-2">
-                <CodeOutlined></CodeOutlined>
-                <div>CodeMaster AI</div>
-              </NavLink>
-            </h1>
-          </div>
-          <nav id="tour-nav-links" className="hidden md:flex space-x-8 pt-2">
-            <NavLink to="/" className={`font-medium text-brand-700 cursor-pointer transition-colors whitespace-nowrap hover:text-brand-400 ${navSelected === '/' ? 'border-b-2 border-brand-700' : ''}`}>Trang chủ</NavLink>
-            <NavLink to="/introduce" className={`font-medium text-brand-700 cursor-pointer transition-colors whitespace-nowrap hover:text-brand-400 ${navSelected === '/introduce' ? 'border-b-2 border-brand-700' : ''}`}>Giới thiệu</NavLink>
-            <NavLink to="/blog" className={`font-medium text-brand-700 cursor-pointer transition-colors whitespace-nowrap hover:text-brand-400 ${navSelected === '/blog' ? 'border-b-2 border-brand-700' : ''}`}>Tin tức</NavLink>
-            <NavLink to="/course" className={`font-medium text-brand-700 cursor-pointer transition-colors whitespace-nowrap hover:text-brand-400 ${navSelected === '/course' ? 'border-b-2 border-brand-700' : ''}`}>Khóa học</NavLink>
-            {/* <NavLink to="/cart" className={`font-medium text-brand-700 cursor-pointer transition-colors whitespace-nowrap hover:text-brand-400 ${navSelected === '/cart' ? 'border-b-2 border-brand-700' : ''}`}>Giỏ hàng</NavLink> */}
+      <div className="container mx-auto px-4 md:px-10 py-3 flex items-center justify-between">
+        {/* ===== LEFT ===== */}
+        <div className="flex items-center gap-6">
+          {/* Logo */}
+          <NavLink
+            to="/"
+            className="flex items-center gap-2 text-xl font-bold text-brand-700"
+          >
+            <CodeOutlined />
+            CodeMaster AI
+          </NavLink>
+
+          {/* Desktop Menu */}
+          <nav className="hidden md:flex gap-6">
+            <NavLink
+              to="/"
+              className={navSelected === "/" ? "font-bold border-b-2" : ""}
+            >
+              Trang chủ
+            </NavLink>
+            <NavLink to="/introduce">Giới thiệu</NavLink>
+            <NavLink to="/blog">Tin tức</NavLink>
+            <NavLink to="/course">Khóa học</NavLink>
           </nav>
         </div>
-        <div className="flex space-x-6">
-          <div id="tour-search" className="flex items-center rounded-full bg-brand-25 space-x-3 px-4 py-2 shadow-md w-[400px]">
-            <SearchOutlined className="cursor-pointer hover:text-brand-400" onClick={() => {
-              setGlobalSearchKeyword(searchValue);
-              navigate("/course");
-            }} />
+
+        {/* ===== RIGHT ===== */}
+        <div className="flex items-center gap-3 md:gap-5">
+          {/* Search */}
+          <div className="hidden md:flex items-center bg-white px-3 py-2 rounded-full shadow w-[300px] lg:w-[400px]">
+            <SearchOutlined
+              className="cursor-pointer"
+              onClick={() => {
+                setGlobalSearchKeyword(searchValue);
+                navigate("/course");
+              }}
+            />
             <AutoComplete
               value={searchValue}
               options={options}
               onSearch={handleSearch}
               onSelect={handleSelect}
-              className="w-full custom-autocomplete"
-              notFoundContent={searchValue ? "Không có kết quả tìm kiếm" : null}
+              className="w-full"
             >
               <input
-                className="bg-transparent w-full outline-none border-none focus:outline-none focus:ring-0 placeholder:text-gray-500 font-medium text-sm"
-                type="text"
-                placeholder="Tìm kiếm khóa học..."
-                onKeyDown={handleKeyDown}
+                className="w-full outline-none px-2"
+                placeholder="Tìm khóa học..."
               />
             </AutoComplete>
-            {searchValue && (
-              <button
-                type="button"
-                onClick={() => setSearchValue("")}
-                className="ml-2 text-slate-400 hover:text-slate-600"
-              >
-                <CloseOutlined />
-              </button>
-            )}
           </div>
 
-          <div id="tour-auth" className="flex items-center space-x-6">
-            {userInfo && (
-              <div className="flex items-center space-x-3 relative">
-                <ShoppingCartOutlined onClick={() => navigate('/cart')} className="text-2xl text-brand-700 cursor-pointer hover:text-brand-400 " />
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+          {/* Auth + Cart */}
+          {userInfo && (
+            <>
+              <BookFilled
+                onClick={() => navigate("/myCourses")}
+                className="text-xl cursor-pointer"
+              />
+              <div className="relative">
+                <ShoppingCartOutlined
+                  onClick={() => navigate("/cart")}
+                  className="text-xl cursor-pointer"
+                />
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
                   {countQuantityCart}
                 </span>
               </div>
-            )}
-            {userInfo ? (
-              <div>
-                <div className="flex items-center space-x-3">
-                  <Dropdown menu={{ items }} placement="bottomLeft">
-                    <div className="text-lg w-10 h-10 rounded-full bg-brand-600 font-medium text-white cursor-pointer flex items-center justify-center ">
-                      {<UserOutlined />}
-                    </div>
-                  </Dropdown>
-                </div>
+            </>
+          )}
+
+          {/* User */}
+          {userInfo ? (
+            <Dropdown menu={{ items }}>
+              <div className="w-8 h-8 bg-brand-600 text-white flex items-center justify-center rounded-full cursor-pointer">
+                <UserOutlined />
               </div>
-            ) : (
-              <div onClick={() => navigate('/login')} className="rounded-full bg-brand-600 text-white px-5 py-2 cursor-pointer font-semibold hover:text-brand-100 shadow-md">
-                Đăng Nhập
-              </div>
-            )}
+            </Dropdown>
+          ) : (
+            <button
+              onClick={() => navigate("/login")}
+              className="bg-brand-600 text-white px-4 py-1 rounded-full"
+            >
+              Đăng nhập
+            </button>
+          )}
+
+          {/* Hamburger */}
+          <div className="md:hidden">
+            <MenuOutlined
+              className="text-xl cursor-pointer"
+              onClick={() => setIsOpen(true)}
+            />
           </div>
         </div>
       </div>
+
+      {/* ===== MOBILE MENU ===== */}
+      {isOpen && (
+        <div className="md:hidden bg-white shadow-lg px-6 py-4 space-y-4">
+          <div className="flex justify-between">
+            <div className="font-bold">Menu</div>
+            <CloseOutlined onClick={() => setIsOpen(false)} />
+          </div>
+
+          <div
+            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition"
+            onClick={() => navigate("/")}
+          >
+            Trang chủ
+          </div>
+          <div
+            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition"
+            onClick={() => navigate("/introduce")}
+          >
+            Giới thiệu
+          </div>
+          <div
+            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition"
+            onClick={() => navigate("/blog")}
+          >
+            Tin tức
+          </div>
+          <div
+            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition"
+            onClick={() => navigate("/course")}
+          >
+            Khóa học
+          </div>
+        </div>
+      )}
     </header>
   );
 };

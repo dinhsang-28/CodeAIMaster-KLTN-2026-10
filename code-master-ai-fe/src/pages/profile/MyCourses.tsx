@@ -6,12 +6,54 @@ import { BookOutlined } from "@ant-design/icons";
 const { Text } = Typography;
 
 const courses = [
-  { id: 1, title: "Python cơ bản đến nâng cao", tag: "Đang học", progress: 65, lessons: 24, total: 36 },
-  { id: 2, title: "Machine Learning với Scikit-learn", tag: "Đang học", progress: 40, lessons: 12, total: 30 },
-  { id: 3, title: "HTML & CSS hiện đại", tag: "Hoàn thành", progress: 100, lessons: 20, total: 20 },
-  { id: 4, title: "JavaScript ES6+", tag: "Hoàn thành", progress: 100, lessons: 28, total: 28 },
-  { id: 5, title: "React & Next.js", tag: "Đang học", progress: 30, lessons: 9, total: 30 },
-  { id: 6, title: "Deep Learning với PyTorch", tag: "Chưa bắt đầu", progress: 0, lessons: 0, total: 40 },
+  {
+    id: 1,
+    title: "Python cơ bản đến nâng cao",
+    tag: "Đang học",
+    progress: 65,
+    lessons: 24,
+    total: 36,
+  },
+  {
+    id: 2,
+    title: "Machine Learning với Scikit-learn",
+    tag: "Đang học",
+    progress: 40,
+    lessons: 12,
+    total: 30,
+  },
+  {
+    id: 3,
+    title: "HTML & CSS hiện đại",
+    tag: "Hoàn thành",
+    progress: 100,
+    lessons: 20,
+    total: 20,
+  },
+  {
+    id: 4,
+    title: "JavaScript ES6+",
+    tag: "Hoàn thành",
+    progress: 100,
+    lessons: 28,
+    total: 28,
+  },
+  {
+    id: 5,
+    title: "React & Next.js",
+    tag: "Đang học",
+    progress: 30,
+    lessons: 9,
+    total: 30,
+  },
+  {
+    id: 6,
+    title: "Deep Learning với PyTorch",
+    tag: "Chưa bắt đầu",
+    progress: 0,
+    lessons: 0,
+    total: 40,
+  },
 ];
 
 const tagStyle: Record<string, { bg: string; color: string }> = {
@@ -44,7 +86,12 @@ const MyCourses = () => {
         <h2 className="text-2xl font-bold text-brand-900">Khóa học của tôi</h2>
         <div className="flex gap-2">
           {(["all", "active", "done"] as Filter[]).map((f) => {
-            const label = f === "all" ? "Tất cả" : f === "active" ? "Đang học" : "Hoàn thành";
+            const label =
+              f === "all"
+                ? "Tất cả"
+                : f === "active"
+                  ? "Đang học"
+                  : "Hoàn thành";
             const active = filter === f;
             return (
               <button
@@ -111,7 +158,14 @@ const MyCourses = () => {
               {course.lessons}/{course.total} bài học
             </p>
 
-            <div style={{ background: "#e8e6da", borderRadius: 4, height: 5, overflow: "hidden" }}>
+            <div
+              style={{
+                background: "#e8e6da",
+                borderRadius: 4,
+                height: 5,
+                overflow: "hidden",
+              }}
+            >
               <div
                 style={{
                   background: progressColor[course.tag],

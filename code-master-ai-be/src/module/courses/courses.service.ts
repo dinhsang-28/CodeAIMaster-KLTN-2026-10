@@ -4,7 +4,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { Course } from './entities/course.entity';
 import { Model, Types } from 'mongoose';
 import { CourseDocument } from './entities/course.entity';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CourseLevel } from './enums/courseLevel.enum';
 import { CourseStatus } from './enums/courseStatus.enum';
 import { NotFoundException } from '@nestjs/common';
@@ -13,18 +13,28 @@ import { CategoryDocument } from '../categories/entities/category.entity';
 import { ApiResponse } from '@/common/dto/api-response.dto';
 import { Lesson, LessonDocument } from '../lessons/entities/lesson.entity';
 import { SearchCourse } from './dto/search-course.dto';
-import { filter } from 'rxjs';
 import { UploadService } from '@/upload/upload.service';
 import {
   Assignment,
   AssignmentDocument,
 } from '../assignments/entities/assignment.entity';
 import { Quiz, QuizDocument } from '../quizzes/entities/quiz.entity';
-import { Question, QuestionDocument } from '../questions/entities/question.entity';
+import {
+  Question,
+  QuestionDocument,
+} from '../questions/entities/question.entity';
 import {
   CodeAssignment,
   CodeAssignmentDocument,
 } from '../code-assignments/entities/code-assignment.entity';
+import {
+  CartDetail,
+  CartDetailDocument,
+} from '../cart-details/entities/cart-detail.entity';
+import {
+  Enrollment,
+  EnrollmentDocument,
+} from '../enrollments/entities/enrollment.entity';
 
 @Injectable()
 export class CoursesService {
@@ -47,8 +57,14 @@ export class CoursesService {
     @InjectModel(Question.name)
     private readonly questionModel: Model<QuestionDocument>,
 
+    @InjectModel(CartDetail.name)
+    private readonly cartDetailModel: Model<CartDetailDocument>,
+
     @InjectModel(CodeAssignment.name)
     private readonly codeAssignmentModel: Model<CodeAssignmentDocument>,
+
+    @InjectModel(Enrollment.name)
+    private readonly enrollmentModel: Model<EnrollmentDocument>,
 
     private readonly uploadService: UploadService,
   ) {}
@@ -132,15 +148,27 @@ export class CoursesService {
       .exec();
 
     const lessonIds = lessons.map((lesson) => lesson._id);
+    const lessonIdStrings = lessonIds.map((id) => String(id));
+    const lessonObjectIds = lessonIdStrings
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
     const assignments = await this.assignmentModel
-      .find({ lesson_id: { $in: lessonIds } })
+      .find({
+        $or: [
+          { lesson_id: { $in: lessonObjectIds } },
+          { lesson_id: { $in: lessonIdStrings } },
+        ],
+      })
       .lean()
       .exec();
 
     const assignmentIds = assignments.map((assignment) => assignment._id);
 
     const [quizzes, codeAssignments] = await Promise.all([
-      this.quizModel.find({ assignment_id: { $in: assignmentIds } }).lean().exec(),
+      this.quizModel
+        .find({ assignment_id: { $in: assignmentIds } })
+        .lean()
+        .exec(),
       this.codeAssignmentModel
         .find({ assignment_id: { $in: assignmentIds } })
         .lean()
@@ -199,30 +227,21 @@ export class CoursesService {
       assignmentsByLessonId.get(lessonKey)!.push(enrichedAssignment);
     }
 
-    const lessonDetails = lessons.map((lesson) => ({
-      ...lesson,
-      assignments: assignmentsByLessonId.get(String(lesson._id)) || [],
-    }));
+    const lessonDetails = lessons.map((lesson) => {
+      const lessonAssignments =
+        assignmentsByLessonId.get(String(lesson._id)) || [];
+      return {
+        ...lesson,
+        assignments: lessonAssignments,
+        assignment_ids: lessonAssignments.map((item) => item._id),
+      };
+    });
 
     return new ApiResponse('Thông tin đầy đủ khóa học', {
       ...course,
       lessons: lessonDetails,
     });
   }
-
-  // <<<<<<< HEAD
-  //   async update(id: string, updateCourseDto: UpdateCourseDto): Promise<Course> {
-  // =======
-  //   const lessons = await this.lessonModel
-  //     .find({ course_id: id })
-  //     .sort({ lesson_order: 1 })
-  //     .lean();
-
-  //   return new ApiResponse('Chi tiết khóa học', {
-  //     ...course,
-  //     lessons,
-  //   });
-  // }
 
   async update(
     id: string,
@@ -235,7 +254,7 @@ export class CoursesService {
       thumbnailUrl = uploadResult.url;
       updateCourseDto.thumbnail = thumbnailUrl;
     }
-    // >>>>>>> 7a09b174f54336764d48cfc516c4821069271587
+
     const updated = await this.courseModel.findByIdAndUpdate(
       id,
       updateCourseDto,
@@ -247,6 +266,14 @@ export class CoursesService {
     if (!updated) {
       throw new NotFoundException('Course not found');
     }
+
+    if (updateCourseDto.price !== undefined) {
+      await this.cartDetailModel.updateMany(
+        { course_id: new Types.ObjectId(id) },
+        { $set: { price: updateCourseDto.price } },
+      );
+    }
+
     return updated;
   }
 
@@ -301,5 +328,117 @@ export class CoursesService {
       total,
       sumPage,
     };
+  }
+
+  async getCourseEnrollment(userId: string) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('userId không hợp lệ');
+    }
+
+    const enrollments = await this.enrollmentModel
+      .find({
+        user_id: new Types.ObjectId(userId),
+        status: 'active',
+      })
+      .populate({
+        path: 'course_id',
+        populate: {
+          path: 'category',
+          select: 'category_name',
+        },
+      })
+      .lean();
+
+    const courses = enrollments.map((e) => e.course_id);
+
+    return new ApiResponse('Danh sách khóa học đã đăng ký', courses);
+  }
+
+  async getFeaturedCourse(): Promise<ApiResponse<any>> {
+    const topCourses = await this.enrollmentModel.aggregate([
+      {
+        $match: {
+          status: 'active',
+        },
+      },
+      {
+        $group: {
+          _id: '$course_id',
+          totalEnrollments: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { totalEnrollments: -1 },
+      },
+      {
+        $limit: 3,
+      },
+      {
+        $lookup: {
+          from: 'courses',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'course',
+        },
+      },
+
+      {
+        $unwind: '$course',
+      },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'course.category',
+          foreignField: '_id',
+          as: 'category',
+        },
+      },
+      {
+        $unwind: {
+          path: '$category',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: '$course._id',
+          title: '$course.title',
+          thumbnail: '$course.thumbnail',
+          price: '$course.price',
+          level: '$course.level',
+          totalEnrollments: 1,
+          category: {
+            _id: '$category._id',
+            category_name: '$category.category_name',
+          },
+        },
+      },
+    ]);
+
+    return new ApiResponse('Top 4 khóa học nổi bật', topCourses);
+  }
+
+  async getNonActiveCourse(userId: string): Promise<ApiResponse<any>> {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('userId không hợp lệ');
+    }
+
+    const enrollments = await this.enrollmentModel.find({
+      user_id: new Types.ObjectId(userId),
+      status: 'active',
+    });
+
+    const enrolledCourseIds = enrollments.map((e) => e.course_id);
+
+    const courses = await this.courseModel
+      .find({
+        status: CourseStatus.ACTIVE,
+        _id: { $nin: enrolledCourseIds },
+      })
+      .populate('category', 'category_name')
+      .lean()
+      .exec();
+
+    return new ApiResponse('Danh sách khóa học chưa đăng ký', courses);
   }
 }

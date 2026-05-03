@@ -20,6 +20,7 @@ import {
   Enrollment,
   EnrollmentSchema,
 } from '../enrollments/entities/enrollment.entity';
+import { Course, CourseSchema } from '../courses/entities/course.entity';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import {
       { name: CartDetail.name, schema: CartDetailSchema },
       { name: User.name, schema: UserSchema },
       { name: Enrollment.name, schema: EnrollmentSchema },
+      { name: Course.name, schema: CourseSchema },
     ]),
   ],
   controllers: [PaymentsController],
