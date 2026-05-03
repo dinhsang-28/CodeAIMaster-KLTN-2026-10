@@ -163,6 +163,19 @@ export class PaymentsService {
         await this.cartDetailModel.deleteMany({ cart_id: cart._id });
       }
 
+      if (courseId) {
+        const userCart = await this.cartModel.findOne({
+          user_id: userObjectId,
+        });
+
+        if (userCart) {
+          await this.cartDetailModel.deleteOne({
+            cart_id: userCart._id,
+            course_id: new Types.ObjectId(courseId),
+          });
+        }
+      }
+
       await this.sendPaymentSuccessEmail(
         userObjectId.toString(),
         payment._id.toString(),

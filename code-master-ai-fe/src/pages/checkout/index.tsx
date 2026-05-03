@@ -47,7 +47,7 @@ const CheckoutPage = () => {
           setCheckoutItems([item]);
           setTotalPrice(item.price);
 
-          const resUser = await getCartListQuick(); // dùng tạm API này
+          const resUser = await getCartListQuick();
           const user = resUser?.data?.user_id;
 
           setFormData((prev) => ({
