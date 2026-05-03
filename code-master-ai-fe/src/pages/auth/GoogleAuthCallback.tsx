@@ -59,7 +59,9 @@ export default function GoogleAuthCallback() {
       }
 
       const user = JSON.parse(decodeURIComponent(userString));
+      console.log("User info from Google callback:", user);
       setUserInfo(user);
+      
       showMessage("success", "Đăng nhập Google thành công!");
       navigate("/");
     } catch (error) {
