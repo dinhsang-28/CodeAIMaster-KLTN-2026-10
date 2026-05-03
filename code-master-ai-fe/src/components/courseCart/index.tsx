@@ -96,6 +96,30 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
       console.log("Lỗi khi thêm vào giỏ hàng. Vui lòng thử lại.");
     }
   };
+
+  const checkUser = (isBuyNow: boolean) => {
+    if (!userInfo) {
+      setModalText("Vui lòng đăng nhập để mua hàng!");
+      showModal();
+      return;
+    }
+    if (!userInfo?.phone) {
+      setModalText("Vui lòng cập nhật thông tin để mua hàng!");
+      showModal();
+      return;
+    }
+    if (isBuyNow) {
+      if (course.price === 0) {
+        navigate(`/course/${course._id}`);
+        return;
+      } else {
+        navigate(`/checkout/${course._id}`);
+        return;
+      }
+    } else {
+      onCart();
+    }
+  };
   return (
     <article className="group  flex h-full flex-col overflow-hidden rounded-3xl border border-brand-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
       <div
@@ -162,7 +186,10 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
             {course.price !== 0 && (
               <button
                 type="button"
-                onClick={() => onCart()}
+                // onClick={() => onCart()}
+                onClick={() => {
+                  checkUser(false);
+                }}
                 className="flex size-10 items-center justify-center rounded-xl bg-brand-25 text-brand-600 transition-colors hover:bg-brand-50"
               >
                 <ShoppingCartOutlined />
@@ -170,22 +197,7 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
             )}
             <Button
               className="rounded-xl bg-brand-700 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-800"
-              onClick={() => {
-                if (!userInfo) {
-                  setModalText("Vui lòng đăng nhập để mua hàng!");
-                  showModal();
-                }
-                if (!userInfo?.phone) {
-                  setModalText("Vui lòng cập nhật thông tin để mua hàng!");
-                  showModal();
-                }
-
-                if (course.price === 0) {
-                  navigate(`/course/${course._id}`);
-                } else {
-                  navigate(`/checkout/${course._id}`);
-                }
-              }}
+              onClick={() => checkUser(true)}
             >
               {course.price === 0 ? "Học" : "Mua"}
             </Button>
