@@ -3,6 +3,9 @@ import { ShoppingCartOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { createCartItem, GetCartLength } from "../../api/cart";
 import { useUserCart } from "../../store/cart";
+import { Button, Modal } from "antd";
+import { useState } from "react";
+import { useUserInfo } from "../../store/user";
 // const getCategoryBadgeClass = (categoryName: string) => {
 //   switch (categoryName) {
 //     case "Frontend":
@@ -55,8 +58,34 @@ import { useUserCart } from "../../store/cart";
 //   );
 // };
 export const CourseCard = ({ course }: { course: ICourse }) => {
+  const [open, setOpen] = useState(false);
+  const [confirmLoading] = useState(false);
+  const { userInfo } = useUserInfo();
+  const [modalText, setModalText] = useState(
+    "Vui lòng đăng nhập để mua khóa học!",
+  );
   const navigate = useNavigate();
   const { setQuantityCart } = useUserCart();
+  const showModal = () => {
+    setOpen(true);
+  };
+
+  const handleOk = () => {
+    if (!userInfo) {
+      navigate(`/login`);
+      return;
+    } else {
+      if (!userInfo?.phone) {
+        navigate(`/profile`);
+        return;
+      }
+    }
+  };
+
+  const handleCancel = () => {
+    console.log("Clicked cancel button");
+    setOpen(false);
+  };
   const onCart = async () => {
     try {
       await createCartItem(course._id);
@@ -139,10 +168,18 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
                 <ShoppingCartOutlined />
               </button>
             )}
-            <button
-              type="button"
+            <Button
               className="rounded-xl bg-brand-700 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-800"
               onClick={() => {
+                if (!userInfo) {
+                  setModalText("Vui lòng đăng nhập để mua hàng!");
+                  showModal();
+                }
+                if (!userInfo?.phone) {
+                  setModalText("Vui lòng cập nhật thông tin để mua hàng!");
+                  showModal();
+                }
+
                 if (course.price === 0) {
                   navigate(`/course/${course._id}`);
                 } else {
@@ -151,10 +188,20 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
               }}
             >
               {course.price === 0 ? "Học" : "Mua"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
+
+      <Modal
+        title="Thông báo"
+        open={open}
+        onOk={handleOk}
+        confirmLoading={confirmLoading}
+        onCancel={handleCancel}
+      >
+        <p>{modalText}</p>
+      </Modal>
     </article>
   );
 };
