@@ -46,7 +46,6 @@ const MyEnrollment: React.FC = () => {
         </div>
       </section>
 
-      {/* Course List */}
       <section className="px-4 sm:px-6 lg:px-12 pb-16 max-w-[1440px] mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {coursesData.map((course) => (
@@ -54,7 +53,6 @@ const MyEnrollment: React.FC = () => {
               key={course._id}
               className="group bg-white rounded-xl overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300"
             >
-              {/* Image */}
               <div className="aspect-video overflow-hidden relative">
                 <img
                   src={course.thumbnail}
@@ -68,7 +66,6 @@ const MyEnrollment: React.FC = () => {
                 </div>
               </div>
 
-              {/* Content */}
               <div className="p-5 sm:p-6">
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-1">
                   {course.title}
@@ -78,7 +75,6 @@ const MyEnrollment: React.FC = () => {
                   Giảng viên: {course.instructor}
                 </p> */}
 
-                {/* Progress */}
                 <div className="mb-5">
                   <div className="flex justify-between text-xs font-medium text-gray-600 mb-1">
                     <span>Tiến độ:65%</span>
@@ -92,7 +88,6 @@ const MyEnrollment: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Button */}
                 <button className="w-full py-3 sm:py-4 bg-gradient-to-r from-green-900 to-green-700 text-white font-semibold rounded-lg hover:opacity-90 transition">
                   Vào học ngay
                 </button>
