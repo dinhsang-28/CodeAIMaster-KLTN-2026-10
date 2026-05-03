@@ -38,6 +38,11 @@ export class CoursesController {
     return this.coursesService.findAll();
   }
 
+  @Get('featuredCourses')
+  getFeaturedCourses() {
+    return this.coursesService.getFeaturedCourse();
+  }
+
   @Get('search')
   searchCourse(@Query() search: SearchCourse) {
     return this.coursesService.searchCourses(search);
@@ -46,6 +51,12 @@ export class CoursesController {
   @Get(':id/info')
   getCourseInfo(@Param('id') id: string) {
     return this.coursesService.getCourseInfo(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('nonActive')
+  getNonActiveCourses(@CurrentUser() user: any) {
+    return this.coursesService.getNonActiveCourse(user._id);
   }
 
   @UseGuards(JwtAuthGuard)
