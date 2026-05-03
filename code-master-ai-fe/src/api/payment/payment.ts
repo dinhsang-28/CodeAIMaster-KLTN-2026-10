@@ -1,7 +1,8 @@
-import {axiosInstance} from "../../utils/axios";
+import { axiosInstance } from "../../utils/axios";
 
 export interface CreatePaymentPayload {
   payment_method: "momo" | "vnpay";
+  courseId?: string;
 }
 
 export interface PaymentUser {
@@ -39,7 +40,7 @@ export interface PaymentByOrderResponse {
 
 export const createPayment = async (payload: CreatePaymentPayload) => {
   try {
-    const response = await axiosInstance.post('/payments/create', payload);
+    const response = await axiosInstance.post("/payments/create", payload);
     return response.data;
   } catch (error) {
     console.error("Lỗi tạo thanh toán:", error);
@@ -49,7 +50,7 @@ export const createPayment = async (payload: CreatePaymentPayload) => {
 
 export const getMyPayments = async () => {
   try {
-    const response = await axiosInstance.get('/payments/my-payments');
+    const response = await axiosInstance.get("/payments/my-payments");
     return response.data;
   } catch (error) {
     console.error("Lỗi lấy danh sách thanh toán:", error);
@@ -62,7 +63,7 @@ export const getPaymentByOrderId = async (
 ): Promise<PaymentByOrderResponse> => {
   try {
     const response = await axiosInstance.get<PaymentByOrderResponse>(
-      `/payments/by-order/${orderId}`
+      `/payments/by-order/${orderId}`,
     );
     console.log("LẤY PAYMENT THEO ORDER THÀNH CÔNG:", response.data);
     return response.data;

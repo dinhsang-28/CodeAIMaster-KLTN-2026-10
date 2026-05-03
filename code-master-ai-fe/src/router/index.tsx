@@ -80,6 +80,10 @@ export const router = createBrowserRouter([
         element: <CheckoutPage />,
       },
       {
+        path: "/checkout/:courseId",
+        element: <CheckoutPage />,
+      },
+      {
         path: "/history-order",
         element: <PurchaseHistoryContent />,
       },

@@ -9,8 +9,11 @@ import type {
 } from "../../types/checkout/checkout";
 import Footer from "../../components/footer";
 import { getCartListQuick } from "../../api/cart";
+import { useParams } from "react-router-dom";
+import { GetCoursesDetail } from "../../api/course";
 
 const CheckoutPage = () => {
+  const { courseId } = useParams();
   const [formData, setFormData] = useState<CheckoutFormData>({
     fullName: "",
     email: "",
@@ -24,12 +27,31 @@ const CheckoutPage = () => {
   const [totalPrice, setTotalPrice] = useState<number>(0);
 
   useEffect(() => {
-    const fetchCheckoutCart = async () => {
+    const fetchCheckout = async () => {
       try {
         setLoading(true);
 
+        // 👉 CASE 1: BUY NOW
+        if (courseId) {
+          const res = await GetCoursesDetail(courseId); // ⚠️ cần API này
+
+          const course = res?.data;
+
+          const item: CheckoutCourseItem = {
+            id: course._id,
+            title: course.title,
+            price: Number(course.price || 0),
+            image: course.thumbnail,
+          };
+
+          setCheckoutItems([item]);
+          setTotalPrice(item.price);
+
+          return;
+        }
+
+        // 👉 CASE 2: CART (giữ nguyên)
         const res = await getCartListQuick();
-        console.log("checkout cart res =", res);
 
         const rawItems = Array.isArray(res?.data?.items) ? res.data.items : [];
 
@@ -52,7 +74,7 @@ const CheckoutPage = () => {
           phone: user?.phone || "",
         }));
       } catch (error) {
-        console.error("Lỗi load checkout cart:", error);
+        console.error("Lỗi load checkout:", error);
         setCheckoutItems([]);
         setTotalPrice(0);
       } finally {
@@ -60,8 +82,8 @@ const CheckoutPage = () => {
       }
     };
 
-    fetchCheckoutCart();
-  }, []);
+    fetchCheckout();
+  }, [courseId]);
 
   const handleChange = (field: keyof CheckoutFormData, value: string) => {
     setFormData((prev) => ({
@@ -73,9 +95,8 @@ const CheckoutPage = () => {
     try {
       const res = await createPayment({
         payment_method: formData.paymentMethod,
+        courseId: courseId, // 🔥 thêm dòng này
       });
-
-      console.log("create payment response =", res);
 
       const paymentUrl = res?.data?.payment_url;
 
@@ -84,10 +105,10 @@ const CheckoutPage = () => {
         return;
       }
 
-      alert("Tạo đơn hàng thành công nhưng chưa lấy được link thanh toán.");
+      alert("Tạo đơn hàng thành công nhưng chưa có link thanh toán.");
     } catch (error) {
       console.error("Thanh toán lỗi:", error);
-      alert("Có lỗi xảy ra khi tạo thanh toán.");
+      alert("Có lỗi xảy ra khi thanh toán.");
     }
   };
   const summary: CheckoutSummary = useMemo(() => {
