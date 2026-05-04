@@ -20,10 +20,14 @@ async function bootstrap() {
   // config cors
   app.enableCors(
     {
-      "origin":true,
+      origin: [
+    'https://code-ai-master-kltn-2026-10.vercel.app',
+    'http://localhost:3000',
+  ],
       "methods":"GET,HEAD,PUT,PATCH,POST,DELETE",
       "preflightContinue":false,
-      credentials:true
+      credentials:true,
+      allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
     }
   )
   await app.listen(port);

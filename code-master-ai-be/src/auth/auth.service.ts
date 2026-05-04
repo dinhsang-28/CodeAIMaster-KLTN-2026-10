@@ -276,8 +276,6 @@ export class AuthService {
         email: user.email,
         name: user.name,
         image: user.image,
-        accessToken: accessToken,
-        refreshToken: refreshToken,
       }),
     );
     const frontendUrl =
