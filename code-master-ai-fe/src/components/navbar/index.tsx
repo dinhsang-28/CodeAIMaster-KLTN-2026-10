@@ -14,6 +14,7 @@ import { PostLogout } from "../../api/auth";
 import { AutoComplete } from "antd";
 import { useCourseStore } from "../../store/course";
 import { CloseOutlined } from "@ant-design/icons";
+import NotificationBell from "../notification-bell";
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -186,6 +187,7 @@ const Navbar = () => {
                 </span>
               </div>
             )}
+            <NotificationBell />
             {userInfo ? (
               <div>
                 <div className="flex items-center space-x-3">
