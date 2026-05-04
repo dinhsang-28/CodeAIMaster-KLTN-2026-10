@@ -6,57 +6,7 @@ import { useUserCart } from "../../store/cart";
 import { Button, Modal } from "antd";
 import { useState } from "react";
 import { useUserInfo } from "../../store/user";
-// const getCategoryBadgeClass = (categoryName: string) => {
-//   switch (categoryName) {
-//     case "Frontend":
-//       return "bg-brand-200 text-brand-900";
-//     case "Backend":
-//       return "bg-brand-700 text-white";
-//     case "AI & Data":
-//       return "bg-brand-400 text-white";
-//     case "Mobile":
-//       return "bg-brand-300 text-brand-900";
-//     case "Cybersecurity":
-//       return "bg-brand-600 text-white";
-//     default:
-//       return "bg-brand-400 text-white";
-//   }
-// };
 
-// const getLevelLabel = (level: string) => {
-//   switch (level) {
-//     case "beginner":
-//       return "Cơ bản";
-//     case "intermediate":
-//       return "Trung bình";
-//     case "advanced":
-//       return "Nâng cao";
-//     default:
-//       return level;
-//   }
-// };
-
-// const renderStars = (rating: number) => {
-//   const fullStars = Math.floor(rating);
-//   const hasHalfStar = rating % 1 !== 0;
-//   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-//   return (
-//     <div className="flex items-center gap-1">
-//       <div className="flex text-amber-400">
-//         {Array.from({ length: fullStars }).map((_, index) => (
-//           <span key={`full-${index}`}>★</span>
-//         ))}
-//         {hasHalfStar && <span>☆</span>}
-//         {Array.from({ length: emptyStars }).map((_, index) => (
-//           <span key={`empty-${index}`} className="opacity-40">
-//             ★
-//           </span>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
 export const CourseCard = ({ course }: { course: ICourse }) => {
   const [open, setOpen] = useState(false);
   const [confirmLoading] = useState(false);
@@ -83,7 +33,6 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
   };
 
   const handleCancel = () => {
-    console.log("Clicked cancel button");
     setOpen(false);
   };
   const onCart = async () => {

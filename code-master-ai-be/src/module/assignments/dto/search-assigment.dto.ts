@@ -16,6 +16,10 @@ export class SearchAssignmentDto {
 
   @IsOptional()
   @IsMongoId()
+  course_id: string;
+
+  @IsOptional()
+  @IsMongoId()
   lesson_id: string;
 
   @IsOptional()

@@ -1,4 +1,3 @@
-import React from "react";
 import { createBrowserRouter } from "react-router-dom";
 import Layout from "../layout";
 import Home from "../pages/home";
@@ -21,18 +20,11 @@ import UserManage from "../pages/admin/userManage";
 import CategoryManage from "../pages/categoryManage";
 import RevenueStatisticsPage from "../pages/revenueManage";
 import GoogleAuthCallback from "../pages/auth/GoogleAuthCallback";
-import LearnLayout from "../layout/LearnLayout";
-import LessonPage from "../pages/lesson";
-import Quizz from "../pages/quizz";
+import LearnLayout from "../pages/learnLayout";
 import GithubAuthCallback from "../pages/auth/GithubAuthCallback";
-import ExercisePage from "../pages/lesson/excersite";
 import RoleManage from "../pages/admin/roleManage";
 import PermissionManage from "../pages/admin/permissionManage";
 import ProfilePage from "../pages/ProfilePage";
-import UserProfile from "../pages/profile";
-import ChangePassword from "../pages/profile/ChangePassword";
-import MyCourses from "../pages/profile/MyCourses";
-import PersonalInfo from "../pages/profile/PersonalInfo";
 import BlogDetail from "../pages/blogDetail";
 import AdminLeads from "../pages/admin/AdminLeads";
 import AdminStudents from "../pages/admin/AdminStudents";
@@ -97,41 +89,29 @@ export const router = createBrowserRouter([
       },
       {
         path: "/profile",
-        element: <UserProfile />, // chứa ProfileLayout + Outlet
-        children: [
-          {
-            index: true,
-            element: <PersonalInfo />, // /profile
-          },
-          {
-            path: "password",
-            element: <ChangePassword />, // /profile/password
-          },
-          {
-            path: "courses",
-            element: <MyCourses />, // /profile/courses
-          },
-        ],
+        element: <ProfilePage />,
+      },
+      {
+        path: "/profile/password",
+        element: <ProfilePage />,
+      },
+      {
+        path: "/admin/profile",
+        element: <ProfilePage />,
+      },
+      {
+        path: "/admin/profile/password",
+        element: <ProfilePage />,
       },
     ],
   },
   {
-    path: "/learn",
+    path: "/learn/:courseId",
     element: <LearnLayout />,
-    children: [
-      {
-        path: "lesson/:id",
-        element: <LessonPage />,
-      },
-      {
-        path: "quiz/:id",
-        element: <Quizz />,
-      },
-      {
-        path: "exercise",
-        element: <ExercisePage />,
-      },
-    ],
+  },
+  {
+    path: "/learn/:courseId/lesson/:lessonId/:stepType",
+    element: <LearnLayout />,
   },
   {
     path: "/register",

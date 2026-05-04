@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   Form,
@@ -16,7 +16,6 @@ import dayjs from "dayjs";
 import {
   createAssignment,
   updateAssignment,
-  deleteAssignment,
   createQuiz,
   updateQuiz,
   getQuizzesByAssignmentId,
@@ -57,37 +56,72 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [lessons, setLessons] = useState<any[]>([]);
   const [deletedQuestionIds, setDeletedQuestionIds] = useState<string[]>([]);
-
-  // Lưu trữ sub-entity IDs khi edit
   const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
   const [currentCodeAsgId, setCurrentCodeAsgId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (visible) {
-      setDeletedQuestionIds([]);
-      setCurrentQuizId(null);
-      setCurrentCodeAsgId(null);
-
-      if ((mode === "edit" || mode === "view") && initialData) {
-        initFormData(initialData);
-      } else {
-        form.resetFields();
-        form.setFieldsValue({
-          type: type,
-          score: 10,
-          time_limit: type === "quiz" ? 15 : 2,
-          memory_limit: 128000,
-          language: "javascript",
-          starter_code: "function solve(){}",
-        });
-      }
+  const getNewestChild = (
+    items: any[],
+    entityName: string,
+    assignmentId: string,
+  ) => {
+    if (!Array.isArray(items) || items.length === 0) {
+      return null;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    const sorted = [...items].sort((a, b) => {
+      const aTime = new Date(a?.updatedAt || a?.createdAt || 0).getTime();
+      const bTime = new Date(b?.updatedAt || b?.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+
+    if (sorted.length > 1) {
+      console.warn(
+        `[AssignmentFormModal] Found ${sorted.length} ${entityName} records for assignment ${assignmentId}. Using the most recently updated one.`,
+        sorted,
+      );
+    }
+
+    return sorted[0];
+  };
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    console.debug("[AssignmentFormModal] open", {
+      visible,
+      mode,
+      type,
+      initialDataId: initialData?._id,
+      initialData,
+    });
+
+    setDeletedQuestionIds([]);
+    setCurrentQuizId(null);
+    setCurrentCodeAsgId(null);
+
+    if ((mode === "edit" || mode === "view") && initialData) {
+      void initFormData(initialData);
+      return;
+    }
+
+    form.resetFields();
+    form.setFieldsValue({
+      type,
+      score: 10,
+      time_limit: type === "quiz" ? 15 : 2,
+      memory_limit: 128000,
+      language: "javascript",
+      starter_code: "function solve(){}",
+    });
+    // eslint-disable-next-line
   }, [visible, mode, initialData, type, form]);
 
   const initFormData = async (data: any) => {
     setLoading(true);
     try {
+      console.debug("[AssignmentFormModal] initFormData start", data);
       if (data.course?._id || data.course) {
         await handleCourseChange(data.course?._id || data.course);
       }
@@ -111,8 +145,9 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
 
       if (type === "quiz") {
         const quizzes = await getQuizzesByAssignmentId(data._id);
-        if (quizzes && quizzes.length > 0) {
-          const quiz = quizzes[0];
+        const quiz = getNewestChild(quizzes, "quiz", data._id);
+
+        if (quiz?._id) {
           setCurrentQuizId(quiz._id);
           formVals.time_limit = quiz.time_limit;
 
@@ -130,24 +165,31 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
         }
       } else if (type === "codeAssignment") {
         const codeAsgs = await getCodeAssignmentsByAssignmentId(data._id);
-        if (codeAsgs && codeAsgs.length > 0) {
-          const ca = codeAsgs[0];
-          setCurrentCodeAsgId(ca._id);
-          formVals.language = ca.language_support || ca.language;
-          formVals.time_limit = ca.time_limit;
-          formVals.memory_limit = ca.memory_limit;
+        const codeAssignment = getNewestChild(
+          codeAsgs,
+          "code assignment",
+          data._id,
+        );
+
+        if (codeAssignment?._id) {
+          setCurrentCodeAsgId(codeAssignment._id);
+          formVals.language =
+            codeAssignment.language_support || codeAssignment.language;
+          formVals.time_limit = codeAssignment.time_limit;
+          formVals.memory_limit = codeAssignment.memory_limit;
           formVals.problem_description =
-            ca.problem_description || ca.description;
-          formVals.input_format = ca.input_format;
-          formVals.output_format = ca.output_format;
-          formVals.starter_code = ca.starter_code;
+            codeAssignment.problem_description || codeAssignment.description;
+          formVals.input_format = codeAssignment.input_format;
+          formVals.output_format = codeAssignment.output_format;
+          formVals.starter_code = codeAssignment.starter_code;
         }
       }
 
       form.setFieldsValue(formVals);
+      console.debug("[AssignmentFormModal] formVals after init", formVals);
     } catch (err) {
       console.error(err);
-      message.error("Lỗi khi tải chi tiết dữ liệu");
+      message.error("Loi khi tai chi tiet du lieu");
     } finally {
       setLoading(false);
     }
@@ -226,16 +268,27 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
       language_support: values.language || "javascript",
     };
 
+    console.debug("[AssignmentFormModal] submitCodeAssignment payload", {
+      mode,
+      assignmentId,
+      currentCodeAsgId,
+      payload,
+    });
+
     if (mode === "create" || !currentCodeAsgId) {
-      await createCodeAssignment(payload);
+      const created = await createCodeAssignment(payload);
+      console.debug("[AssignmentFormModal] createCodeAssignment response", created);
+      return created;
     } else {
-      await updateCodeAssignment(currentCodeAsgId, payload);
+      const updated = await updateCodeAssignment(currentCodeAsgId, payload);
+      console.debug("[AssignmentFormModal] updateCodeAssignment response", updated);
+      return updated;
     }
   };
 
   const onFinish = async (values: any) => {
     setLoading(true);
-    let asgId = mode === "edit" ? initialData._id : null;
+    let assignmentId = mode === "edit" ? initialData?._id : null;
 
     try {
       let combinedDate = undefined;
@@ -247,43 +300,52 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
         combinedDate = `${dateStr}T${timeStr}.000Z`;
       }
 
-      const basePayload: any = {
+      const basePayload = {
         lesson_id: values.lesson_id,
         title: values.name,
         description: values.description || "",
         max_score: values.score || 10,
         due_date: combinedDate,
-        type: type,
+        type,
       };
 
       if (mode === "create") {
-        const newAsg = await createAssignment(basePayload);
-        asgId = newAsg._id || newAsg.id;
+        const assignment = await createAssignment(basePayload);
+        assignmentId = assignment._id || assignment.id;
+      } else if (assignmentId) {
+        await updateAssignment(assignmentId, basePayload);
+      }
 
-        if (type === "codeAssignment" && newAsg.type === "quiz") {
-          try {
-            await updateAssignment(asgId, { type: "codeAssignment" });
-          } catch (patchErr) {
-            await deleteAssignment(asgId);
-            throw new Error(
-              "Hệ thống chưa hỗ trợ tạo Code Assignment trực tiếp.",
-            );
-          }
-        }
-      } else {
-        await updateAssignment(asgId, basePayload);
+      if (!assignmentId) {
+        throw new Error("Khong tao duoc assignment");
       }
 
       if (type === "quiz") {
-        await submitQuizAssignment(asgId, values);
-      } else if (type === "codeAssignment") {
-        await submitCodeAssignment(asgId, values);
+        await submitQuizAssignment(assignmentId, values);
+      } else {
+        const codeAsgResult = await submitCodeAssignment(assignmentId, values);
+        console.debug("[AssignmentFormModal] currentCodeAsgId before refresh", currentCodeAsgId);
+        try {
+          const refreshedCodeAsgs = await getCodeAssignmentsByAssignmentId(assignmentId);
+          console.debug("[AssignmentFormModal] refreshed code assignments", refreshedCodeAsgs);
+          const list = Array.isArray(refreshedCodeAsgs)
+            ? refreshedCodeAsgs
+            : refreshedCodeAsgs?.data || refreshedCodeAsgs?.results || [];
+          const newest = list[0] || codeAsgResult || null;
+          console.debug("[AssignmentFormModal] newest code assignment selected", newest);
+          if (newest?._id) {
+            setCurrentCodeAsgId(newest._id);
+            console.debug("[AssignmentFormModal] setCurrentCodeAsgId", newest._id);
+          }
+        } catch (refreshErr) {
+          console.debug("[AssignmentFormModal] refresh code assignments failed", refreshErr);
+        }
       }
 
-      message.success(`${mode === "create" ? "Tạo" : "Cập nhật"} thành công!`);
+      message.success(`${mode === "create" ? "Tao" : "Cap nhat"} thanh cong!`);
       onSuccess();
     } catch (err: any) {
-      message.error(err.message || "Có lỗi xảy ra, vui lòng thử lại!");
+      message.error(err.message || "Co loi xay ra, vui long thu lai!");
     } finally {
       setLoading(false);
     }
@@ -293,28 +355,28 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
     <Modal
       title={
         mode === "view"
-          ? "Chi tiết bài tập"
+          ? "Chi tiet bai tap"
           : mode === "create"
-            ? `Tạo ${type === "quiz" ? "Trắc nghiệm" : "Code Assignment"}`
-            : "Sửa bài tập"
+            ? `Tao ${type === "quiz" ? "Trac nghiem" : "Code Assignment"}`
+            : "Sua bai tap"
       }
       open={visible}
       onCancel={onCancel}
-      width={type === "codeAssignment" ? 800 : 800}
+      width={800}
       footer={
         mode === "view" ? (
-          <Button onClick={onCancel}>Đóng</Button>
+          <Button onClick={onCancel}>Dong</Button>
         ) : (
           <>
             <Button onClick={onCancel} disabled={loading}>
-              Hủy
+              Huy
             </Button>
             <Button
               type="primary"
               onClick={() => form.submit()}
               loading={loading}
             >
-              Lưu
+              Luu
             </Button>
           </>
         )
@@ -330,14 +392,14 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <Form.Item
               name="name"
-              label="Tên bài tập"
+              label="Ten bai tap"
               rules={[{ required: true }]}
             >
-              <Input placeholder="Nhập tên bài tập" />
+              <Input placeholder="Nhap ten bai tap" />
             </Form.Item>
             <Form.Item
               name="score"
-              label="Điểm tối đa"
+              label="Diem toi da"
               rules={[{ required: true }]}
             >
               <InputNumber style={{ width: "100%" }} min={1} />
@@ -345,10 +407,10 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
 
             <Form.Item
               name="course_id"
-              label="Khóa học"
+              label="Khoa hoc"
               rules={[{ required: true }]}
             >
-              <Select placeholder="Chọn khóa học" onChange={handleCourseChange}>
+              <Select placeholder="Chon khoa hoc" onChange={handleCourseChange}>
                 {courses.map((c) => (
                   <Option key={c._id} value={c._id}>
                     {c.title || c.name}
@@ -358,11 +420,11 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
             </Form.Item>
             <Form.Item
               name="lesson_id"
-              label="Bài học"
+              label="Bai hoc"
               rules={[{ required: true }]}
             >
               <Select
-                placeholder="Chọn bài học"
+                placeholder="Chon bai hoc"
                 disabled={!form.getFieldValue("course_id")}
               >
                 {lessons.map((l) => (
@@ -373,25 +435,25 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
               </Select>
             </Form.Item>
 
-            <Form.Item name="dueDate" label="Ngày hết hạn">
+            <Form.Item name="dueDate" label="Ngay het han">
               <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
             </Form.Item>
-            <Form.Item name="dueTime" label="Giờ hết hạn">
+            <Form.Item name="dueTime" label="Gio het han">
               <TimePicker style={{ width: "100%" }} format="HH:mm" />
             </Form.Item>
           </div>
 
-          <Form.Item name="description" label="Mô tả bài tập">
-            <TextArea rows={2} placeholder="Mô tả chung..." />
+          <Form.Item name="description" label="Mo ta bai tap">
+            <TextArea rows={2} placeholder="Mo ta chung..." />
           </Form.Item>
 
           {type === "codeAssignment" && (
             <div className="bg-gray-50 p-4 rounded-lg mt-2">
-              <h4 className="font-semibold mb-3">Cấu hình Code</h4>
+              <h4 className="font-semibold mb-3">Cau hinh Code</h4>
               <div className="grid grid-cols-2 gap-4">
                 <Form.Item
                   name="language"
-                  label="Ngôn ngữ hỗ trợ"
+                  label="Ngon ngu ho tro"
                   initialValue="javascript"
                 >
                   <Select>
@@ -415,14 +477,14 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
                   <InputNumber style={{ width: "100%" }} min={1024} />
                 </Form.Item>
               </div>
-              <Form.Item name="problem_description" label="Đề bài">
-                <TextArea rows={3} placeholder="Nhập đề bài chi tiết..." />
+              <Form.Item name="problem_description" label="De bai">
+                <TextArea rows={3} placeholder="Nhap de bai chi tiet..." />
               </Form.Item>
               <div className="grid grid-cols-2 gap-4">
-                <Form.Item name="input_format" label="Định dạng Input">
+                <Form.Item name="input_format" label="Dinh dang Input">
                   <TextArea rows={2} />
                 </Form.Item>
-                <Form.Item name="output_format" label="Định dạng Output">
+                <Form.Item name="output_format" label="Dinh dang Output">
                   <TextArea rows={2} />
                 </Form.Item>
               </div>
@@ -435,10 +497,10 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
           {type === "quiz" && (
             <div className="bg-gray-50 p-4 rounded-lg mt-2">
               <div className="flex justify-between items-center mb-3">
-                <h4 className="font-semibold">Danh sách câu hỏi</h4>
+                <h4 className="font-semibold">Danh sach cau hoi</h4>
                 <Form.Item
                   name="time_limit"
-                  label="Thời gian làm bài (phút)"
+                  label="Thoi gian lam bai (phut)"
                   className="mb-0"
                 >
                   <InputNumber min={1} />
@@ -453,23 +515,23 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
                         key={key}
                         className="bg-white p-4 rounded border border-gray-200 mb-3 relative"
                       >
-                        <div className="font-bold mb-2">Câu {index + 1}</div>
+                        <div className="font-bold mb-2">Cau {index + 1}</div>
                         <Form.Item {...restField} name={[name, "_id"]} hidden>
                           <Input />
                         </Form.Item>
                         <Form.Item
                           {...restField}
                           name={[name, "text"]}
-                          rules={[{ required: true, message: "Nhập câu hỏi" }]}
+                          rules={[{ required: true, message: "Nhap cau hoi" }]}
                         >
-                          <TextArea rows={2} placeholder="Nội dung câu hỏi" />
+                          <TextArea rows={2} placeholder="Noi dung cau hoi" />
                         </Form.Item>
 
                         <div className="grid grid-cols-2 gap-4">
                           <Form.Item
                             {...restField}
                             name={[name, "option_a"]}
-                            label="Lựa chọn A"
+                            label="Lua chon A"
                             rules={[{ required: true }]}
                           >
                             <Input />
@@ -477,7 +539,7 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
                           <Form.Item
                             {...restField}
                             name={[name, "option_b"]}
-                            label="Lựa chọn B"
+                            label="Lua chon B"
                             rules={[{ required: true }]}
                           >
                             <Input />
@@ -485,7 +547,7 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
                           <Form.Item
                             {...restField}
                             name={[name, "option_c"]}
-                            label="Lựa chọn C"
+                            label="Lua chon C"
                             rules={[{ required: true }]}
                           >
                             <Input />
@@ -493,7 +555,7 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
                           <Form.Item
                             {...restField}
                             name={[name, "option_d"]}
-                            label="Lựa chọn D"
+                            label="Lua chon D"
                             rules={[{ required: true }]}
                           >
                             <Input />
@@ -504,7 +566,7 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
                           <Form.Item
                             {...restField}
                             name={[name, "correct_answer"]}
-                            label="Đáp án đúng"
+                            label="Dap an dung"
                             className="mb-0"
                             initialValue="A"
                           >
@@ -518,7 +580,7 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
                           <Form.Item
                             {...restField}
                             name={[name, "score"]}
-                            label="Điểm câu này"
+                            label="Diem cau nay"
                             className="mb-0"
                             initialValue={1}
                           >
@@ -534,15 +596,13 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
                             className="absolute top-2 right-2"
                             onClick={() => {
                               const q = form.getFieldValue(["questions", name]);
-                              if (q && q._id)
-                                setDeletedQuestionIds((prev) => [
-                                  ...prev,
-                                  q._id,
-                                ]);
+                              if (q && q._id) {
+                                setDeletedQuestionIds((prev) => [...prev, q._id]);
+                              }
                               remove(name);
                             }}
                           >
-                            Xóa
+                            Xoa
                           </Button>
                         )}
                       </div>
@@ -554,7 +614,7 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
                         block
                         icon={<PlusOutlined />}
                       >
-                        Thêm câu hỏi mới
+                        Them cau hoi moi
                       </Button>
                     )}
                   </>

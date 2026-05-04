@@ -15,6 +15,9 @@ import { JUDGE0_LANGUAGES } from '@/common/constants/languages.constant';
 import { UserLessonProgressService } from '../user-lesson-progress/user-lesson-progress.service';
 import { Course } from '../courses/entities/course.entity';
 import { Advisory } from './entities/advisory.entity';
+import { SubmitQuizDto } from './dto/submit-quiz.dto';
+import { Quiz } from '../quizzes/entities/quiz.entity';
+import { Question } from '../questions/entities/question.entity';
 
 @Injectable()
 export class SubmissionsService {
@@ -27,6 +30,8 @@ export class SubmissionsService {
     @InjectModel(CodeAssignment.name) private readonly codeAssignmentModel: Model<CodeAssignment>,
     @InjectModel('Course') private readonly courseModel: Model<Course>,
     @InjectModel('Advisory') private readonly advisoryModel: Model<Advisory>,
+    @InjectModel(Quiz.name) private readonly quizModel: Model<Quiz>,
+    @InjectModel(Question.name) private readonly questionModel: Model<Question>,
     private readonly aiAssistantService: AiAssistantService,
     private readonly httpService: HttpService,
     private readonly userLessonProgressService: UserLessonProgressService,
@@ -34,31 +39,43 @@ export class SubmissionsService {
 
  async submitCode(
     userId: string,
-    codeassignmentId: string,
+    assignmentId: string,
+    codeAssignmentId: string,
     language: string,
     sourceCode: string,
   ) {
     try {
-      //  Ép kiểu assignmentId sang ObjectId
-      const objectId = new Types.ObjectId(codeassignmentId);
-      console.log("-===",objectId);
+      const assignmentObjectId = Types.ObjectId.isValid(assignmentId)
+        ? new Types.ObjectId(assignmentId)
+        : null;
 
-      // Tìm cấu hình chấm code
-      const codeAssignment = await this.codeAssignmentModel.findOne({ _id: objectId });
-      if (!codeAssignment) {
-        throw new BadRequestException('Không tìm thấy cấu hình chấm code cho bài tập này.');
+      const codeAssignmentObjectId = Types.ObjectId.isValid(codeAssignmentId)
+        ? new Types.ObjectId(codeAssignmentId)
+        : null;
+
+      let codeAssignment: any = null;
+
+      if (codeAssignmentObjectId) {
+        codeAssignment = await this.codeAssignmentModel.findById(codeAssignmentObjectId).lean().exec();
       }
 
-      // Tìm Test Case
+      if (!codeAssignment && assignmentObjectId) {
+        codeAssignment = await this.codeAssignmentModel.findOne({ assignment_id: assignmentObjectId }).lean().exec();
+      }
+
+      if (!codeAssignment) {
+        throw new BadRequestException('Không tìm thấy codeAssignment hợp lệ cho bài tập này.');
+      }
+
+      const resolvedCodeAssignmentObjectId = new Types.ObjectId(codeAssignment._id as any);
+
       const testCases = await this.testCaseModel
-        .find({ assignment_id: objectId }) 
+        .find({ code_assignment_id: resolvedCodeAssignmentObjectId })
         .lean()
         .exec();
 
-      console.log('Số lượng Test Case tìm được:', testCases.length);
-
       if (!testCases || testCases.length === 0) {
-        throw new BadRequestException('Bài tập này chưa có Test Case nào để chấm điểm.');
+        throw new BadRequestException('Bài tập chưa có testcase. Vui lòng tạo testcase bằng AI trước khi cho học viên nộp bài.');
       }
 
       //  Map ID ngôn ngữ
@@ -153,20 +170,23 @@ export class SubmissionsService {
 
       // Lưu Submission 
       const newSubmission = await this.submissionModel.create({
-        user_id: userId,        
-        codeAssignment_id:  codeassignmentId, 
+        user_id: userId,
+        codeAssignment_id: resolvedCodeAssignmentObjectId,
         language: language,
-        code: sourceCode,       
+        code: sourceCode,
         status: finalStatus,
-        score: (passedCases / testCases.length) * 10, 
+        score: (passedCases / testCases.length) * 10,
         ai_hint: null
       });
 
-      // await this.userLessonProgressService.handleAssignmentGraded(
-      //   userId,
-      //   codeassignmentId,
-      //   finalStatus === 'ACCEPTED',
-      // );
+      // Update UserLessonProgress
+      if (codeAssignment.assignment_id) {
+        await this.userLessonProgressService.handleAssignmentGraded(
+          userId,
+          codeAssignment.assignment_id.toString(),
+          finalStatus === 'ACCEPTED',
+        );
+      }
 
       return {
         message: 'Chấm bài hoàn tất',
@@ -176,12 +196,85 @@ export class SubmissionsService {
         compileError: errorDetail,
       };
 
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
-      console.error(error);
-      throw new InternalServerErrorException('Lỗi hệ thống chấm bài.');
+      
+      // Log chi tiết lỗi để debug
+      console.error('=== LỖI HỆ THỐNG CHẤM BÀI ===');
+      console.error('Error message:', error?.message);
+      console.error('Error response status:', error?.response?.status);
+      console.error('Error response data:', JSON.stringify(error?.response?.data, null, 2));
+      console.error('Full error:', error);
+      console.error('================================');
+
+      // Trả lỗi chi tiết hơn
+      const detail = error?.response?.data?.message || error?.response?.data?.error || error?.message || 'Lỗi không xác định';
+      throw new InternalServerErrorException(`Lỗi hệ thống chấm bài: ${detail}`);
     }
   }
+
+  async submitQuiz(userId: string, submitQuizDto: SubmitQuizDto) {
+    const { quiz_id, answers } = submitQuizDto;
+
+    const quiz = await this.quizModel.findById(quiz_id).lean().exec();
+    if (!quiz) {
+      throw new BadRequestException('Không tìm thấy Quiz.');
+    }
+
+    const questions = await this.questionModel.find({ quiz_id }).lean().exec();
+    if (!questions || questions.length === 0) {
+      throw new BadRequestException('Quiz không có câu hỏi nào.');
+    }
+
+    let correctCount = 0;
+    const results: any[] = [];
+
+    const normalizeLetter = (value?: string) => {
+      const normalized = (value || '').trim().toUpperCase();
+      return ['A', 'B', 'C', 'D'].indexOf(normalized);
+    };
+
+    for (const question of questions) {
+      const userAnswer = answers.find(a => a.question_id === question._id.toString());
+      const correctIndex = normalizeLetter(question.correct_answer);
+      const isCorrect = userAnswer && userAnswer.selected_answer && userAnswer.selected_answer.length > 0 && 
+                        userAnswer.selected_answer.length === 1 && 
+                        parseInt(userAnswer.selected_answer[0]) === correctIndex;
+      
+      if (isCorrect) {
+        correctCount++;
+      }
+      
+      results.push({
+        question_id: question._id,
+        isCorrect: Boolean(isCorrect),
+      });
+    }
+
+    const totalQuestions = questions.length;
+    const passed = correctCount === totalQuestions; // Require 100% to pass? Or 80%? Let's use 100% for now or calculate score
+    const score = (correctCount / totalQuestions) * 10;
+
+    // Update lesson progress
+    if (quiz.assignment_id) {
+      await this.userLessonProgressService.handleAssignmentGraded(
+        userId,
+        quiz.assignment_id.toString(),
+        passed,
+      );
+    }
+
+    return {
+      message: 'Chấm bài hoàn tất',
+      quizId: quiz_id,
+      score,
+      passed,
+      correctCount,
+      totalQuestions,
+      results
+    };
+  }
+
     // gia su tra loi khi nguoi dung muon hieu sai gi
   async requestAiTutor(submissionId:string){
     const submission = await this.submissionModel.findById(submissionId);

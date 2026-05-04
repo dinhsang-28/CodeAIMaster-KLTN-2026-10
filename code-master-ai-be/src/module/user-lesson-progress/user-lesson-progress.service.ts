@@ -70,8 +70,12 @@ export class UserLessonProgressService {
       throw new NotFoundException('Lesson not found');
     }
 
+    const normalizedWatchPercent = Number.isFinite(watchPercent)
+      ? Math.max(0, Math.min(100, Math.round(watchPercent)))
+      : 0;
+
     const progress = await this.ensureProgress(userId, lessonId, String(lesson.course_id));
-    const nextWatchPercent = Math.max(progress.watchPercent ?? 0, watchPercent);
+    const nextWatchPercent = Math.max(progress.watchPercent ?? 0, normalizedWatchPercent);
 
     progress.watchPercent = Math.min(100, nextWatchPercent);
 
@@ -107,7 +111,11 @@ export class UserLessonProgressService {
       throw new NotFoundException('Lesson not found');
     }
 
-    const progress = await this.ensureProgress(userId, String(lesson._id), String(lesson.course_id));
+    const progress = await this.ensureProgress(
+      userId,
+      String(lesson._id),
+      String(lesson.course_id),
+    );
 
     if (!progress.isCompleted) {
       progress.status = LessonProgressStatus.IN_PROGRESS;
@@ -182,6 +190,8 @@ export class UserLessonProgressService {
       shouldComplete = assignmentPassed;
     } else if (hasVideo && hasAssignment) {
       shouldComplete = progress.watchPercent >= 80 && assignmentPassed;
+    } else {
+      shouldComplete = true;
     }
 
     const wasCompleted = progress.isCompleted;
