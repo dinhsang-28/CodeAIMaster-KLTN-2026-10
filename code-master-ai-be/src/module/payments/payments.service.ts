@@ -41,6 +41,8 @@ import {
   Enrollment,
   EnrollmentDocument,
 } from '../enrollments/entities/enrollment.entity';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/schemas/notification.schema';
 
 @Injectable()
 export class PaymentsService {
@@ -66,6 +68,7 @@ export class PaymentsService {
 
     private readonly configService: ConfigService,
     private readonly mailerService: MailerService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   private async getCartWithItems(userId: string) {
@@ -444,6 +447,11 @@ export class PaymentsService {
       payment._id.toString(),
       order._id.toString(),
     );
+    // Gửi notification sau khi thanh toán thành công
+    await this.sendPaymentSuccessNotification(
+      order.user_id.toString(),
+      order._id.toString(),
+    );
 
     return { payment, order };
   }
@@ -464,6 +472,33 @@ export class PaymentsService {
 
     return this.confirmPaymentSuccessByOrder(orderId, PaymentMethod.MOMO);
   }
+  // Gửi notification sau khi thanh toán thành công
+  private async sendPaymentSuccessNotification(userId: string, orderId: string) {
+    const orderDetails = await this.orderDetailModel
+      .find({ order_id: new Types.ObjectId(orderId) })
+      .populate('course_id', 'title')
+      .lean();
+
+    const courseNames = orderDetails
+      .map((item: any) => item.course_id?.title)
+      .filter(Boolean);
+    const topNames = courseNames.slice(0, 2).join(', ');
+    const suffix = courseNames.length > 2 ? ` và ${courseNames.length - 2} khóa học khác` : '';
+    const courseText = topNames ? `${topNames}${suffix}` : 'khóa học của bạn';
+
+    try {
+      await this.notificationService.create({
+        userId,
+        title: 'Thanh toán thành công',
+        message: `Bạn đã mua thành công ${courseText}. Chúc bạn học tập hiệu quả!`,
+        type: NotificationType.COURSE,
+        link: '/profile/my-courses',
+      });
+    } catch (error) {
+      console.error('Send payment notification failed:', error);
+    }
+  }
+
   private async sendPaymentSuccessEmail(
     userId: string,
     invoiceCode: string,

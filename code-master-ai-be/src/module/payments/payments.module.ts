@@ -20,9 +20,11 @@ import {
   Enrollment,
   EnrollmentSchema,
 } from '../enrollments/entities/enrollment.entity';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
+    NotificationModule,
     MongooseModule.forFeature([
       { name: Payment.name, schema: PaymentSchema },
       { name: Cart.name, schema: CartSchema },

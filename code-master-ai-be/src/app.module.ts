@@ -32,6 +32,7 @@ import { join } from 'path';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/adapters/handlebars.adapter';
 import { UserLessonProgressModule } from './module/user-lesson-progress/user-lesson-progress.module';
 import { ProgressModule } from './module/progress/progress.module';
+import { NotificationModule } from './module/notification/notification.module';
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { ProgressModule } from './module/progress/progress.module';
 
     StatisticsModule,
     AiAssistantModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
