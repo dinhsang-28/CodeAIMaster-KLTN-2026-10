@@ -15,6 +15,7 @@ import {
   Assignment,
   SchemaAssginment,
 } from '../assignments/entities/assignment.entity';
+import { AssignmentType } from '../assignments/enums/types.enum';
 
 @Injectable()
 export class CodeAssignmentsService {
@@ -29,14 +30,40 @@ export class CodeAssignmentsService {
   async create(
     createCodeAssignmentDto: CreateCodeAssignmentDto,
   ): Promise<CodeAssignment> {
-    const assignment = await this.assignmentModel.findById(
-      createCodeAssignmentDto.assignment_id,
-    );
+    if (!Types.ObjectId.isValid(createCodeAssignmentDto.assignment_id)) {
+      throw new BadRequestException('assignment_id không hợp lệ');
+    }
+
+    const assignmentObjectId = new Types.ObjectId(createCodeAssignmentDto.assignment_id);
+    const assignment = await this.assignmentModel.findById(assignmentObjectId).lean().exec();
     if (!assignment) {
       throw new NotFoundException('Assignment not found');
     }
 
-    return this.codeAssignmentModel.create(createCodeAssignmentDto);
+    const existing = await this.codeAssignmentModel.findOne({
+      assignment_id: assignmentObjectId,
+    }).lean().exec();
+
+    if (existing) {
+      const updated = await this.codeAssignmentModel.findByIdAndUpdate(
+        existing._id,
+        {
+          ...createCodeAssignmentDto,
+          assignment_id: assignmentObjectId,
+        },
+        { new: true, runValidators: true },
+      );
+      if (!updated) {
+        throw new BadRequestException('Không thể cập nhật code assignment hiện có');
+      }
+      return updated.toObject();
+    }
+
+    const created = await this.codeAssignmentModel.create({
+      ...createCodeAssignmentDto,
+      assignment_id: assignmentObjectId,
+    });
+    return created.toObject();
   }
 
   async findAll(assignment_id?: string): Promise<CodeAssignment[]> {
@@ -48,7 +75,24 @@ export class CodeAssignmentsService {
       filter.assignment_id = assignment_id;
     }
 
-    return this.codeAssignmentModel.find(filter).lean().exec();
+    const records = await this.codeAssignmentModel.find(filter).lean().exec();
+    if (records.length > 0) return records;
+
+    // Fallback cho dữ liệu cũ/sai field assignment_id trong document
+    if (assignment_id) {
+      return this.codeAssignmentModel
+        .find({
+          $or: [
+            { assignment_id },
+            { assignmentId: assignment_id },
+            { assignment_id: new Types.ObjectId(assignment_id) },
+          ],
+        })
+        .lean()
+        .exec();
+    }
+
+    return records;
   }
 
   async findOne(id: string): Promise<CodeAssignment> {
@@ -72,6 +116,11 @@ export class CodeAssignmentsService {
       );
       if (!assignment) {
         throw new NotFoundException('Assignment not found');
+      }
+      if (assignment.type !== AssignmentType.CODEASSIGNMENT) {
+        throw new BadRequestException(
+          'Assignment type must be "codeAssignment" to attach a code assignment',
+        );
       }
     }
 

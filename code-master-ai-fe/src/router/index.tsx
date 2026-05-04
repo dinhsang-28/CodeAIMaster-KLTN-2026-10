@@ -20,11 +20,8 @@ import UserManage from "../pages/admin/userManage";
 import CategoryManage from "../pages/categoryManage";
 import RevenueStatisticsPage from "../pages/revenueManage";
 import GoogleAuthCallback from "../pages/auth/GoogleAuthCallback";
-import LearnLayout from "../layout/LearnLayout";
-import LessonPage from "../pages/lesson";
-import Quizz from "../pages/quizz";
+import LearnLayout from "../pages/learnLayout";
 import GithubAuthCallback from "../pages/auth/GithubAuthCallback";
-import ExercisePage from "../pages/lesson/excersite";
 import RoleManage from "../pages/admin/roleManage";
 import PermissionManage from "../pages/admin/permissionManage";
 import ProfilePage from "../pages/ProfilePage";
@@ -109,22 +106,12 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: "/learn",
+    path: "/learn/:courseId",
     element: <LearnLayout />,
-    children: [
-      {
-        path: "lesson/:id",
-        element: <LessonPage />,
-      },
-      {
-        path: "quiz/:id",
-        element: <Quizz />,
-      },
-      {
-        path: "exercise",
-        element: <ExercisePage />,
-      },
-    ],
+  },
+  {
+    path: "/learn/:courseId/lesson/:lessonId/:stepType",
+    element: <LearnLayout />,
   },
   {
     path: "/register",

@@ -7,6 +7,8 @@ import { Course } from './entities/course.entity';
 import { CategoriesModule } from '../categories/categories.module';
 import { Lesson, LessonSchema } from '../lessons/entities/lesson.entity';
 import { UploadModule } from '@/upload/upload.module';
+import { ProgressModule } from '../progress/progress.module';
+import { UserLessonProgressModule } from '../user-lesson-progress/user-lesson-progress.module';
 import {
   Assignment,
   AssignmentSchema,
@@ -28,6 +30,10 @@ import {
   Enrollment,
   EnrollmentSchema,
 } from '../enrollments/entities/enrollment.entity';
+import {
+  UserLessonProgress,
+  UserLessonProgressSchema,
+} from '../user-lesson-progress/entities/user-lesson-progress.entity';
 
 @Module({
   imports: [
@@ -40,9 +46,12 @@ import {
       { name: CodeAssignment.name, schema: CodeAssignmentSchema },
       { name: CartDetail.name, schema: CartDetailSchema },
       { name: Enrollment.name, schema: EnrollmentSchema },
+      { name: UserLessonProgress.name, schema: UserLessonProgressSchema },
     ]),
     CategoriesModule,
     UploadModule,
+    ProgressModule,
+    UserLessonProgressModule,
   ],
   controllers: [CoursesController],
   providers: [CoursesService],

@@ -4,7 +4,7 @@ import {
   TabKey,
   fakeRelatedCourses,
 } from "../../data/courseDetail";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { GetCoursesDetail } from "../../api/courseDetail";
 import { createCartItem } from "../../api/cart";
 const formatPrice = (price: number) =>
@@ -52,6 +52,7 @@ export default function CourseDetailPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("intro");
   const [openSectionIndex, setOpenSectionIndex] = useState<number>(0);
   const { id } = useParams();
+  const navigate = useNavigate();
   const [courseDetail, setCourseDetail] = useState<CourseDetail | null>(null);
 
   useEffect(() => {
@@ -311,15 +312,26 @@ export default function CourseDetailPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <button
-                    onClick={() => onCart()}
-                    className="w-full rounded-2xl bg-brand-600 px-5 py-4 font-bold text-white transition hover:bg-brand-700"
-                  >
-                    Thêm vào giỏ hàng
-                  </button>
-                  <button className="w-full rounded-2xl border-2 border-brand-700 px-5 py-4 font-bold text-brand-700 transition hover:bg-brand-700 hover:text-white">
-                    Mua ngay
-                  </button>
+                  {courseDetail.price === 0 ? (
+                    <button
+                      onClick={() => navigate(`/learn/${courseDetail._id}`)}
+                      className="w-full rounded-2xl bg-brand-600 px-5 py-4 font-bold text-white transition hover:bg-brand-700"
+                    >
+                      Học ngay
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => onCart()}
+                        className="w-full rounded-2xl bg-brand-600 px-5 py-4 font-bold text-white transition hover:bg-brand-700"
+                      >
+                        Thêm vào giỏ hàng
+                      </button>
+                      <button className="w-full rounded-2xl border-2 border-brand-700 px-5 py-4 font-bold text-brand-700 transition hover:bg-brand-700 hover:text-white">
+                        Mua ngay
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-4 border-t border-brand-100 pt-6 text-sm text-slate-600">
