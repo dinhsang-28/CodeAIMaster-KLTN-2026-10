@@ -29,7 +29,6 @@
 //   failedQueue = [];
 // };
 
-
 // axiosInstance.interceptors.response.use(
 //   (response) => {
 //     return response; // api thanh cong cho qua
@@ -70,7 +69,7 @@
 //         // useUserInfo.getState().clearUserInfo();
 //         // const currentPath = window.location.pathname;
 //         // const publicPaths = ["/", "/introduce", "/blog", "/course"];
-//         // const isPublicPage = publicPaths.some(path => 
+//         // const isPublicPage = publicPaths.some(path =>
 //         //   path === "/" ? currentPath === "/" : currentPath.startsWith(path)
 //         // );
 //         // // if (window.location.pathname !== "/login") {
@@ -199,14 +198,14 @@ import { useUserInfo } from "../store/user";
 //   baseURL: "http://localhost:3001/api/v1",
 //   withCredentials: true,
 // });
-// // // export const axiosInstance = axios.create({
-// // //   baseURL: "https://codeaimaster-kltn-2026-10.onrender.com/api/v1",
-// // //   withCredentials: true,
-// // // });
+// export const axiosInstance = axios.create({
+//   baseURL: "https://codeaimaster-kltn-2026-10.onrender.com/api/v1",
+//   withCredentials: true,
+// });
 
 export const axiosInstance = axios.create({
-  baseURL: "http://localhost:3000/api/v1",
-  // baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
+  // baseURL: "http://localhost:3000/api/v1",
+  baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
   withCredentials: true,
 });
 
@@ -231,7 +230,7 @@ axiosInstance.interceptors.response.use(
 
     const skipRefreshUrls = ["/auth/refresh", "/auth/login", "/auth/logout"];
     const isSkipped = skipRefreshUrls.some((url) =>
-      originalRequest.url?.includes(url)
+      originalRequest.url?.includes(url),
     );
 
     if (error.response?.status === 401 && !isSkipped) {
@@ -261,7 +260,7 @@ axiosInstance.interceptors.response.use(
         const currentPath = window.location.pathname;
         const publicPaths = ["/", "/introduce", "/blog", "/course"];
         const isPublicPage = publicPaths.some((path) =>
-          path === "/" ? currentPath === "/" : currentPath.startsWith(path)
+          path === "/" ? currentPath === "/" : currentPath.startsWith(path),
         );
 
         if (!isPublicPage && currentPath !== "/login") {
@@ -275,7 +274,7 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;
