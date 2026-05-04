@@ -1,24 +1,14 @@
 import React, { useMemo, useState } from "react";
-import { Button, Input, Typography } from "antd";
-import { CheckOutlined } from "@ant-design/icons";
+import { Button, Input } from "antd";
 import { PostChangePassword, PostRetryPassword, PostVerifyForgotOTP } from "../../api/auth";
 import { useUserInfo } from "../../store/user";
 
-const { Text } = Typography;
 
 const strengthLevels = [
   { label: "Yếu", color: "#e24b4a" },
   { label: "Trung bình", color: "#ef9f27" },
   { label: "Mạnh", color: "#4a7c59" },
   { label: "Rất mạnh", color: "#2f5438" },
-];
-
-const requirements = [
-  "Tối thiểu 8 ký tự",
-  "Ít nhất 1 chữ hoa (A-Z)",
-  "Ít nhất 1 chữ số (0-9)",
-  "Ít nhất 1 ký tự đặc biệt (!@#$...)",
-  "Không trùng mật khẩu cũ",
 ];
 
 const getStrength = (val: string): number => {

@@ -83,7 +83,6 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
   };
 
   const handleCancel = () => {
-    console.log("Clicked cancel button");
     setOpen(false);
   };
   const onCart = async () => {
