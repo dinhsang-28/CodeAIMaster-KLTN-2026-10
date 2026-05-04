@@ -21,7 +21,8 @@ import {
 
 @Injectable()
 export class TestcasesService {
-  private genAI: GoogleGenerativeAI;
+  private genAI: GoogleGenerativeAI | null;
+  private readonly aiApiKey: string;
   constructor(
     @InjectModel(TestCase.name) private testCaseModel: Model<TestCaseDocument>,
     @InjectModel(Assignment.name)
@@ -29,25 +30,70 @@ export class TestcasesService {
     @InjectModel(CodeAssignment.name)
     private codeAssignmentModel: Model<CodeAssignmentDocument>,
   ) {
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+    this.aiApiKey = (process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '').trim();
+    this.genAI = this.aiApiKey ? new GoogleGenerativeAI(this.aiApiKey) : null;
   }
   async generateTestCaseByAI(
     assignmentId: string,
     solutionCode: string,
     constraints: string,
     numberOfTestCases: number = 5,
+    hiddenTestCases?: number,
   ) {
-    const assignment = await this.codeAssignmentModel.findById(assignmentId);
+    console.log('[generate-ai] incoming assignmentId=', assignmentId);
+    console.log('[generate-ai] incoming numberOfTestCases=', numberOfTestCases);
+    console.log('[generate-ai] incoming hiddenTestCases=', hiddenTestCases);
+
+    if (!Types.ObjectId.isValid(assignmentId)) {
+      console.log('[generate-ai] invalid assignmentId');
+      throw new BadRequestException('assignmentId không hợp lệ');
+    }
+
+    const assignmentObjectId = new Types.ObjectId(assignmentId);
+    const assignment = await this.assignmentModel.findById(assignmentObjectId).lean().exec();
+    console.log('[generate-ai] assignment found=', Boolean(assignment));
     if (!assignment) {
-      throw new BadRequestException('khong tim thay bai tap');
+      throw new BadRequestException('Không tìm thấy assignment cho bài tập này.');
+    }
+
+    const codeAssignmentExact = await this.codeAssignmentModel
+      .findOne({ assignment_id: assignmentObjectId })
+      .lean()
+      .exec();
+
+    const codeAssignmentFallback = codeAssignmentExact
+      ? null
+      : await this.codeAssignmentModel
+          .find({
+            $or: [
+              { assignment_id: assignmentObjectId },
+              { assignment_id: assignmentId },
+              { assignmentId: assignmentId },
+            ],
+          })
+          .limit(5)
+          .lean()
+          .exec();
+
+    const codeAssignment = codeAssignmentExact || codeAssignmentFallback?.[0] || null;
+    console.log('[generate-ai] codeAssignment exact found=', Boolean(codeAssignmentExact));
+    console.log('[generate-ai] codeAssignment fallback count=', codeAssignmentFallback?.length || 0);
+    console.log('[generate-ai] codeAssignment resolved=', Boolean(codeAssignment));
+
+    if (!codeAssignment) {
+      throw new BadRequestException('Bài tập này chưa có CodeAssignment để sinh testcase.');
+    }
+    if (!this.genAI) {
+      console.error('[generate-ai] missing AI api key. GEMINI_API_KEY/OPENAI_API_KEY is empty');
+      throw new BadRequestException('Chưa cấu hình AI API key.');
     }
     // 2. Thiết lập Prompt ép AI trả về chuẩn cấu trúc DB của bạn
     const prompt = `
       Bạn là chuyên gia thuật toán. Hãy tạo ra ${numberOfTestCases} test cases cho bài toán sau.
       
       THÔNG TIN BÀI TOÁN:
-      - Tên bài: ${assignment.title}
-      - Mô tả: ${assignment.problem_description}
+      - Tên bài: ${codeAssignment.title}
+      - Mô tả: ${codeAssignment.problem_description}
       - Giới hạn: ${constraints}
       - Code giải chuẩn: \n${solutionCode}
 
@@ -55,6 +101,7 @@ export class TestcasesService {
       1. Kết quả (expected_output) phải chuẩn xác 100% dựa trên Code giải chuẩn.
       2. 2 test cases đầu tiên set "is_hidden": false. Các test cases còn lại set "is_hidden": true.
       3. CHỈ TRẢ VỀ JSON ARRAY, KHÔNG ĐƯỢC CÓ BẤT KỲ VĂN BẢN NÀO KHÁC.
+      4. Nếu hiddenTestCases được truyền vào và lớn hơn 0, hãy tạo đúng số testcase ẩn tương ứng.
 
       Cấu trúc JSON mong muốn:
       [
@@ -66,29 +113,55 @@ export class TestcasesService {
       ]
     `;
     try {
-      const model = this.genAI.getGenerativeModel({
+      const model = this.genAI!.getGenerativeModel({
         model: 'gemini-2.5-flash-lite',
       });
       const result = await model.generateContent(prompt);
-      let textResponse = result.response.text();
-
-      textResponse = textResponse
+      const rawText = result.response.text();
+      console.log('[generate-ai] raw ai response=', rawText);
+      let textResponse = rawText
         .replace(/```json/g, '')
         .replace(/```/g, '')
         .trim();
-      const parsedTestCases = JSON.parse(textResponse);
 
-      const testCasesToSave = parsedTestCases.map((tc) => ({
-        ...tc,
-        assignment_id: new Types.ObjectId(assignmentId),
+      const jsonMatch = textResponse.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        textResponse = jsonMatch[0];
+      }
+
+      let parsedTestCases: any;
+      try {
+        parsedTestCases = JSON.parse(textResponse);
+      } catch (parseError) {
+        console.error('[generate-ai] parse failed raw response=', rawText);
+        throw new BadRequestException('AI trả về dữ liệu không phải JSON hợp lệ.');
+      }
+
+      const normalizedTestCases = Array.isArray(parsedTestCases)
+        ? parsedTestCases
+        : [];
+
+      const hiddenCount = typeof hiddenTestCases === 'number' && hiddenTestCases >= 0
+        ? hiddenTestCases
+        : Math.max(numberOfTestCases - 2, 0);
+
+      const testCasesToSave = normalizedTestCases.map((tc, index) => ({
+        assignment_id: new Types.ObjectId(assignment._id),
+        code_assignment_id: new Types.ObjectId(codeAssignment._id),
+        input_data: String(tc.input_data ?? '').trim(),
+        expected_output: String(tc.expected_output ?? '').trim(),
+        is_hidden: typeof tc.is_hidden === 'boolean' ? tc.is_hidden : index >= (numberOfTestCases - hiddenCount),
       }));
 
-      const savedTestCases =
-        await this.testCaseModel.insertMany(testCasesToSave);
+      const deduped = testCasesToSave.filter((tc, index, self) =>
+        index === self.findIndex((item) => item.input_data === tc.input_data && item.expected_output === tc.expected_output),
+      );
+
+      const savedTestCases = await this.testCaseModel.insertMany(deduped);
 
       return {
         message: `Đã tự động tạo và lưu ${savedTestCases.length} Test Cases thành công!`,
-        data: testCasesToSave,
+        data: savedTestCases,
       };
     } catch (error) {
       console.error(error);
@@ -98,21 +171,43 @@ export class TestcasesService {
     }
   }
   async findAll(code_assignment_id?: string): Promise<TestCase[]> {
-    ``;
     const filter: Record<string, any> = {};
     if (code_assignment_id) {
       if (!Types.ObjectId.isValid(code_assignment_id)) {
         throw new BadRequestException('code_assignment_id không hợp lệ');
       }
-      filter.code_assignment_id = code_assignment_id;
+      filter.code_assignment_id = new Types.ObjectId(code_assignment_id);
     }
 
     return this.testCaseModel.find(filter).lean().exec();
   }
+
+  async getPublicTestCases(code_assignment_id: string): Promise<any[]> {
+    if (!Types.ObjectId.isValid(code_assignment_id)) {
+      throw new BadRequestException('code_assignment_id không hợp lệ');
+    }
+
+    const testCases = await this.testCaseModel
+      .find({ code_assignment_id: new Types.ObjectId(code_assignment_id) })
+      .lean()
+      .exec();
+
+    // Map over test cases and remove expected_output if it's hidden
+    return testCases.map(tc => {
+      if (tc.is_hidden) {
+        return {
+          ...tc,
+          expected_output: undefined,
+        };
+      }
+      return tc;
+    });
+  }
+
   async create(createTestcaseDto: CreateTestcaseDto): Promise<TestCase> {
     const codeAssignment = await this.codeAssignmentModel.findById(
       createTestcaseDto.code_assignment_id,
-    );
+    ).lean().exec();
     if (!codeAssignment) {
       throw new NotFoundException('CodeAssignment not found');
     }

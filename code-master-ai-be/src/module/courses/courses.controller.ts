@@ -5,11 +5,14 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   Query,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
+  Req,
+  Delete,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '@/auth/passport/jwt-auth.guard';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -43,6 +46,13 @@ export class CoursesController {
   @Get(':id/info')
   getCourseInfo(@Param('id') id: string) {
     return this.coursesService.getCourseInfo(id);
+  }
+
+  @Get(':id/learning')
+  @UseGuards(JwtAuthGuard)
+  getLearningCourse(@Req() req, @Param('id') id: string) {
+    const userId = req.user._id;
+    return this.coursesService.getLearningCourse(id, userId);
   }
 
   @Get(':id')

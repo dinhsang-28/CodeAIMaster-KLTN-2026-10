@@ -468,6 +468,7 @@ import Editor from "@monaco-editor/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { axiosInstance } from "../../utils/axios";
 import { Select } from "antd";
+import { getCodeAssignments } from "../../api/codeAssignment";
 
 // =============================================
 // TYPES
@@ -505,6 +506,12 @@ interface ExerciseData {
   default_code?: Record<string, string>;
 }
 
+interface ExercisePageProps {
+  assignment?: any;
+  nextPath?: string;
+  onComplete?: () => void;
+}
+
 // =============================================
 // CONFIG
 // =============================================
@@ -517,11 +524,11 @@ const LANGUAGES = [
 ];
 
 const DEFAULT_CODES: Record<string, string> = {
-  javascript: `import React from 'react';\n\nfunction Greeting({ name = 'Khách' }) {\n  return (\n    <h1>Xin chào, {name}!</h1>\n  );\n}\n\nexport default Greeting;`,
-  typescript: `import React from 'react';\n\ninterface Props {\n  name?: string;\n}\n\nconst Greeting: React.FC<Props> = ({ name = 'Khách' }) => {\n  return <h1>Xin chào, {name}!</h1>;\n};\n\nexport default Greeting;`,
-  python: `def greeting(name="Khách"):\n    return f"Xin chào, {name}!"\n\nif __name__ == "__main__":\n    print(greeting("An"))`,
-  java: `public class Solution {\n    public static String greeting(String name) {\n        if (name == null || name.isEmpty()) name = "Khách";\n        return "Xin chào, " + name + "!";\n    }\n}`,
-  cpp: `#include <iostream>\n#include <string>\nusing namespace std;\n\nstring greeting(string name = "Khách") {\n    return "Xin chào, " + name + "!";\n}\n\nint main() {\n    cout << greeting("An") << endl;\n    return 0;\n}`,
+  javascript: `function solve() {\n  // Viết code của bạn ở đây\n}`,
+  typescript: `function solve(): void {\n  // Viết code của bạn ở đây\n}`,
+  python: `def solve():\n    # Viết code của bạn ở đây\n    pass`,
+  java: `public class Solution {\n    public static void main(String[] args) {\n        // Viết code của bạn ở đây\n    }\n}`,
+  cpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    // Viết code của bạn ở đây\n    return 0;\n}`,
 };
 
 // Status display helpers (kept as maps since they're data, not styles)
@@ -638,11 +645,17 @@ function AiTutorModal({
 // =============================================
 // MAIN COMPONENT
 // =============================================
-export default function ExercisePage() {
+export default function ExercisePage({ assignment, nextPath, onComplete }: ExercisePageProps) {
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const navigate = useNavigate();
 
+  // --- Resolve IDs from props (LearnLayout) or URL params ---
+  const initialCodeAssignment = assignment?.codeAssignment || assignment?.code_assignment || null;
+  const resolvedAssignmentId = assignment?._id || assignmentId || '';
+  const resolvedCodeAssignmentId = initialCodeAssignment?._id || '';
+
   const [exercise, setExercise] = useState<ExerciseData | null>(null);
+  const [codeAssignmentInfo, setCodeAssignmentInfo] = useState<any>(initialCodeAssignment);
   const [loadingExercise, setLoadingExercise] = useState(true);
   const [language, setLanguage] = useState("javascript");
   const [code, setCode] = useState(DEFAULT_CODES.javascript);
@@ -653,27 +666,75 @@ export default function ExercisePage() {
   const [result, setResult] = useState<SubmissionResult | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const editorRef = useRef<any>(null);
+  const [resolvedCodeId, setResolvedCodeId] = useState(resolvedCodeAssignmentId);
 
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiHint, setAiHint] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!assignmentId) return;
+    // Nếu đã có codeAssignment data từ props (LearnLayout) → dùng luôn
+    if (initialCodeAssignment) {
+      const ca = initialCodeAssignment;
+      setCodeAssignmentInfo(ca);
+      const starterCode = ca.starter_code || '';
+      setExercise({
+        _id: ca._id,
+        title: ca.title || assignment?.title || 'Bài tập code',
+        difficulty: ca.difficulty === 'EASY' ? 'Dễ' : ca.difficulty === 'HARD' ? 'Khó' : 'Trung bình',
+        description: ca.problem_description || assignment?.description || '',
+        requirements: [],
+        examples: [],
+        note: undefined,
+        default_code: starterCode ? { javascript: starterCode, python: starterCode, java: starterCode, cpp: starterCode, typescript: starterCode } : undefined,
+      });
+      setResolvedCodeId(ca._id);
+      if (starterCode) setCode(starterCode);
+      else setCode(DEFAULT_CODES[language] || DEFAULT_CODES.javascript);
+      setLoadingExercise(false);
+      return;
+    }
+
+    // Fallback: gọi API nếu chưa có data (trường hợp vào trực tiếp bằng URL)
+    if (!resolvedAssignmentId) {
+      setLoadingExercise(false);
+      return;
+    }
+
     const fetchExercise = async () => {
       try {
-        const res = await axiosInstance.get(`/code-assignments/65e000000000000000000001`);
-        const data: ExerciseData = res.data;
-        setExercise(data);
-        if (data.default_code?.[language]) setCode(data.default_code[language]);
+        // Lấy codeAssignment theo assignment_id
+        const codeAssignments = await getCodeAssignments(resolvedAssignmentId);
+        const ca = Array.isArray(codeAssignments) ? codeAssignments[0] : codeAssignments;
+        if (ca) {
+          setCodeAssignmentInfo(ca);
+          setResolvedCodeId(ca._id);
+          const starterCode = ca.starter_code || '';
+          setExercise({
+            _id: ca._id,
+            title: ca.title || 'Bài tập code',
+            difficulty: ca.difficulty === 'EASY' ? 'Dễ' : ca.difficulty === 'HARD' ? 'Khó' : 'Trung bình',
+            description: ca.problem_description || '',
+            requirements: [],
+            examples: [],
+            note: undefined,
+            default_code: starterCode ? { javascript: starterCode, python: starterCode, java: starterCode, cpp: starterCode, typescript: starterCode } : undefined,
+          });
+          if (starterCode) setCode(starterCode);
+          else setCode(DEFAULT_CODES[language] || DEFAULT_CODES.javascript);
+        } else {
+          setConsoleOutput('Không tìm thấy bài tập code cho assignment này.');
+        }
       } catch (error) {
         console.error("Lỗi lấy đề bài:", error);
+        setConsoleOutput('Lỗi khi tải đề bài.');
       } finally {
         setLoadingExercise(false);
       }
     };
     fetchExercise();
-  }, [assignmentId, language]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignment, assignmentId]);
 
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
@@ -692,6 +753,13 @@ export default function ExercisePage() {
       setActiveTab("console");
       return;
     }
+
+    if (!resolvedAssignmentId && !resolvedCodeId) {
+      setConsoleOutput("Không tìm thấy assignmentId hợp lệ. Vui lòng thử tải lại trang.");
+      setActiveTab("console");
+      return;
+    }
+
     setIsSubmitting(true);
     setIsSuccess(false);
     setResult(null);
@@ -701,9 +769,9 @@ export default function ExercisePage() {
     setConsoleOutput(`[${ts}] Compiling project...`);
 
     try {
-      const testAssignmentId = "65e000000000000000000001";
       const res = await axiosInstance.post("/submissions/submit", {
-        codeassignmentId: testAssignmentId,
+        assignmentId: resolvedAssignmentId,
+        codeAssignmentId: resolvedCodeId,
         language,
         sourceCode,
       });
@@ -715,13 +783,16 @@ export default function ExercisePage() {
         );
       } else {
         setConsoleOutput(
-          `[${ts2}] Compiling project...\n✓ Compiled successfully\n✓ All tests passed (${data.passedCases}/${data.totalCases})`
+          `[${ts2}] Compiling project...\n✓ Compiled successfully\n✓ Passed ${data.passedCases}/${data.totalCases} test cases`
         );
       }
       setResult(data);
       setActiveTab("result");
       if (data.submission?.ai_hint) setAiHint(data.submission.ai_hint);
-      if (data.submission?.status === "ACCEPTED") setIsSuccess(true);
+      if (data.submission?.status === "ACCEPTED") {
+        setIsSuccess(true);
+        if (onComplete) onComplete();
+      }
     } catch (err: any) {
       setConsoleOutput(`Lỗi từ server: ${err.response?.data?.message || err.message}`);
     } finally {
@@ -762,7 +833,7 @@ export default function ExercisePage() {
       ? Math.round((result.passedCases / result.totalCases) * 100)
       : 0;
   const showAiTutorBtn = result !== null && result.submission?.status !== "ACCEPTED";
-  const title = exercise?.title ?? "Xây dựng Component Greeting";
+  const title = assignment?.title || exercise?.title || "Bài tập code";
 
   const fileExt: Record<string, string> = {
     javascript: "jsx",
@@ -848,85 +919,146 @@ export default function ExercisePage() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-[18px]">
-                  {/* Description */}
-                  <p className="text-[13px] text-slate-500 leading-[1.7] m-0">
-                    {exercise?.description ?? (
-                      <>
-                        Trong bài tập này, bạn sẽ tạo một functional component đơn giản có tên là{" "}
-                        <code className="bg-slate-100 px-1.5 py-px rounded text-xs text-cyan-600 font-mono">
-                          Greeting
-                        </code>
-                        . Component này sẽ nhận vào một prop là{" "}
-                        <code className="bg-slate-100 px-1.5 py-px rounded text-xs text-cyan-600 font-mono">
-                          name
-                        </code>{" "}
-                        và hiển thị lời chào tương ứng.
-                      </>
-                    )}
-                  </p>
-
-                  {/* Requirements */}
-                  <div>
-                    <p className="text-[11px] font-bold tracking-[0.06em] text-slate-400 uppercase mb-[10px]">
-                      Yêu cầu:
-                    </p>
-                    <ul className="list-none m-0 p-0 flex flex-col gap-2">
-                      {(
-                        exercise?.requirements ?? [
-                          "Component phải được đặt tên là Greeting",
-                          "Sử dụng cấu trúc Functional Component của React",
-                          'Hiển thị văn bản theo định dạng: "Xin chào, [name]!" bên trong thẻ h1',
-                          'Nếu không có prop name, mặc định sẽ hiển thị "Xin chào, Khách!"',
-                        ]
-                      ).map((req, i) => (
-                        <li key={i} className="flex items-start gap-2 text-[13px] text-slate-500 leading-snug">
-                          <span className="w-[18px] h-[18px] rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-[1px]">
-                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </span>
-                          {req}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Examples */}
-                  <div>
-                    <p className="text-[11px] font-bold tracking-[0.06em] text-slate-400 uppercase mb-[10px]">
-                      Ví dụ:
-                    </p>
-                    <div className="flex flex-col gap-2">
-                      {(
-                        exercise?.examples ?? [
-                          { input: '<Greeting name="An" />', output: "<h1>Xin chào, An!</h1>" },
-                          { input: "<Greeting />", output: "<h1>Xin chào, Khách!</h1>" },
-                        ]
-                      ).map((ex, i) => (
-                        <div
-                          key={i}
-                          className="bg-slate-50 border border-[#e8edf2] rounded-[10px] px-[14px] py-[10px] font-mono text-xs"
-                        >
-                          <div className="text-cyan-600 mb-1">
-                            <span className="text-slate-400 text-[10px] font-sans mr-1.5">INPUT</span>
-                            {ex.input}
-                          </div>
-                          <div className="text-slate-500">
-                            <span className="text-slate-400 text-[10px] font-sans mr-1.5">OUTPUT</span>
-                            {ex.output}
-                          </div>
-                        </div>
-                      ))}
+                  {/* Đề bài */}
+                  {exercise?.description && (
+                    <div>
+                      <p className="text-[11px] font-bold tracking-[0.06em] text-slate-400 uppercase mb-[10px]">
+                        Đề bài:
+                      </p>
+                      <p className="text-[13px] text-slate-500 leading-[1.7] m-0">
+                        {exercise.description}
+                      </p>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Note */}
-                  <div className="bg-amber-50 border border-amber-200 rounded-[10px] px-[14px] py-[10px]">
-                    <p className="text-xs text-amber-800 m-0 leading-relaxed">
-                      {exercise?.note ??
-                        "Phải sử dụng cú pháp JSX hợp lệ. Không được dùng class component."}
-                    </p>
-                  </div>
+                  {/* Requirements - chỉ hiển thị khi có data */}
+                  {exercise?.requirements && exercise.requirements.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-bold tracking-[0.06em] text-slate-400 uppercase mb-[10px]">
+                        Yêu cầu:
+                      </p>
+                      <ul className="list-none m-0 p-0 flex flex-col gap-2">
+                        {exercise.requirements.map((req, i) => (
+                          <li key={i} className="flex items-start gap-2 text-[13px] text-slate-500 leading-snug">
+                            <span className="w-[18px] h-[18px] rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-[1px]">
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </span>
+                            {req}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Ví dụ - input/output format */}
+                  {(codeAssignmentInfo?.input_format || codeAssignmentInfo?.output_format || (exercise?.examples && exercise.examples.length > 0)) && (
+                    <div>
+                      <p className="text-[11px] font-bold tracking-[0.06em] text-slate-400 uppercase mb-[10px]">
+                        Ví dụ:
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        {/* Input/Output format từ codeAssignment */}
+                        {(codeAssignmentInfo?.input_format || codeAssignmentInfo?.output_format) && (
+                          <div className="bg-slate-50 border border-[#e8edf2] rounded-[10px] px-[14px] py-[10px] font-mono text-xs">
+                            {codeAssignmentInfo?.input_format && (
+                              <div className="text-cyan-600 mb-1">
+                                <span className="text-slate-400 text-[10px] font-sans mr-1.5 font-bold">INPUT</span>
+                                {codeAssignmentInfo.input_format}
+                              </div>
+                            )}
+                            {codeAssignmentInfo?.output_format && (
+                              <div className="text-slate-500">
+                                <span className="text-slate-400 text-[10px] font-sans mr-1.5 font-bold">OUTPUT</span>
+                                {codeAssignmentInfo.output_format}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Examples từ exercise data (nếu có) */}
+                        {exercise?.examples && exercise.examples.map((ex, i) => (
+                          <div
+                            key={i}
+                            className="bg-slate-50 border border-[#e8edf2] rounded-[10px] px-[14px] py-[10px] font-mono text-xs"
+                          >
+                            <div className="text-cyan-600 mb-1">
+                              <span className="text-slate-400 text-[10px] font-sans mr-1.5 font-bold">INPUT</span>
+                              {ex.input}
+                            </div>
+                            <div className="text-slate-500">
+                              <span className="text-slate-400 text-[10px] font-sans mr-1.5 font-bold">OUTPUT</span>
+                              {ex.output}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Constraints / Giới hạn */}
+                  {(codeAssignmentInfo?.time_limit || codeAssignmentInfo?.memory_limit) && (
+                    <div>
+                      <p className="text-[11px] font-bold tracking-[0.06em] text-slate-400 uppercase mb-[10px]">
+                        Giới hạn:
+                      </p>
+                      <div className="flex gap-3">
+                        {codeAssignmentInfo.time_limit && (
+                          <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
+                              <circle cx="12" cy="12" r="10" />
+                              <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                            <span className="text-xs text-blue-700 font-medium">{codeAssignmentInfo.time_limit}s</span>
+                          </div>
+                        )}
+                        {codeAssignmentInfo.memory_limit && (
+                          <div className="flex items-center gap-1.5 bg-purple-50 border border-purple-200 rounded-lg px-3 py-1.5">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2">
+                              <rect x="2" y="3" width="20" height="14" rx="2" />
+                              <line x1="8" y1="21" x2="16" y2="21" />
+                              <line x1="12" y1="17" x2="12" y2="21" />
+                            </svg>
+                            <span className="text-xs text-purple-700 font-medium">{Math.round(codeAssignmentInfo.memory_limit / 1000)}MB</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Độ khó */}
+                  {exercise?.difficulty && (
+                    <div>
+                      <p className="text-[11px] font-bold tracking-[0.06em] text-slate-400 uppercase mb-[10px]">
+                        Độ khó:
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className={[
+                          "text-[11px] px-3 py-1 rounded-full font-semibold",
+                          exercise.difficulty === "Dễ" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+                          exercise.difficulty === "Khó" ? "bg-red-50 text-red-700 border border-red-200" :
+                          "bg-amber-50 text-amber-700 border border-amber-200"
+                        ].join(" ")}>
+                          {exercise.difficulty}
+                        </span>
+                        {codeAssignmentInfo?.language_support && (
+                          <span className="text-[11px] px-3 py-1 rounded-full font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                            {codeAssignmentInfo.language_support}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Note - chỉ hiển thị khi có và không phải note đã map từ input/output */}
+                  {exercise?.note && !exercise.note.startsWith('Input:') && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-[10px] px-[14px] py-[10px]">
+                      <p className="text-xs text-amber-800 m-0 leading-relaxed">
+                        {exercise.note}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -1259,7 +1391,7 @@ export default function ExercisePage() {
                 Tuyệt vời! Bạn đã hoàn thành bài tập này.
               </span>
               <button
-                onClick={() => navigate(-1)}
+                onClick={() => nextPath ? navigate(nextPath) : navigate(-1)}
                 className="flex items-center gap-1.5 text-[13px] px-5 py-2 rounded-full bg-green-600 text-white border-0 cursor-pointer font-semibold hover:bg-green-700 transition-colors"
               >
                 Bài tiếp theo

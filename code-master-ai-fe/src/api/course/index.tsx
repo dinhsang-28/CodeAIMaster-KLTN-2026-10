@@ -67,6 +67,11 @@ export const getCourseFullInfo = async (id: string) => {
   return res.data?.data || res.data;
 };
 
+export const getLearningCourse = async (id: string) => {
+  const res = await axiosInstance.get(`/courses/${id}/learning`);
+  return res.data?.data || res.data;
+};
+
 export const createCourse = async (data: FormData | object) => {
   const isFormData = data instanceof FormData;
   const res = await axiosInstance.post('/courses', data, {

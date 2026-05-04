@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Quer
 import { SubmissionsService } from './submissions.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { UpdateSubmissionDto } from './dto/update-submission.dto';
+import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { JwtAuthGuard } from '@/auth/passport/jwt-auth.guard';
 import { Public } from '@/decorator/customize';
 import { RequirePermissions } from '@/auth/decorators/permisions.decorator';
@@ -15,18 +16,32 @@ export class SubmissionsController {
   @UseGuards(JwtAuthGuard) 
   async submitCode(
     @Req() req,
-    @Body('codeassignmentId')  codeassignmentId: string,
+    @Body('assignmentId') assignmentId: string,
+    @Body('codeAssignmentId') codeAssignmentId: string,
+    @Body('codeassignmentId') legacyCodeAssignmentId: string,
     @Body('language') language: string, 
     @Body('sourceCode') sourceCode: string,
   ){
     const userId = req.user._id;
     return this.submissionsService.submitCode(
       userId,
-      codeassignmentId,
+      assignmentId || '',
+      codeAssignmentId || legacyCodeAssignmentId || '',
       language,
       sourceCode,
     );
   }
+
+  @Post('quiz')
+  @UseGuards(JwtAuthGuard)
+  async submitQuiz(
+    @Req() req,
+    @Body() submitQuizDto: SubmitQuizDto,
+  ) {
+    const userId = req.user._id;
+    return this.submissionsService.submitQuiz(userId, submitQuizDto);
+  }
+
   //API gia su AI phan tich loi code
   @UseGuards(JwtAuthGuard)
 

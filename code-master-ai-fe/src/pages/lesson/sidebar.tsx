@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle2, Play, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface LessonItem {
-  id: number;
+  id: string;
+  lessonId: string;
   title: string;
   path: string;
   type: string;
@@ -18,7 +19,7 @@ type LessonStatus = "done" | "learning" | "locked";
 const Sidebar = ({ data }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [completedLessons, setCompletedLessons] = useState<number[]>([]);
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -36,16 +37,34 @@ const Sidebar = ({ data }: SidebarProps) => {
     (item) => item.path === location.pathname
   );
 
-  const completedCount = completedLessons.length;
-  const progressPercent =
-    data.length > 0 ? (completedCount / data.length) * 100 : 0;
+  const completedSet = new Set(completedLessons);
+  const completedCount = data.filter((item) =>
+    completedSet.has(item.id) || completedSet.has(`${item.lessonId}::video`) || completedSet.has(`${item.lessonId}::quiz`) || completedSet.has(`${item.lessonId}::code`)
+  ).length;
+  const progressPercent = data.length > 0 ? (completedCount / data.length) * 100 : 0;
 
-  const getStatus = (index: number): LessonStatus => {
-    const lessonId = data[index].id;
+  const getStatus = (item: LessonItem, index: number): LessonStatus => {
+    const prevItems = data.slice(0, index);
+    const videoKey = `${item.lessonId}::video`;
+    const quizKey = `${item.lessonId}::quiz`;
+    const codeKey = `${item.lessonId}::code`;
+    const isCurrent = index === currentIndex;
+    const isDone = completedSet.has(item.id) || completedSet.has(videoKey) || completedSet.has(quizKey) || completedSet.has(codeKey);
 
-    if (index === currentIndex) return "learning";
-    if (completedLessons.includes(lessonId)) return "done";
-    if (index === completedCount) return "learning";
+    if (isCurrent) return "learning";
+    if (isDone) return "done";
+
+    const sameLessonItems = data.filter((x) => x.lessonId === item.lessonId);
+    const currentPosition = sameLessonItems.findIndex((x) => x.id === item.id);
+    const previousInLesson = sameLessonItems.slice(0, currentPosition);
+    const prerequisiteMet = previousInLesson.every((x) =>
+      completedSet.has(x.id) || completedSet.has(`${x.lessonId}::video`) || completedSet.has(`${x.lessonId}::quiz`) || completedSet.has(`${x.lessonId}::code`)
+    );
+
+    if (prerequisiteMet) return "learning";
+    if (prevItems.some((x) => completedSet.has(x.id) || completedSet.has(`${x.lessonId}::video`) || completedSet.has(`${x.lessonId}::quiz`) || completedSet.has(`${x.lessonId}::code`))) {
+      return "locked";
+    }
 
     return "locked";
   };
@@ -60,6 +79,15 @@ const Sidebar = ({ data }: SidebarProps) => {
         return <Lock size={18} className="text-gray-300" />;
     }
   };
+
+  // Group items by lessonId
+  const groupedData = data.reduce((acc, item) => {
+    if (!acc[item.lessonId]) acc[item.lessonId] = [];
+    acc[item.lessonId].push(item);
+    return acc;
+  }, {} as Record<string, LessonItem[]>);
+  
+  const groupedArray = Object.values(groupedData);
 
   return (
     <div
@@ -100,31 +128,54 @@ const Sidebar = ({ data }: SidebarProps) => {
       )}
 
       {/* LIST */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {data.map((item, index) => {
-          const status = getStatus(index);
-          const isActive = location.pathname === item.path;
-          const isLocked = status === "locked";
+      <div className="flex-1 overflow-y-auto p-2 space-y-4">
+        {groupedArray.map((group, groupIndex) => {
+          const videoItem = group.find(i => i.type === 'video');
+          const lessonTitle = videoItem ? videoItem.title : `Bài ${groupIndex + 1}`;
 
           return (
-            <button
-              key={item.id}
-              onClick={() => !isLocked && navigate(item.path)}
-              disabled={isLocked}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition
-                ${collapsed ? "justify-center" : ""}
-                ${isActive ? "bg-brand-50" : "hover:bg-gray-50"}
-                ${isLocked ? "opacity-50 cursor-not-allowed" : ""}
-              `}
-            >
-              {getStatusIcon(status)}
-
+            <div key={group[0].lessonId} className="space-y-1">
               {!collapsed && (
-                <div className="text-sm font-medium truncate">
-                  Bài {index + 1}: {item.title}
+                <div className="text-xs font-bold text-gray-500 uppercase px-3 py-1 mb-1">
+                  Bài {groupIndex + 1}: {lessonTitle.replace(/^Bài \d+: /, '')}
                 </div>
               )}
-            </button>
+              {group.map((item) => {
+                const globalIndex = data.findIndex(d => d.id === item.id);
+                const status = getStatus(item, globalIndex);
+                const isActive = location.pathname === item.path;
+                const isLocked = status === "locked";
+
+                let displayTitle = item.title;
+                if (item.type !== 'video') {
+                  // For sub-items, just show the type e.g., "Quiz", "Code"
+                  displayTitle = item.type === 'quiz' ? 'Bài tập trắc nghiệm' : 'Bài tập lập trình';
+                } else {
+                  displayTitle = 'Video bài giảng';
+                }
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => !isLocked && navigate(item.path)}
+                    disabled={isLocked}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition
+                      ${collapsed ? "justify-center" : "pl-6"}
+                      ${isActive ? "bg-brand-50" : "hover:bg-gray-50"}
+                      ${isLocked ? "opacity-50 cursor-not-allowed" : ""}
+                    `}
+                  >
+                    {getStatusIcon(status)}
+
+                    {!collapsed && (
+                      <div className="text-sm font-medium truncate">
+                        {displayTitle}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           );
         })}
       </div>

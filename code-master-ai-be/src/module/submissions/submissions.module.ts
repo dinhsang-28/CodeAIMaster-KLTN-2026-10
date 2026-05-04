@@ -11,6 +11,8 @@ import { AiAssistantModule } from '@/ai-assistant/ai-assistant.module';
 import { UserLessonProgressModule } from '../user-lesson-progress/user-lesson-progress.module';
 import { Course, CourseSchema } from '../courses/entities/course.entity';
 import { Advisory, AdvisorySchema } from './entities/advisory.entity';
+import { Quiz, QuizSchema } from '../quizzes/entities/quiz.entity';
+import { Question, QuestionSchema } from '../questions/entities/question.entity';
 
 @Module({
   imports: [
@@ -23,7 +25,9 @@ import { Advisory, AdvisorySchema } from './entities/advisory.entity';
       { name: CodeAssignment.name, schema: CodeAssignmentSchema },
       { name: TestCase.name, schema: TestCaseSchema },
       {name:Course.name,schema:CourseSchema},
-      {name:Advisory.name, schema: AdvisorySchema}
+      {name:Advisory.name, schema: AdvisorySchema},
+      { name: Quiz.name, schema: QuizSchema },
+      { name: Question.name, schema: QuestionSchema }
     ]),
   ],
   controllers: [SubmissionsController],
