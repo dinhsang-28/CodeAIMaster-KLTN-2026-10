@@ -115,6 +115,7 @@ const AssignmentFormModal: React.FC<AssignmentFormModalProps> = ({
       language: "javascript",
       starter_code: "function solve(){}",
     });
+    // eslint-disable-next-line
   }, [visible, mode, initialData, type, form]);
 
   const initFormData = async (data: any) => {
