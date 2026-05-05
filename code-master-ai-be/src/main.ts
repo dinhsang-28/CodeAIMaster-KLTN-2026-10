@@ -26,6 +26,16 @@ async function bootstrap() {
       credentials:true
     }
   )
+//   app.enableCors({
+//   origin: [
+//     'https://code-ai-master-kltn-2026-10.vercel.app', // frontend production
+//     'http://localhost:5173', // local dev
+//     'http://localhost:3000',
+//   ],
+//   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+//   credentials: true,
+//   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+// });
   await app.listen(port);
 }
 bootstrap();
