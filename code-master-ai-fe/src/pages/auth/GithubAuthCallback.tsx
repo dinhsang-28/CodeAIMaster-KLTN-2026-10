@@ -23,6 +23,14 @@ export default function GithubAuthCallback() {
       }
 
       const user = JSON.parse(decodeURIComponent(userString));
+       const { accessToken, refreshToken, ...userInfoClean } = user;
+
+      if (accessToken) {
+      document.cookie = `access_token=${accessToken}; path=/; max-age=900;SameSite=None; Secure`;
+    }
+    if (refreshToken) {
+      document.cookie = `refresh_token=${refreshToken}; path=/; max-age=604800;SameSite=None; Secure`;
+    }
       // if (user.accessToken && user.refreshToken) {
       //   // Lưu Access Token (Sống 15 phút - 900 giây)
       //   document.cookie = `access_token=${user.accessToken}; path=/; max-age=900; SameSite=Lax; Secure`;
@@ -34,9 +42,14 @@ export default function GithubAuthCallback() {
       // delete user.accessToken;
       // delete user.refreshToken;
 
-      setUserInfo(user);
+      // setUserInfo(userInfoClean);
+      localStorage.setItem("userInfo", JSON.stringify({
+      state: { userInfo: userInfoClean },
+      version: 0
+    }));
+    window.location.href = "/";
       showMessage("success", "Đăng nhập GitHub thành công!");
-      navigate("/");
+      // navigate("/");
     } catch (error) {
       console.error("Github callback error:", error);
       showMessage("error", "Có lỗi khi xử lý đăng nhập GitHub!");

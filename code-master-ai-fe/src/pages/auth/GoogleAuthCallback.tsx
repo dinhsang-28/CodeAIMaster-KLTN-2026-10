@@ -98,17 +98,30 @@ export default function GoogleAuthCallback() {
     const { accessToken, refreshToken, ...userInfoClean } = user;
     console.log("3. userInfoClean:", userInfoClean); // object có rỗng không?
 
+    if (accessToken) {
+      document.cookie = `access_token=${accessToken}; path=/; max-age=900;SameSite=None; Secure`;
+    }
+    if (refreshToken) {
+      document.cookie = `refresh_token=${refreshToken}; path=/; max-age=604800;SameSite=None; Secure`;
+    }
+
     setUserInfo(userInfoClean);
     
     // Kiểm tra ngay sau khi set
     console.log("4. store sau khi set:", useUserInfo.getState().userInfo);
 
-   setTimeout(() => {
-  console.log("sau 100ms:", useUserInfo.getState().userInfo);
-  // Kiểm tra localStorage trực tiếp
-  console.log("localStorage:", localStorage.getItem("userInfo"));
-  navigate("/", { replace: true });
-}, 100);
+    localStorage.setItem("userInfo", JSON.stringify({
+      state: { userInfo: userInfoClean },
+      version: 0
+    }));
+    window.location.href = "/";
+
+  //  setTimeout(() => {
+//   console.log("sau 100ms:", useUserInfo.getState().userInfo);
+//   // Kiểm tra localStorage trực tiếp
+//   console.log("localStorage:", localStorage.getItem("userInfo"));
+//   navigate("/", { replace: true });
+// }, 100);
   } catch (error) {
     console.error("Error:", error);
     navigate("/login");

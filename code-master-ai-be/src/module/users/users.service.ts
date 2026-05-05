@@ -441,6 +441,8 @@ export class UsersService {
       googleId: profile.provider === 'google' ? profile.googleId : undefined,
       githubId: profile.provider === 'github' ? profile.githubId : undefined,
       provider: profile.provider,
+      address: '',
+      phone: '',
       isActive: true,
     });
     const populatedUser = await this.userModel
