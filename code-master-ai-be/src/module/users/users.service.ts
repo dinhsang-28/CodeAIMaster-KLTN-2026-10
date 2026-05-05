@@ -70,9 +70,14 @@ export class UsersService {
     // 1. Tạm thời bỏ qua aqp để test
     const limit = pageSize ? Number(pageSize) : 10;
     const offset = ((current ? Number(current) : 1) - 1) * limit;
-
     // Nếu không có trường deleted, hãy để là {}
     const filter: any = {};
+    const userRole = await this.roleModel.findOne({ role_name: 'user' });
+    console.log('userRole:', userRole); 
+    if (userRole) {
+      filter.role_id = { $ne: userRole._id };
+    }
+    console.log('filter role_id ne user:', filter.role_id);
     if (query.search) {
       filter.$or = [
         { name: { $regex: query.search, $options: 'i' } },
@@ -86,7 +91,7 @@ export class UsersService {
         .limit(limit)
         .skip(offset)
         .populate('role_id', 'role_name')
-        .select('-password ')
+        .select('-password')
         .exec(),
       this.userModel.countDocuments(filter),
     ]);
