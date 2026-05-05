@@ -227,76 +227,113 @@ export class AuthService {
     return await this.usersService.changePassword(data);
   };
 
+  // async validateOAuthLogin(profile: any, res: any) {
+  //   const accessExpire = process.env.JWT_ACCESS_EXPIRE || '15m';
+  //   const refreshExpire = process.env.JWT_REFRESH_EXPIRE || '7d';
+  //   const accessCookieAge =
+  //     parseInt(process.env.COOKIE_ACCESS_MAX_AGE as string, 10) || 900000;
+  //   const refreshCookieAge =
+  //     parseInt(process.env.COOKIE_REFRESH_MAX_AGE as string, 10) || 604800000;
+  //   const isProd = process.env.NODE_ENV === 'production';
+
+  //   const user = await this.usersService.createOAuthUser(profile);
+
+  //   const payload = {
+  //     username: user.email,
+  //     sub: user._id,
+  //     permissions: user.role_id?.['permissions'] || [],
+  //   };
+
+  //   const accessToken = this.jwtService.sign(payload, {
+  //     expiresIn: accessExpire as any,
+  //   });
+  //   const refreshToken = this.jwtService.sign(payload, {
+  //     expiresIn: refreshExpire as any,
+  //   });
+
+  //   await this.usersService.updateRefreshToken(
+  //     user._id.toString(),
+  //     refreshToken,
+  //   );
+
+  //   const cookieBase = {
+  //     httpOnly: true,
+  //     secure: isProd,
+  //     sameSite: isProd ? 'none' : ('lax' as const),
+  //   };
+
+  //   res.cookie('access_token', accessToken, {
+  //     ...cookieBase,
+  //     maxAge: accessCookieAge,
+  //   });
+
+  //   res.cookie('refresh_token', refreshToken, {
+  //     ...cookieBase,
+  //     path: '/',
+  //     maxAge: refreshCookieAge,
+  //   });
+
+  //   //  Truyền user info qua URL để frontend lấy
+  //   const userInfo = encodeURIComponent(
+  //     JSON.stringify({
+  //       _id: user._id,
+  //       email: user.email,
+  //       name: user.name,
+  //       image: user.image,
+  //       permissions: user.role_id?.['permissions'] || [], 
+  //       phone: user.phone || '',
+  //       // address:user.address || '',
+  //       accessToken: accessToken,  
+  //       refreshToken: refreshToken, 
+  //     }),
+  //   );
+  //   const frontendUrl =
+  //     process.env.FRONTEND_URL ||
+  //     'https://code-ai-master-kltn-2026-10.vercel.app';
+
+  //   const callbackUrl =
+  //     profile.provider === 'github'
+  //       ? `${frontendUrl}/auth/github/callback?user=${userInfo}`
+  //       : `${frontendUrl}/auth/google/callback?user=${userInfo}`;
+
+  //   return res.redirect(callbackUrl);
+  // }
   async validateOAuthLogin(profile: any, res: any) {
-    const accessExpire = process.env.JWT_ACCESS_EXPIRE || '15m';
-    const refreshExpire = process.env.JWT_REFRESH_EXPIRE || '7d';
-    const accessCookieAge =
-      parseInt(process.env.COOKIE_ACCESS_MAX_AGE as string, 10) || 900000;
-    const refreshCookieAge =
-      parseInt(process.env.COOKIE_REFRESH_MAX_AGE as string, 10) || 604800000;
-    const isProd = process.env.NODE_ENV === 'production';
+  const accessExpire = process.env.JWT_ACCESS_EXPIRE || '15m';
+  const refreshExpire = process.env.JWT_REFRESH_EXPIRE || '7d';
 
-    const user = await this.usersService.createOAuthUser(profile);
+  const user = await this.usersService.createOAuthUser(profile);
 
-    const payload = {
-      username: user.email,
-      sub: user._id,
-      permissions: user.role_id?.['permissions'] || [],
-    };
+  const payload = {
+    username: user.email,
+    sub: user._id,
+    permissions: user.role_id?.['permissions'] || [],
+  };
 
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: accessExpire as any,
-    });
-    const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: refreshExpire as any,
-    });
+  const accessToken = this.jwtService.sign(payload, { expiresIn: accessExpire as any });
+  const refreshToken = this.jwtService.sign(payload, { expiresIn: refreshExpire as any });
 
-    await this.usersService.updateRefreshToken(
-      user._id.toString(),
-      refreshToken,
-    );
+  await this.usersService.updateRefreshToken(user._id.toString(), refreshToken);
 
-    const cookieBase = {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? 'none' : ('lax' as const),
-    };
+  // Chỉ truyền qua URL, không set cookie ở đây
+  const userInfo = encodeURIComponent(JSON.stringify({
+    _id: user._id,
+    email: user.email,
+    name: user.name,
+    image: user.image,
+    permissions: user.role_id?.['permissions'] || [],
+    phone: user.phone || '',
+    accessToken,
+    refreshToken,
+  }));
 
-    res.cookie('access_token', accessToken, {
-      ...cookieBase,
-      maxAge: accessCookieAge,
-    });
+  const frontendUrl = process.env.FRONTEND_URL || 'https://code-ai-master-kltn-2026-10.vercel.app';
+  const callbackUrl = profile.provider === 'github'
+    ? `${frontendUrl}/auth/github/callback?user=${userInfo}`
+    : `${frontendUrl}/auth/google/callback?user=${userInfo}`;
 
-    res.cookie('refresh_token', refreshToken, {
-      ...cookieBase,
-      path: '/',
-      maxAge: refreshCookieAge,
-    });
-
-    //  Truyền user info qua URL để frontend lấy
-    const userInfo = encodeURIComponent(
-      JSON.stringify({
-        _id: user._id,
-        email: user.email,
-        name: user.name,
-        image: user.image,
-        permissions: user.role_id?.['permissions'] || [], 
-        phone: user.phone || '',
-        accessToken: accessToken,  
-        refreshToken: refreshToken, 
-      }),
-    );
-    const frontendUrl =
-      process.env.FRONTEND_URL ||
-      'https://code-ai-master-kltn-2026-10.vercel.app';
-
-    const callbackUrl =
-      profile.provider === 'github'
-        ? `${frontendUrl}/auth/github/callback?user=${userInfo}`
-        : `${frontendUrl}/auth/google/callback?user=${userInfo}`;
-
-    return res.redirect(callbackUrl);
-  }
+  return res.redirect(callbackUrl);
+}
   async getMe(userId: string) {
     const user = await this.usersService.findOne(userId);
 
