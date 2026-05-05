@@ -282,6 +282,8 @@ export class AuthService {
         image: user.image,
         permissions: user.role_id?.['permissions'] || [], 
         phone: user.phone || '',
+        accessToken: accessToken,  
+        refreshToken: refreshToken, 
       }),
     );
     const frontendUrl =

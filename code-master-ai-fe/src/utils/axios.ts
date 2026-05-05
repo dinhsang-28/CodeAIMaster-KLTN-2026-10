@@ -256,7 +256,6 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
         useUserInfo.getState().clearUserInfo();
-
         const currentPath = window.location.pathname;
         const publicPaths = ["/", "/introduce", "/blog", "/course"];
         const isPublicPage = publicPaths.some((path) =>
