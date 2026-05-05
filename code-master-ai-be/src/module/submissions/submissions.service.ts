@@ -37,7 +37,384 @@ export class SubmissionsService {
     private readonly userLessonProgressService: UserLessonProgressService,
   ) {}
 
- async submitCode(
+//  async submitCode(
+//     userId: string,
+//     assignmentId: string,
+//     codeAssignmentId: string,
+//     language: string,
+//     sourceCode: string,
+//   ) {
+//     try {
+//       const assignmentObjectId = Types.ObjectId.isValid(assignmentId)
+//         ? new Types.ObjectId(assignmentId)
+//         : null;
+
+//       const codeAssignmentObjectId = Types.ObjectId.isValid(codeAssignmentId)
+//         ? new Types.ObjectId(codeAssignmentId)
+//         : null;
+
+//       let codeAssignment: any = null;
+
+//       if (codeAssignmentObjectId) {
+//         codeAssignment = await this.codeAssignmentModel.findById(codeAssignmentObjectId).lean().exec();
+//       }
+
+//       if (!codeAssignment && assignmentObjectId) {
+//         codeAssignment = await this.codeAssignmentModel.findOne({ assignment_id: assignmentObjectId }).lean().exec();
+//       }
+
+//       if (!codeAssignment) {
+//         throw new BadRequestException('Không tìm thấy codeAssignment hợp lệ cho bài tập này.');
+//       }
+
+//       const resolvedCodeAssignmentObjectId = new Types.ObjectId(codeAssignment._id as any);
+
+//       const testCases = await this.testCaseModel
+//         .find({ code_assignment_id: resolvedCodeAssignmentObjectId })
+//         .lean()
+//         .exec();
+
+//       if (!testCases || testCases.length === 0) {
+//         throw new BadRequestException('Bài tập chưa có testcase. Vui lòng tạo testcase bằng AI trước khi cho học viên nộp bài.');
+//       }
+
+//       //  Map ID ngôn ngữ
+//       // const languageMap = { python: 71, cpp: 54, java: 62, javascript: 63 };
+//       const normalizedLang = language.toLowerCase().trim();
+//       const languageId = JUDGE0_LANGUAGES[normalizedLang];
+//       if (!languageId) {
+//         throw new BadRequestException(`Hệ thống chưa hỗ trợ ngôn ngữ: ${language}`);
+//       }
+
+//       let passedCases = 0;
+//       let maxTime = 0;
+//       let maxMemory = 0;
+//       let finalStatus = 'ACCEPTED';
+//       let errorDetail:string | null = null;
+      
+
+//       // HÀM DELAY ĐỂ HỖ TRỢ POLLING (Nghỉ một chút trước khi hỏi lại Judge0)
+//       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+//       // Gửi lên Judge0 
+//       const judgePromises = testCases.map(async (testCase: any) => {
+//         const payload = {
+//           source_code: Buffer.from(sourceCode).toString('base64'),
+//           language_id: languageId,
+//           stdin: testCase.input_data ? Buffer.from(testCase.input_data).toString('base64') : null, 
+//           expected_output: testCase.expected_output ? Buffer.from(testCase.expected_output).toString('base64') : null,
+//           cpu_time_limit: codeAssignment.time_limit || 2.0,
+//           memory_limit: codeAssignment.memory_limit || 128000,
+//         };
+
+//         //  Gửi request lấy Token 
+//         const initResponse = await firstValueFrom(
+//           this.httpService.post(
+//             `${this.JUDGE0_URL}/submissions?base64_encoded=true&wait=false`,
+//             payload,
+//             { headers: { 'Content-Type': 'application/json' } },
+//           ),
+//         );
+        
+//         const token = initResponse.data.token;
+//         let result: any = null;
+//         let statusId = 1; // 1: In Queue, 2: Processing
+
+//         //  Polling - Vòng lặp hỏi kết quả liên tục
+//         while (statusId === 1 || statusId === 2) {
+//           await delay(1000); // Nghỉ 1 giây để Judge0 kịp chayvà chấm bài
+//           // lay ket qua khi judge0 chấm xong
+//           const checkResponse = await firstValueFrom(
+//             this.httpService.get(
+//               `${this.JUDGE0_URL}/submissions/${token}?base64_encoded=true`
+//             )
+//           );
+          
+//           result = checkResponse.data;
+//           statusId = result.status.id;
+//         }
+
+//         //  Có kết quả cuối cùng thì trả về
+//         return result;
+//       });
+      
+
+//       const judgeResults = await Promise.all(judgePromises);
+      
+//       console.log("=== KẾT QUẢ TỪ JUDGE0 ===");
+//       console.log(JSON.stringify(judgeResults, null, 2));
+//       console.log("=========================");
+
+//       //  Phân tích kết quả
+//       for (const result of judgeResults) {
+//         if (result.status.id === 3) {
+//           passedCases++;
+//         } else {
+//           if (result.status.id === 6) {
+//             finalStatus = 'COMPILATION_ERROR';
+//             errorDetail = result.compile_output 
+//               ? Buffer.from(result.compile_output, 'base64').toString('utf-8') 
+//               : 'Lỗi biên dịch không xác định';
+//             break;
+//           } else {
+//             if (finalStatus === 'ACCEPTED') {
+//               finalStatus = result.status.description.toUpperCase().replace(/ /g, '_');
+//             }
+//             if (!errorDetail && result.stderr) {
+//               errorDetail = Buffer.from(result.stderr, 'base64').toString('utf-8');
+//             }
+//           }
+//         }
+//         if (result.time && parseFloat(result.time) > maxTime) maxTime = parseFloat(result.time);
+//         if (result.memory && result.memory > maxMemory) maxMemory = result.memory;
+//       }
+
+//       // Lưu Submission 
+//       const newSubmission = await this.submissionModel.create({
+//         user_id: userId,
+//         codeAssignment_id: resolvedCodeAssignmentObjectId,
+//         language: language,
+//         code: sourceCode,
+//         status: finalStatus,
+//         score: (passedCases / testCases.length) * 10,
+//         ai_hint: null
+//       });
+
+//       // Update UserLessonProgress
+//       if (codeAssignment.assignment_id) {
+//         await this.userLessonProgressService.handleAssignmentGraded(
+//           userId,
+//           codeAssignment.assignment_id.toString(),
+//           finalStatus === 'ACCEPTED',
+//         );
+//       }
+
+//       return {
+//         message: 'Chấm bài hoàn tất',
+//         submission: newSubmission,
+//         passedCases,
+//         totalCases: testCases.length,
+//         compileError: errorDetail,
+//       };
+
+//     } catch (error: any) {
+//       if (error instanceof BadRequestException) throw error;
+      
+//       // Log chi tiết lỗi để debug
+//       console.error('=== LỖI HỆ THỐNG CHẤM BÀI ===');
+//       console.error('Error message:', error?.message);
+//       console.error('Error response status:', error?.response?.status);
+//       console.error('Error response data:', JSON.stringify(error?.response?.data, null, 2));
+//       console.error('Full error:', error);
+//       console.error('================================');
+
+//       // Trả lỗi chi tiết hơn
+//       const detail = error?.response?.data?.message || error?.response?.data?.error || error?.message || 'Lỗi không xác định';
+//       throw new InternalServerErrorException(`Lỗi hệ thống chấm bài: ${detail}`);
+//     }
+//   }
+
+//   async submitCode(
+//     userId: string,
+//     assignmentId: string,
+//     codeAssignmentId: string,
+//     language: string,
+//     sourceCode: string,
+//   ) {
+//     try {
+//       // 1. CHUẨN BỊ DỮ LIỆU & KIỂM TRA ĐẦU VÀO
+//       const assignmentObjectId = Types.ObjectId.isValid(assignmentId)
+//         ? new Types.ObjectId(assignmentId)
+//         : null;
+
+//       const codeAssignmentObjectId = Types.ObjectId.isValid(codeAssignmentId)
+//         ? new Types.ObjectId(codeAssignmentId)
+//         : null;
+
+//       let codeAssignment: any = null;
+
+//       if (codeAssignmentObjectId) {
+//         codeAssignment = await this.codeAssignmentModel.findById(codeAssignmentObjectId).lean().exec();
+//       }
+
+//       if (!codeAssignment && assignmentObjectId) {
+//         codeAssignment = await this.codeAssignmentModel.findOne({ assignment_id: assignmentObjectId }).lean().exec();
+//       }
+
+//       if (!codeAssignment) {
+//         throw new BadRequestException('Không tìm thấy codeAssignment hợp lệ cho bài tập này.');
+//       }
+
+//       const resolvedCodeAssignmentObjectId = new Types.ObjectId(codeAssignment._id as any);
+
+//       const testCases = await this.testCaseModel
+//         .find({ code_assignment_id: resolvedCodeAssignmentObjectId })
+//         .lean()
+//         .exec();
+
+//       if (!testCases || testCases.length === 0) {
+//         throw new BadRequestException('Bài tập chưa có testcase. Vui lòng tạo testcase bằng AI trước khi cho học viên nộp bài.');
+//       }
+
+//       // Map ID ngôn ngữ
+//       const normalizedLang = language.toLowerCase().trim();
+//       const languageId = JUDGE0_LANGUAGES[normalizedLang];
+//       if (!languageId) {
+//         throw new BadRequestException(`Hệ thống chưa hỗ trợ ngôn ngữ: ${language}`);
+//       }
+
+//       // =====================================================================
+//       // 🚨 BƯỚC QUAN TRỌNG: TIÊM CODE NGẦM (CODE INJECTION) CHO JAVASCRIPT
+//       // =====================================================================
+//       let finalSourceCode = sourceCode;
+
+//       if (normalizedLang === 'javascript' || normalizedLang === 'js') {
+//         finalSourceCode = `${sourceCode}
+
+// // --- ĐOẠN CODE HỆ THỐNG TỰ ĐỘNG THÊM VÀO ĐỂ ĐỌC/GHI LUỒNG I/O CHO JUDGE0 ---
+// const fs = require('fs');
+// try {
+//   const inputData = fs.readFileSync(0, 'utf-8');
+//   if (typeof solve === 'function') {
+//     const result = solve(inputData);
+//     if (result !== undefined) {
+//       console.log(result);
+//     }
+//   }
+// } catch (e) {
+//   console.error(e);
+// }
+// `;
+//       }
+
+//       // 2. BIẾN THEO DÕI KẾT QUẢ
+//       let passedCases = 0;
+//       let maxTime = 0;
+//       let maxMemory = 0;
+//       let finalStatus = 'ACCEPTED';
+//       let errorDetail: string | null = null;
+//       const judgeResults: any[] = [];
+
+//       // HÀM DELAY ĐỂ HỖ TRỢ POLLING
+//       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+//       // =====================================================================
+//       // 3. GỬI LÊN JUDGE0 (CHẠY TUẦN TỰ ĐỂ TRÁNH LỖI 429 - RATE LIMIT)
+//       // =====================================================================
+//       for (const testCase of testCases) {
+//         const payload = {
+//           // Gửi đoạn code đã được "tiêm" thêm hàm đọc I/O
+//           source_code: Buffer.from(finalSourceCode).toString('base64'),
+//           language_id: languageId,
+//           stdin: testCase.input_data ? Buffer.from(testCase.input_data).toString('base64') : null, 
+//           expected_output: testCase.expected_output ? Buffer.from(testCase.expected_output).toString('base64') : null,
+//           cpu_time_limit: codeAssignment.time_limit || 2.0,
+//           memory_limit: codeAssignment.memory_limit || 128000,
+//         };
+
+//         // Gửi request lấy Token 
+//         const initResponse = await firstValueFrom(
+//           this.httpService.post(
+//             `${this.JUDGE0_URL}/submissions?base64_encoded=true&wait=false`,
+//             payload,
+//             { headers: { 'Content-Type': 'application/json' } },
+//           ),
+//         );
+        
+//         const token = initResponse.data.token;
+//         let result: any = null;
+//         let statusId = 1; // 1: In Queue, 2: Processing
+
+//         // Polling - Vòng lặp hỏi kết quả liên tục
+//         while (statusId === 1 || statusId === 2) {
+//           await delay(1000); // Nghỉ 1 giây
+//           const checkResponse = await firstValueFrom(
+//             this.httpService.get(
+//               `${this.JUDGE0_URL}/submissions/${token}?base64_encoded=true`
+//             )
+//           );
+          
+//           result = checkResponse.data;
+//           statusId = result.status.id;
+//         }
+
+//         judgeResults.push(result);
+
+//         // 4. PHÂN TÍCH KẾT QUẢ
+//         // Dừng chấm các Test Case khác nếu dính lỗi biên dịch
+//         if (statusId === 6) {
+//           finalStatus = 'COMPILATION_ERROR';
+//           errorDetail = result.compile_output 
+//             ? Buffer.from(result.compile_output, 'base64').toString('utf-8') 
+//             : 'Lỗi biên dịch không xác định';
+//           break; 
+//         } 
+        
+//         if (statusId === 3) {
+//           passedCases++;
+//         } else {
+//           if (finalStatus === 'ACCEPTED') {
+//             finalStatus = result.status.description.toUpperCase().replace(/ /g, '_');
+//           }
+//           if (!errorDetail && result.stderr) {
+//             errorDetail = Buffer.from(result.stderr, 'base64').toString('utf-8');
+//           }
+//         }
+
+//         if (result.time && parseFloat(result.time) > maxTime) maxTime = parseFloat(result.time);
+//         if (result.memory && result.memory > maxMemory) maxMemory = result.memory;
+//       }
+
+//       console.log("=== KẾT QUẢ TỪ JUDGE0 ===");
+//       console.log(JSON.stringify(judgeResults, null, 2));
+//       console.log("=========================");
+
+//       // 5. LƯU KẾT QUẢ VÀO DATABASE
+//       const newSubmission = await this.submissionModel.create({
+//         user_id: userId,
+//         codeAssignment_id: resolvedCodeAssignmentObjectId,
+//         language: language,
+//         code: sourceCode, // Lưu code GỐC của học viên (Không lưu phần code đã tiêm để giữ code sạch)
+//         status: finalStatus,
+//         score: (passedCases / testCases.length) * 10,
+//         execute_time: maxTime,     
+//         execute_memory: maxMemory, 
+//         ai_hint: null
+//       });
+
+//       // Update UserLessonProgress
+//       if (codeAssignment.assignment_id) {
+//         await this.userLessonProgressService.handleAssignmentGraded(
+//           userId,
+//           codeAssignment.assignment_id.toString(),
+//           finalStatus === 'ACCEPTED',
+//         );
+//       }
+
+//       return {
+//         message: 'Chấm bài hoàn tất',
+//         submission: newSubmission,
+//         passedCases,
+//         totalCases: testCases.length,
+//         compileError: errorDetail,
+//       };
+
+//     } catch (error: any) {
+//       if (error instanceof BadRequestException) throw error;
+      
+//       console.error('=== LỖI HỆ THỐNG CHẤM BÀI ===');
+//       console.error('Error message:', error?.message);
+//       console.error('Error response status:', error?.response?.status);
+//       console.error('Error response data:', JSON.stringify(error?.response?.data, null, 2));
+//       console.error('Full error:', error);
+//       console.error('================================');
+
+//       const detail = error?.response?.data?.message || error?.response?.data?.error || error?.message || 'Lỗi không xác định';
+//       throw new InternalServerErrorException(`Lỗi hệ thống chấm bài: ${detail}`);
+//     }
+//   }
+
+async submitCode(
     userId: string,
     assignmentId: string,
     codeAssignmentId: string,
@@ -45,6 +422,7 @@ export class SubmissionsService {
     sourceCode: string,
   ) {
     try {
+      // 1. CHUẨN BỊ DỮ LIỆU & KIỂM TRA ĐẦU VÀO
       const assignmentObjectId = Types.ObjectId.isValid(assignmentId)
         ? new Types.ObjectId(assignmentId)
         : null;
@@ -64,7 +442,7 @@ export class SubmissionsService {
       }
 
       if (!codeAssignment) {
-        throw new BadRequestException('Không tìm thấy codeAssignment hợp lệ cho bài tập này.');
+        throw new BadRequestException('Không tìm thấy cấu hình chấm code cho bài tập này.');
       }
 
       const resolvedCodeAssignmentObjectId = new Types.ObjectId(codeAssignment._id as any);
@@ -75,30 +453,100 @@ export class SubmissionsService {
         .exec();
 
       if (!testCases || testCases.length === 0) {
-        throw new BadRequestException('Bài tập chưa có testcase. Vui lòng tạo testcase bằng AI trước khi cho học viên nộp bài.');
+        throw new BadRequestException('Bài tập chưa có testcase. Vui lòng tạo testcase bằng AI trước khi nộp.');
       }
 
-      //  Map ID ngôn ngữ
-      // const languageMap = { python: 71, cpp: 54, java: 62, javascript: 63 };
+      // Map ID ngôn ngữ
       const normalizedLang = language.toLowerCase().trim();
       const languageId = JUDGE0_LANGUAGES[normalizedLang];
       if (!languageId) {
         throw new BadRequestException(`Hệ thống chưa hỗ trợ ngôn ngữ: ${language}`);
       }
 
+      // =====================================================================
+      // 🚨 SMART CODE INJECTION: XỬ LÝ LINH HOẠT MỌI CÁCH VIẾT CỦA HỌC VIÊN
+      // =====================================================================
+      let finalSourceCode = sourceCode;
+
+      // Xử lý thông minh cho JAVASCRIPT
+      if (normalizedLang === 'javascript' || normalizedLang === 'js') {
+        // Kiểm tra xem học viên có tự in kết quả ra chưa (Tự viết full code)
+        const isFullScript = sourceCode.includes('console.log') || sourceCode.includes('fs.readFileSync');
+
+        if (!isFullScript) {
+          finalSourceCode = `${sourceCode}
+
+// --- SMART WRAPPER: HỆ THỐNG TỰ CHÈN ĐỂ CHẤM BÀI ---
+const __fs = require('fs');
+try {
+  const __inputData = __fs.readFileSync(0, 'utf-8');
+  
+  // Tự động săn lùng các tên hàm phổ biến mà học viên hay dùng
+  const __targetFunc = typeof solve === 'function' ? solve 
+                     : typeof main === 'function' ? main 
+                     : typeof execute === 'function' ? execute
+                     : null;
+
+  if (__targetFunc) {
+    const __result = __targetFunc(__inputData);
+    
+    // In kết quả tự động (Hỗ trợ cả Mảng và Object)
+    if (__result !== undefined && __result !== null) {
+      if (typeof __result === 'object') {
+        console.log(JSON.stringify(__result)); 
+      } else {
+        console.log(__result);
+      }
+    }
+  }
+} catch (e) {
+  // Nuốt lỗi để không làm bẩn màn hình Console của học viên
+}
+`;
+        }
+      } 
+      // Xử lý thông minh cho PYTHON (Tặng thêm)
+      else if (normalizedLang === 'python' || normalizedLang === 'py') {
+        const isFullScript = sourceCode.includes('print(') || sourceCode.includes('sys.stdin');
+        
+        if (!isFullScript) {
+          finalSourceCode = `${sourceCode}
+
+# --- SMART WRAPPER: HỆ THỐNG TỰ CHÈN ĐỂ CHẤM BÀI ---
+import sys, json
+try:
+    __inputData = sys.stdin.read()
+    __func = locals().get('solve', locals().get('main'))
+    
+    if callable(__func):
+        __result = __func(__inputData)
+        if __result is not None:
+            if isinstance(__result, (dict, list)):
+                print(json.dumps(__result).replace(" ", ""))
+            else:
+                print(__result)
+except Exception:
+    pass
+`;
+        }
+      }
+
+      // =====================================================================
+      // 2. BIẾN THEO DÕI KẾT QUẢ VÀ GỬI LÊN JUDGE0
+      // =====================================================================
       let passedCases = 0;
       let maxTime = 0;
       let maxMemory = 0;
       let finalStatus = 'ACCEPTED';
-      let errorDetail:string | null = null;
+      let errorDetail: string | null = null;
+      const judgeResults: any[] = [];
 
-      // HÀM DELAY ĐỂ HỖ TRỢ POLLING (Nghỉ một chút trước khi hỏi lại Judge0)
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-      // Gửi lên Judge0 
-      const judgePromises = testCases.map(async (testCase: any) => {
+      // Gửi lên Judge0 (Chạy Tuần tự an toàn)
+      for (const testCase of testCases) {
         const payload = {
-          source_code: Buffer.from(sourceCode).toString('base64'),
+          source_code: Buffer.from(finalSourceCode).toString('base64'), // Chú ý: Gửi code đã tiêm
           language_id: languageId,
           stdin: testCase.input_data ? Buffer.from(testCase.input_data).toString('base64') : null, 
           expected_output: testCase.expected_output ? Buffer.from(testCase.expected_output).toString('base64') : null,
@@ -106,7 +554,6 @@ export class SubmissionsService {
           memory_limit: codeAssignment.memory_limit || 128000,
         };
 
-        //  Gửi request lấy Token 
         const initResponse = await firstValueFrom(
           this.httpService.post(
             `${this.JUDGE0_URL}/submissions?base64_encoded=true&wait=false`,
@@ -117,65 +564,55 @@ export class SubmissionsService {
         
         const token = initResponse.data.token;
         let result: any = null;
-        let statusId = 1; // 1: In Queue, 2: Processing
+        let statusId = 1;
 
-        //  Polling - Vòng lặp hỏi kết quả liên tục
         while (statusId === 1 || statusId === 2) {
-          await delay(1000); // Nghỉ 1 giây để Judge0 kịp chayvà chấm bài
-          // lay ket qua khi judge0 chấm xong
+          await delay(1000); 
           const checkResponse = await firstValueFrom(
             this.httpService.get(
               `${this.JUDGE0_URL}/submissions/${token}?base64_encoded=true`
             )
           );
-          
           result = checkResponse.data;
           statusId = result.status.id;
         }
 
-        //  Có kết quả cuối cùng thì trả về
-        return result;
-      });
-      
+        judgeResults.push(result);
 
-      const judgeResults = await Promise.all(judgePromises);
-      
-      console.log("=== KẾT QUẢ TỪ JUDGE0 ===");
-      console.log(JSON.stringify(judgeResults, null, 2));
-      console.log("=========================");
-
-      //  Phân tích kết quả
-      for (const result of judgeResults) {
-        if (result.status.id === 3) {
+        // 3. PHÂN TÍCH LỖI VÀ KẾT QUẢ
+        if (statusId === 6) {
+          finalStatus = 'COMPILATION_ERROR';
+          errorDetail = result.compile_output 
+            ? Buffer.from(result.compile_output, 'base64').toString('utf-8') 
+            : 'Lỗi biên dịch không xác định';
+          break; 
+        } 
+        
+        if (statusId === 3) {
           passedCases++;
         } else {
-          if (result.status.id === 6) {
-            finalStatus = 'COMPILATION_ERROR';
-            errorDetail = result.compile_output 
-              ? Buffer.from(result.compile_output, 'base64').toString('utf-8') 
-              : 'Lỗi biên dịch không xác định';
-            break;
-          } else {
-            if (finalStatus === 'ACCEPTED') {
-              finalStatus = result.status.description.toUpperCase().replace(/ /g, '_');
-            }
-            if (!errorDetail && result.stderr) {
-              errorDetail = Buffer.from(result.stderr, 'base64').toString('utf-8');
-            }
+          if (finalStatus === 'ACCEPTED') {
+            finalStatus = result.status.description.toUpperCase().replace(/ /g, '_');
+          }
+          if (!errorDetail && result.stderr) {
+            errorDetail = Buffer.from(result.stderr, 'base64').toString('utf-8');
           }
         }
+
         if (result.time && parseFloat(result.time) > maxTime) maxTime = parseFloat(result.time);
         if (result.memory && result.memory > maxMemory) maxMemory = result.memory;
       }
 
-      // Lưu Submission 
+      // 4. LƯU VÀO DATABASE (Lưu code gốc của học viên)
       const newSubmission = await this.submissionModel.create({
         user_id: userId,
         codeAssignment_id: resolvedCodeAssignmentObjectId,
         language: language,
-        code: sourceCode,
+        code: sourceCode, // Lưu sourceCode GỐC, Không lưu finalSourceCode để giấu bí mật
         status: finalStatus,
         score: (passedCases / testCases.length) * 10,
+        execute_time: maxTime,     
+        execute_memory: maxMemory, 
         ai_hint: null
       });
 
@@ -198,16 +635,7 @@ export class SubmissionsService {
 
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
-      
-      // Log chi tiết lỗi để debug
-      console.error('=== LỖI HỆ THỐNG CHẤM BÀI ===');
-      console.error('Error message:', error?.message);
-      console.error('Error response status:', error?.response?.status);
-      console.error('Error response data:', JSON.stringify(error?.response?.data, null, 2));
-      console.error('Full error:', error);
-      console.error('================================');
-
-      // Trả lỗi chi tiết hơn
+      console.error('=== LỖI HỆ THỐNG CHẤM BÀI ===', error);
       const detail = error?.response?.data?.message || error?.response?.data?.error || error?.message || 'Lỗi không xác định';
       throw new InternalServerErrorException(`Lỗi hệ thống chấm bài: ${detail}`);
     }
