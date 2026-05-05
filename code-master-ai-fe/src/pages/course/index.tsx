@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import { CourseCard } from "../../components/courseCart";
 import { AutoComplete, Empty } from "antd";
 import { CloseOutlined, LoadingOutlined } from "@ant-design/icons";
-import {
-  CompassOutlined,
-  SearchOutlined,
-  DownOutlined,
-} from "@ant-design/icons";
+import { SearchOutlined, DownOutlined } from "@ant-design/icons";
 import { Dropdown, type MenuProps } from "antd";
 import { GetCourses, GetNonActiveCourse } from "../../api/course";
 import { useCourseStore } from "../../store/course";
@@ -188,7 +184,7 @@ export default function CoursesPage() {
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-8 sm:py-12 md:px-10 xl:px-0">
           {/* ── Header ── */}
           <AnimateOnScroll>
-            <section className="mb-8 sm:mb-12 flex flex-col gap-6 sm:gap-8 md:flex-row md:items-end md:justify-between">
+            <section className="mb-8 sm:mb-12">
               <div className="max-w-2xl">
                 <h1 className="mb-3 sm:mb-4 text-2xl sm:text-3xl md:text-5xl font-black tracking-tight text-brand-700">
                   Tất cả khóa học
@@ -197,16 +193,6 @@ export default function CoursesPage() {
                   Khám phá các lộ trình học tập từ cơ bản đến nâng cao cùng
                   chuyên gia AI hàng đầu Việt Nam.
                 </p>
-              </div>
-
-              <div className="flex flex-col items-start md:items-center justify-center">
-                <button
-                  type="button"
-                  className="flex items-center gap-3 rounded-2xl border border-brand-100 bg-gray-200 px-5 sm:px-7 py-3 sm:py-3.5 font-bold text-brand-700 text-sm sm:text-base transition-colors hover:bg-gray-100 w-full sm:w-auto justify-center sm:justify-start"
-                >
-                  <CompassOutlined />
-                  <span>Nhận tư vấn lộ trình</span>
-                </button>
               </div>
             </section>
           </AnimateOnScroll>
