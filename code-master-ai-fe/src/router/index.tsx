@@ -1,4 +1,3 @@
-import React from "react";
 import { createBrowserRouter } from "react-router-dom";
 import Layout from "../layout";
 import Home from "../pages/home";
@@ -21,21 +20,15 @@ import UserManage from "../pages/admin/userManage";
 import CategoryManage from "../pages/categoryManage";
 import RevenueStatisticsPage from "../pages/revenueManage";
 import GoogleAuthCallback from "../pages/auth/GoogleAuthCallback";
-import LearnLayout from "../layout/LearnLayout";
-import LessonPage from "../pages/lesson";
-import Quizz from "../pages/quizz";
+import LearnLayout from "../pages/learnLayout";
 import GithubAuthCallback from "../pages/auth/GithubAuthCallback";
-import ExercisePage from "../pages/lesson/excersite";
 import RoleManage from "../pages/admin/roleManage";
 import PermissionManage from "../pages/admin/permissionManage";
 import ProfilePage from "../pages/ProfilePage";
-import UserProfile from "../pages/profile";
-import ChangePassword from "../pages/profile/ChangePassword";
-import MyCourses from "../pages/profile/MyCourses";
-import PersonalInfo from "../pages/profile/PersonalInfo";
 import BlogDetail from "../pages/blogDetail";
 import AdminLeads from "../pages/admin/AdminLeads";
 import AdminStudents from "../pages/admin/AdminStudents";
+import MyEnrollment from "../pages/myCourses";
 
 export const router = createBrowserRouter([
   {
@@ -67,11 +60,19 @@ export const router = createBrowserRouter([
         element: <CourseDetailPage />,
       },
       {
+        path: "/myCourses",
+        element: <MyEnrollment />,
+      },
+      {
         path: "/cart",
         element: <Cart />,
       },
       {
         path: "/checkout",
+        element: <CheckoutPage />,
+      },
+      {
+        path: "/checkout/:courseId",
         element: <CheckoutPage />,
       },
       {
@@ -88,41 +89,29 @@ export const router = createBrowserRouter([
       },
       {
         path: "/profile",
-        element: <UserProfile />, // chứa ProfileLayout + Outlet
-        children: [
-          {
-            index: true,
-            element: <PersonalInfo />, // /profile
-          },
-          {
-            path: "password",
-            element: <ChangePassword />, // /profile/password
-          },
-          {
-            path: "courses",
-            element: <MyCourses />, // /profile/courses
-          },
-        ],
+        element: <ProfilePage />,
+      },
+      {
+        path: "/profile/password",
+        element: <ProfilePage />,
+      },
+      {
+        path: "/admin/profile",
+        element: <ProfilePage />,
+      },
+      {
+        path: "/admin/profile/password",
+        element: <ProfilePage />,
       },
     ],
   },
   {
-    path: "/learn",
+    path: "/learn/:courseId",
     element: <LearnLayout />,
-    children: [
-      {
-        path: "lesson/:id",
-        element: <LessonPage />,
-      },
-      {
-        path: "quiz/:id",
-        element: <Quizz />,
-      },
-      {
-        path: "exercise",
-        element: <ExercisePage />,
-      },
-    ],
+  },
+  {
+    path: "/learn/:courseId/lesson/:lessonId/:stepType",
+    element: <LearnLayout />,
   },
   {
     path: "/register",
@@ -165,11 +154,11 @@ export const router = createBrowserRouter([
       { path: "courses", element: <CourseManage /> },
       { path: "exercises", element: <ExerciseManage /> },
       { path: "users", element: <UserManage /> },
-       { path: "students", element: <AdminStudents /> },
+      { path: "students", element: <AdminStudents /> },
       { path: "categories", element: <CategoryManage /> },
       { path: "roles", element: <RoleManage /> },
       { path: "permissions", element: <PermissionManage /> },
-      {path: "leads", element: <AdminLeads />},
+      { path: "leads", element: <AdminLeads /> },
       {
         path: "profile",
         element: <ProfilePage />,

@@ -1,78 +1,143 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { lessons } from "./fakeData";
 
-const LessonPage = () => {
+type LessonPageProps = {
+  lessonData?: any;
+  nextPath?: string;
+  onComplete?: () => void;
+};
+
+const getYoutubeEmbedUrl = (url?: string) => {
+  if (!url) return "";
+
+  try {
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname.replace(/^www\./, "");
+
+    if (hostname === "youtu.be") {
+      const videoId = parsedUrl.pathname.split("/").filter(Boolean)[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    }
+
+    if (hostname.includes("youtube.com")) {
+      const videoId = parsedUrl.searchParams.get("v");
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+
+      if (parsedUrl.pathname.startsWith("/embed/")) {
+        return url;
+      }
+    }
+  } catch {
+    return url.replace("watch?v=", "embed/");
+  }
+
+  return url;
+};
+
+const LessonPage = ({ lessonData, nextPath, onComplete }: LessonPageProps) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [canProceed, setCanProceed] = useState(false);
+  const timerRef = useRef<number | null>(null);
 
-  // Auto scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
+    setCanProceed(false);
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => setCanProceed(true), 4 * 60 * 1000);
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
   }, [id]);
 
-  const lesson = lessons.find((l) => l.id === Number(id));
+  const lesson = lessonData || lessons.find((l) => l.id === Number(id));
 
-  if (!lesson || lesson.type !== "lesson") {
+  if (!lesson) {
     return <div>Không có bài học</div>;
   }
 
   const currentIndex = lessons.findIndex((l) => l.id === Number(id));
-  const nextLesson = lessons[currentIndex + 1];
+  const fallbackNextLesson = currentIndex >= 0 ? lessons[currentIndex + 1] : undefined;
+  const resolvedNextPath = nextPath || fallbackNextLesson?.path;
 
   const completeLesson = (lessonId: number) => {
-    // Lấy danh sách bài hoàn thành
+    if (onComplete) {
+      onComplete();
+      return;
+    }
+
+    const completionKey = `${lessonId}::video`;
     const saved = localStorage.getItem("completed_lessons");
     const completed = saved ? JSON.parse(saved) : [];
 
-    // Thêm ID nếu chưa có
-    if (!completed.includes(lessonId)) {
-      completed.push(lessonId);
+    if (!completed.includes(completionKey)) {
+      completed.push(completionKey);
       localStorage.setItem("completed_lessons", JSON.stringify(completed));
-      
       window.dispatchEvent(new Event("lessonsUpdated"));
     }
-
-    console.log(`Đã hoàn thành bài học ${lessonId}`);
   };
 
   return (
     <>
-      <h1 className="text-2xl font-bold mb-4">{lesson.title}</h1>
+      <h1 className="mb-4 text-2xl font-bold">{lesson.title}</h1>
 
-      <p className="text-gray-500 mb-6">{lesson.description}</p>
+      <p className="mb-6 text-gray-500">{lesson.description || lesson.content}</p>
 
-      <div className="text-gray-700 leading-relaxed whitespace-pre-line">
-        {lesson.content}
+      <div className="whitespace-pre-line leading-relaxed text-gray-700">
+        {lesson.content || lesson.description || "Không có nội dung bài học."}
       </div>
 
-      {/* COMPLETE */}
-      <div className="mt-10 bg-brand-50 rounded-2xl p-6 text-center">
-        <h3 className="font-semibold text-lg mb-2 text-brand-700">
+      {lesson.video_url && (
+        <div className="mt-8 aspect-video w-full overflow-hidden rounded-2xl shadow-lg">
+          <iframe
+            src={getYoutubeEmbedUrl(lesson.video_url)}
+            title="Video bài học"
+            className="h-full w-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        </div>
+      )}
+
+      <div className="mt-10 rounded-2xl bg-brand-50 p-6 text-center">
+        <h3 className="mb-2 text-lg font-semibold text-brand-700">
           Bạn đã hoàn thành bài học này?
         </h3>
 
-        <p className="text-brand-500 mb-6 text-sm">
+        <p className="mb-6 text-sm text-brand-500">
           Đánh dấu hoàn thành để tiếp tục học
         </p>
 
         <div className="flex justify-center gap-4">
           <button
             onClick={() => {
-              completeLesson(lesson.id);
-              if (nextLesson) navigate(nextLesson.path);
+              if (!canProceed) return;
+              completeLesson(lesson.id || 0);
+              if (resolvedNextPath) navigate(resolvedNextPath);
             }}
-            className="bg-brand-500 text-white px-6 py-2 rounded-full hover:bg-brand-700"
+            disabled={!canProceed}
+            className={`rounded-full px-6 py-2 text-white transition ${
+              canProceed ? "bg-brand-500 hover:bg-brand-700" : "cursor-not-allowed bg-brand-300"
+            }`}
           >
-            ✔ Hoàn thành
+            {canProceed ? "Hoàn thành" : "Xem đủ 4 phút để tiếp tục"}
           </button>
 
-          {nextLesson && (
+          {resolvedNextPath && (
             <button
-              onClick={() => navigate(nextLesson.path)}
-              className="border px-6 py-2 rounded-full hover:bg-gray-100"
+              onClick={() => {
+                if (!canProceed) return;
+                navigate(resolvedNextPath);
+              }}
+              disabled={!canProceed}
+              className={`rounded-full border px-6 py-2 transition ${
+                canProceed ? "hover:bg-gray-100" : "cursor-not-allowed opacity-60"
+              }`}
             >
-              Bài tiếp →
+              Bài tiếp
             </button>
           )}
         </div>

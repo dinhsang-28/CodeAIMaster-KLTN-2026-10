@@ -105,10 +105,18 @@ export const PostChangePassword = async (data: any) => {
   return res.data;
 };
 // lay lai userinfo
+// export const GetMe = async () => {
+//   const response = await axiosInstance.get('/auth/me',{
+//     _silent: true, 
+//   } as any);
+//   console.log("GetMe response: ", response.data);
+//   return response.data;
+// }
+
 export const GetMe = async () => {
   const response = await axiosInstance.get('/auth/me',{
-    _silent: true, 
-  } as any);
+   headers: { "x-silent": "true" }, 
+  } );
   console.log("GetMe response: ", response.data);
   return response.data;
 }

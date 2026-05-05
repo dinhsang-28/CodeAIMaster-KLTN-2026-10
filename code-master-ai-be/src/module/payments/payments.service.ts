@@ -43,6 +43,7 @@ import {
 } from '../enrollments/entities/enrollment.entity';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '../notification/schemas/notification.schema';
+import { Course, CourseDocument } from '../courses/entities/course.entity';
 
 @Injectable()
 export class PaymentsService {
@@ -65,6 +66,9 @@ export class PaymentsService {
 
     @InjectModel(CartDetail.name)
     private readonly cartDetailModel: Model<CartDetailDocument>,
+
+    @InjectModel(Course.name)
+    private readonly courseModel: Model<CourseDocument>,
 
     private readonly configService: ConfigService,
     private readonly mailerService: MailerService,
@@ -104,7 +108,7 @@ export class PaymentsService {
     userId: string,
     createPaymentDto: CreatePaymentDto,
   ): Promise<ApiResponse<any>> {
-    const { payment_method } = createPaymentDto;
+    const { payment_method, courseId } = createPaymentDto;
 
     const userObjectId = new Types.ObjectId(userId);
     const user = await this.userModel.findById(userObjectId).lean();
@@ -119,7 +123,17 @@ export class PaymentsService {
       );
     }
 
-    const { cart, cartDetails, amount } = await this.getCartWithItems(userId);
+    // const { cart, cartDetails, amount } = await this.getCartWithItems(userId);
+
+    let cart, cartDetails, amount;
+
+    if (courseId) {
+      // 👉 BUY NOW
+      ({ cart, cartDetails, amount } = await this.getSingleCourse(courseId));
+    } else {
+      // 👉 CART
+      ({ cart, cartDetails, amount } = await this.getCartWithItems(userId));
+    }
 
     const order = await this.orderModel.create({
       user_id: userObjectId,
@@ -148,7 +162,22 @@ export class PaymentsService {
         paid_at: null,
       });
 
-      await this.cartDetailModel.deleteMany({ cart_id: cart._id });
+      if (!courseId && cart) {
+        await this.cartDetailModel.deleteMany({ cart_id: cart._id });
+      }
+
+      if (courseId) {
+        const userCart = await this.cartModel.findOne({
+          user_id: userObjectId,
+        });
+
+        if (userCart) {
+          await this.cartDetailModel.deleteOne({
+            cart_id: userCart._id,
+            course_id: new Types.ObjectId(courseId),
+          });
+        }
+      }
 
       await this.sendPaymentSuccessEmail(
         userObjectId.toString(),
@@ -454,6 +483,29 @@ export class PaymentsService {
     );
 
     return { payment, order };
+  }
+
+  private async getSingleCourse(courseId: string) {
+    if (!Types.ObjectId.isValid(courseId)) {
+      throw new BadRequestException('courseId không hợp lệ');
+    }
+
+    const course = await this.courseModel.findById(courseId).lean();
+
+    if (!course) {
+      throw new NotFoundException('Khóa học không tồn tại');
+    }
+
+    return {
+      cart: null,
+      cartDetails: [
+        {
+          course_id: course._id,
+          price: course.price,
+        },
+      ],
+      amount: course.price,
+    };
   }
 
   async markPaymentPaidAndClearCartByOrder(orderId: string) {

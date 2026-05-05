@@ -238,7 +238,11 @@ export class AuthService {
 
     const user = await this.usersService.createOAuthUser(profile);
 
-    const payload = { username: user.email, sub: user._id };
+    const payload = {
+      username: user.email,
+      sub: user._id,
+      permissions: user.role_id?.['permissions'] || [],
+    };
 
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: accessExpire as any,
@@ -276,6 +280,10 @@ export class AuthService {
         email: user.email,
         name: user.name,
         image: user.image,
+        permissions: user.role_id?.['permissions'] || [], 
+        phone: user.phone || '',
+        accessToken: accessToken,  
+        refreshToken: refreshToken, 
       }),
     );
     const frontendUrl =
@@ -291,14 +299,13 @@ export class AuthService {
   }
   async getMe(userId: string) {
     const user = await this.usersService.findOne(userId);
-    console.log('GetMe user: ', user);
+
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
     return {
       email: user.email,
       _id: user._id,
-      name: user.name,
       permissions: user.role_id?.['permissions'] || [],
       phone: user.phone,
       image: user.image,

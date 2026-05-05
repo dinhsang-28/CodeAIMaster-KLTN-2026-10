@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Input, Button, Modal as AntdModal, message, Spin, Pagination } from "antd";
+import { Input, Button, Modal as AntdModal, message, Spin, Pagination, Select } from "antd";
 import {
   SearchOutlined, PlusOutlined, EditOutlined, MoreOutlined, DeleteOutlined,
   FilterOutlined, DownloadOutlined, CalendarOutlined, RocketOutlined,
   MailOutlined, BellOutlined, RobotOutlined
 } from "@ant-design/icons";
 
-import { 
+import {
   searchAssignments, deleteAssignment,
   getQuizzesByAssignmentId, deleteQuiz, getQuestionsByQuizId, deleteQuestion,
   getCodeAssignmentsByAssignmentId, deleteCodeAssignment, getTestcasesByCodeAssignmentId, deleteTestcase
@@ -15,6 +15,8 @@ import { searchCourses, getCourseFullInfo } from "../../api/course";
 
 import AssignmentFormModal from "../../components/Modals/AssignmentFormModal";
 import TestcaseManagerModal from "../../components/Modals/TestcaseManagerModal";
+
+const { Option } = Select;
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -34,6 +36,25 @@ const StatusPill = ({ status }: { status: "open" | "closed" }) =>
     <span style={{ display: "inline-block", padding: "3px 12px", borderRadius: 6, background: "#f1f5f9", color: "#475569", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em" }}>CLOSED</span>
   );
 
+const pickNewestChild = (items: any[], entityName: string, assignmentId: string) => {
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  const sorted = [...items].sort((a, b) => {
+    const aTime = new Date(a?.updatedAt || a?.createdAt || 0).getTime();
+    const bTime = new Date(b?.updatedAt || b?.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
+
+  if (sorted.length > 1) {
+    console.warn(
+      `[ExerciseManage] Found ${sorted.length} ${entityName} records for assignment ${assignmentId}. Using the most recently updated one.`,
+      sorted,
+    );
+  }
+
+  return sorted[0];
+};
+
 const ExerciseManage: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0); // 0: quiz, 1: codeAssignment, 2: questions
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -41,8 +62,11 @@ const ExerciseManage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
+  const [lessons, setLessons] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
 
+  const [selectedCourse, setSelectedCourse] = useState<string>("");
+  const [selectedLesson, setSelectedLesson] = useState<string>("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [keyword, setKeyword] = useState("");
@@ -54,6 +78,7 @@ const ExerciseManage: React.FC = () => {
   const [currentAsg, setCurrentAsg] = useState<any>(null);
 
   const [tcModalVisible, setTcModalVisible] = useState(false);
+  const [currentAssignmentId, setCurrentAssignmentId] = useState<string>("");
   const [currentCodeAsgId, setCurrentCodeAsgId] = useState<string>("");
 
   useEffect(() => {
@@ -69,7 +94,7 @@ const ExerciseManage: React.FC = () => {
 
   useEffect(() => {
     setPage(1); // Reset trang khi đổi tab hoặc đổi keyword
-  }, [activeTab, debouncedKeyword]);
+  }, [activeTab, debouncedKeyword, selectedLesson, selectedCourse]);
 
   useEffect(() => {
     if (activeTab === 0 || activeTab === 1) {
@@ -80,7 +105,7 @@ const ExerciseManage: React.FC = () => {
       setTotal(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, debouncedKeyword, activeTab]);
+  }, [page, limit, debouncedKeyword, activeTab, selectedLesson]);
 
   const fetchCourses = async () => {
     try {
@@ -91,11 +116,30 @@ const ExerciseManage: React.FC = () => {
     }
   };
 
+  const fetchLessons = async (courseId: string) => {
+    if (!courseId) {
+      setLessons([]);
+      return;
+    }
+    try {
+      const res = await getCourseFullInfo(courseId);
+      const courseData = res.data || res;
+      setLessons(courseData.lessons || []);
+    } catch (e) {
+      console.error(e);
+      setLessons([]);
+    }
+  };
+
   const fetchAssignments = async () => {
     setLoading(true);
     try {
       const type = activeTab === 0 ? "quiz" : "codeAssignment";
-      const res = await searchAssignments({ page, limit, keyword: debouncedKeyword, type });
+      const params: any = { page, limit, keyword: debouncedKeyword, type };
+      if (selectedLesson) {
+        params.lesson_id = selectedLesson;
+      }
+      const res = await searchAssignments(params);
       const dataList = Array.isArray(res) ? res : res?.assignments || res?.results || res?.data || [];
       setAssignments(dataList);
       setTotal(res?.totalAssignments || res?.total || dataList.length || 0);
@@ -116,7 +160,24 @@ const ExerciseManage: React.FC = () => {
     setAsgModalVisible(true);
   };
 
+  const handleCourseChange = (courseId: string) => {
+    setSelectedCourse(courseId);
+    setSelectedLesson("");
+    setPage(1);
+    fetchLessons(courseId);
+  };
+
+  const handleLessonChange = (lessonId: string) => {
+    setSelectedLesson(lessonId);
+    setPage(1);
+  };
+
   const handleEdit = (record: any) => {
+    console.debug("[ExerciseManage] handleEdit clicked", {
+      recordId: record?._id,
+      record,
+      activeTab,
+    });
     setCurrentAsg(record);
     setAsgModalMode("edit");
     setAsgModalVisible(true);
@@ -129,16 +190,27 @@ const ExerciseManage: React.FC = () => {
   // };
 
   const handleManageTestcases = async (assignment: any) => {
+    console.debug("[ExerciseManage] handleManageTestcases clicked", {
+      assignmentId: assignment?._id,
+      assignment,
+      activeTab,
+    });
     setLoading(true);
     try {
       const codeAsgs = await getCodeAssignmentsByAssignmentId(assignment._id);
-      if (codeAsgs && codeAsgs.length > 0) {
-        setCurrentCodeAsgId(codeAsgs[0]._id);
+      console.debug("[ExerciseManage] getCodeAssignmentsByAssignmentId response", codeAsgs);
+      const codeAsg = pickNewestChild(codeAsgs, "code assignment", assignment._id);
+      console.debug("[ExerciseManage] pickNewestChild result", codeAsg);
+      if (codeAsg?._id) {
+        setCurrentAssignmentId(assignment._id);
+        setCurrentCodeAsgId(codeAsg._id);
+        console.debug("[ExerciseManage] setCurrentCodeAsgId", codeAsg._id);
         setTcModalVisible(true);
       } else {
         message.warning("Bài tập này chưa có Code Assignment map nào!");
       }
     } catch (e) {
+      console.error("[ExerciseManage] handleManageTestcases error", e);
       message.error("Lỗi hệ thống khi tìm Code Assignment");
     } finally {
       setLoading(false);
@@ -229,7 +301,7 @@ const ExerciseManage: React.FC = () => {
 
       <div className="flex items-center justify-end pt-1 border-t border-gray-100 gap-2">
         {activeTab === 1 && (
-          <Button size="small" type="dashed" icon={<RobotOutlined/>} onClick={() => handleManageTestcases(item)}>Testcases</Button>
+          <Button size="small" type="dashed" icon={<RobotOutlined />} onClick={() => handleManageTestcases(item)}>Testcases</Button>
         )}
         <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(item)} />
         <Button size="small" danger icon={<MoreOutlined />} onClick={() => handleDelete(item)} />
@@ -289,6 +361,35 @@ const ExerciseManage: React.FC = () => {
 
           {/* Filter */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col sm:flex-row gap-2 flex-1">
+              <Select
+                placeholder="Chọn khóa học"
+                style={{ flex: 1, minWidth: 200, height: 38 }}
+                value={selectedCourse || undefined}
+                onChange={handleCourseChange}
+                allowClear
+              >
+                {courses.map((c) => (
+                  <Option key={c._id} value={c._id}>
+                    {c.title || c.name}
+                  </Option>
+                ))}
+              </Select>
+              <Select
+                placeholder="Chọn bài học"
+                style={{ flex: 1, minWidth: 200, height: 38 }}
+                value={selectedLesson || undefined}
+                onChange={handleLessonChange}
+                disabled={!selectedCourse}
+                allowClear
+              >
+                {lessons.map((l) => (
+                  <Option key={l._id} value={l._id}>
+                    {l.title || l.name}
+                  </Option>
+                ))}
+              </Select>
+            </div>
             <Input
               prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
               placeholder="Tìm kiếm bài tập..."
@@ -416,6 +517,7 @@ const ExerciseManage: React.FC = () => {
       {tcModalVisible && (
         <TestcaseManagerModal
           visible={tcModalVisible}
+          assignmentId={currentAssignmentId}
           codeAssignmentId={currentCodeAsgId}
           onCancel={() => setTcModalVisible(false)}
         />

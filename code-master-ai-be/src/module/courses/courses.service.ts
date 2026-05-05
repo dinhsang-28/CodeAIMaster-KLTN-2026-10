@@ -4,7 +4,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { Course } from './entities/course.entity';
 import { Model, Types } from 'mongoose';
 import { CourseDocument } from './entities/course.entity';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CourseLevel } from './enums/courseLevel.enum';
 import { CourseStatus } from './enums/courseStatus.enum';
 import { NotFoundException } from '@nestjs/common';
@@ -13,7 +13,6 @@ import { CategoryDocument } from '../categories/entities/category.entity';
 import { ApiResponse } from '@/common/dto/api-response.dto';
 import { Lesson, LessonDocument } from '../lessons/entities/lesson.entity';
 import { SearchCourse } from './dto/search-course.dto';
-import { filter } from 'rxjs';
 import { UploadService } from '@/upload/upload.service';
 import {
   Assignment,
@@ -28,7 +27,16 @@ import {
   CodeAssignment,
   CodeAssignmentDocument,
 } from '../code-assignments/entities/code-assignment.entity';
-import { CartDetailDocument } from '../cart-details/entities/cart-detail.entity';
+import {
+  CartDetail,
+  CartDetailDocument,
+} from '../cart-details/entities/cart-detail.entity';
+import {
+  Enrollment,
+  EnrollmentDocument,
+} from '../enrollments/entities/enrollment.entity';
+import { ProgressService } from '../progress/progress.service';
+import { UserLessonProgress, UserLessonProgressDocument } from '../user-lesson-progress/entities/user-lesson-progress.entity';
 
 @Injectable()
 export class CoursesService {
@@ -51,11 +59,18 @@ export class CoursesService {
     @InjectModel(Question.name)
     private readonly questionModel: Model<QuestionDocument>,
 
-    @InjectModel(Question.name)
+    @InjectModel(CartDetail.name)
     private readonly cartDetailModel: Model<CartDetailDocument>,
 
     @InjectModel(CodeAssignment.name)
     private readonly codeAssignmentModel: Model<CodeAssignmentDocument>,
+
+    @InjectModel(Enrollment.name)
+    private readonly enrollmentModel: Model<EnrollmentDocument>,
+    @InjectModel(UserLessonProgress.name)
+    private readonly userLessonProgressModel: Model<UserLessonProgressDocument>,
+
+    private readonly progressService: ProgressService,
 
     private readonly uploadService: UploadService,
   ) {}
@@ -166,6 +181,11 @@ export class CoursesService {
         .exec(),
     ]);
 
+    const codeAssignmentByAssignmentId = new Map<string, any>();
+    for (const codeAssignment of codeAssignments) {
+      codeAssignmentByAssignmentId.set(String(codeAssignment.assignment_id), codeAssignment);
+    }
+
     const quizIds = quizzes.map((quiz) => quiz._id);
     const questions = await this.questionModel
       .find({ quiz_id: { $in: quizIds } })
@@ -179,6 +199,117 @@ export class CoursesService {
         questionsByQuizId.set(key, []);
       }
       questionsByQuizId.get(key)!.push(question);
+    }
+
+    const quizzesByAssignmentId = new Map<string, any[]>();
+    for (const quiz of quizzes) {
+      const quizWithQuestions = {
+        ...quiz,
+        questions: questionsByQuizId.get(String(quiz._id)) || [],
+      };
+      const key = String(quiz.assignment_id);
+      if (!quizzesByAssignmentId.has(key)) {
+        quizzesByAssignmentId.set(key, []);
+      }
+      quizzesByAssignmentId.get(key)!.push(quizWithQuestions);
+    }
+
+    const assignmentsByLessonId = new Map<string, any[]>();
+    for (const assignment of assignments) {
+      const assignmentId = String(assignment._id);
+      const enrichedAssignment = {
+        ...assignment,
+        quizzes: quizzesByAssignmentId.get(assignmentId) || [],
+        codeAssignment: codeAssignmentByAssignmentId.get(assignmentId) || null,
+        codeAssignmentId: codeAssignmentByAssignmentId.get(assignmentId)?._id || null,
+      };
+
+      const lessonKey = String(assignment.lesson_id);
+      if (!assignmentsByLessonId.has(lessonKey)) {
+        assignmentsByLessonId.set(lessonKey, []);
+      }
+      assignmentsByLessonId.get(lessonKey)!.push(enrichedAssignment);
+    }
+
+    const lessonDetails = lessons.map((lesson) => {
+      const lessonAssignments =
+        assignmentsByLessonId.get(String(lesson._id)) || [];
+      return {
+        ...lesson,
+        assignments: lessonAssignments,
+        assignment_ids: lessonAssignments.map((item) => item._id),
+      };
+    });
+
+    return new ApiResponse('Thông tin đầy đủ khóa học', {
+      ...course,
+      lessons: lessonDetails,
+    });
+  }
+
+  async getLearningCourse(id: string, userId: string): Promise<ApiResponse<any>> {
+    const course = await this.courseModel
+      .findById(id)
+      .populate('category', 'category_name')
+      .lean()
+      .exec();
+
+    if (!course) {
+      throw new NotFoundException('Không tìm thấy khóa học');
+    }
+
+    const lessons = await this.lessonModel
+      .find({ course_id: id })
+      .sort({ lesson_order: 1 })
+      .lean()
+      .exec();
+
+    const lessonIds = lessons.map((lesson) => lesson._id);
+    const lessonIdStrings = lessonIds.map((lid) => String(lid));
+    const lessonObjectIds = lessonIdStrings
+      .filter((lid) => Types.ObjectId.isValid(lid))
+      .map((lid) => new Types.ObjectId(lid));
+      
+    const assignments = await this.assignmentModel
+      .find({
+        $or: [
+          { lesson_id: { $in: lessonObjectIds } },
+          { lesson_id: { $in: lessonIdStrings } },
+        ],
+      })
+      .lean()
+      .exec();
+
+    const assignmentIds = assignments.map((assignment) => assignment._id);
+
+    const [quizzes, codeAssignments] = await Promise.all([
+      this.quizModel
+        .find({ assignment_id: { $in: assignmentIds } })
+        .lean()
+        .exec(),
+      this.codeAssignmentModel
+        .find({ assignment_id: { $in: assignmentIds } })
+        .lean()
+        .exec(),
+    ]);
+
+    const quizIds = quizzes.map((quiz) => quiz._id);
+    const questions = await this.questionModel
+      .find({ quiz_id: { $in: quizIds } })
+      .lean()
+      .exec();
+
+    const questionsByQuizId = new Map<string, any[]>();
+    for (const question of questions) {
+      // Remove correct_answer for student endpoint
+      const safeQuestion = { ...question };
+      delete (safeQuestion as any).correct_answer;
+
+      const key = String(question.quiz_id);
+      if (!questionsByQuizId.has(key)) {
+        questionsByQuizId.set(key, []);
+      }
+      questionsByQuizId.get(key)!.push(safeQuestion);
     }
 
     const quizzesByAssignmentId = new Map<string, any[]>();
@@ -218,35 +349,62 @@ export class CoursesService {
       assignmentsByLessonId.get(lessonKey)!.push(enrichedAssignment);
     }
 
+    // Fetch user progress
+    const progresses = await this.userLessonProgressModel
+      .find({
+        userId: new Types.ObjectId(userId),
+        courseId: new Types.ObjectId(id),
+      })
+      .lean()
+      .exec();
+
+    const progressByLessonId = new Map<string, any>();
+    for (const prog of progresses) {
+      progressByLessonId.set(String(prog.lessonId), prog);
+    }
+
+    let previousLessonCompleted = true; // First lesson is unlocked by default
+
     const lessonDetails = lessons.map((lesson) => {
-      const lessonAssignments =
-        assignmentsByLessonId.get(String(lesson._id)) || [];
+      const lessonAssignments = assignmentsByLessonId.get(String(lesson._id)) || [];
+      const lessonProgress = progressByLessonId.get(String(lesson._id));
+
+      const isCompleted = lessonProgress ? lessonProgress.isCompleted : false;
+      const watchPercent = lessonProgress ? lessonProgress.watchPercent : 0;
+      const status = lessonProgress ? lessonProgress.status : 'NOT_STARTED';
+
+      const canAccess = previousLessonCompleted;
+      const isLocked = !canAccess;
+      const reason = isLocked ? 'Vui lòng hoàn thành bài học trước đó' : null;
+
+      previousLessonCompleted = isCompleted;
+
       return {
         ...lesson,
         assignments: lessonAssignments,
         assignment_ids: lessonAssignments.map((item) => item._id),
+        progress: {
+          status,
+          watchPercent,
+          isCompleted,
+          completedAt: lessonProgress ? lessonProgress.completedAt : null,
+        },
+        access: {
+          isLocked,
+          canAccess,
+          reason,
+        }
       };
     });
 
-    return new ApiResponse('Thông tin đầy đủ khóa học', {
-      ...course,
+    const courseProgress = await this.progressService.recalculate(userId, id);
+
+    return new ApiResponse('Thông tin học khóa học', {
+      course: course,
+      progress: courseProgress,
       lessons: lessonDetails,
     });
   }
-
-  // <<<<<<< HEAD
-  //   async update(id: string, updateCourseDto: UpdateCourseDto): Promise<Course> {
-  // =======
-  //   const lessons = await this.lessonModel
-  //     .find({ course_id: id })
-  //     .sort({ lesson_order: 1 })
-  //     .lean();
-
-  //   return new ApiResponse('Chi tiết khóa học', {
-  //     ...course,
-  //     lessons,
-  //   });
-  // }
 
   async update(
     id: string,
@@ -333,5 +491,117 @@ export class CoursesService {
       total,
       sumPage,
     };
+  }
+
+  async getCourseEnrollment(userId: string) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('userId không hợp lệ');
+    }
+
+    const enrollments = await this.enrollmentModel
+      .find({
+        user_id: new Types.ObjectId(userId),
+        status: 'active',
+      })
+      .populate({
+        path: 'course_id',
+        populate: {
+          path: 'category',
+          select: 'category_name',
+        },
+      })
+      .lean();
+
+    const courses = enrollments.map((e) => e.course_id);
+
+    return new ApiResponse('Danh sách khóa học đã đăng ký', courses);
+  }
+
+  async getFeaturedCourse(): Promise<ApiResponse<any>> {
+    const topCourses = await this.enrollmentModel.aggregate([
+      {
+        $match: {
+          status: 'active',
+        },
+      },
+      {
+        $group: {
+          _id: '$course_id',
+          totalEnrollments: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { totalEnrollments: -1 },
+      },
+      {
+        $limit: 3,
+      },
+      {
+        $lookup: {
+          from: 'courses',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'course',
+        },
+      },
+
+      {
+        $unwind: '$course',
+      },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'course.category',
+          foreignField: '_id',
+          as: 'category',
+        },
+      },
+      {
+        $unwind: {
+          path: '$category',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: '$course._id',
+          title: '$course.title',
+          thumbnail: '$course.thumbnail',
+          price: '$course.price',
+          level: '$course.level',
+          totalEnrollments: 1,
+          category: {
+            _id: '$category._id',
+            category_name: '$category.category_name',
+          },
+        },
+      },
+    ]);
+
+    return new ApiResponse('Top 4 khóa học nổi bật', topCourses);
+  }
+
+  async getNonActiveCourse(userId: string): Promise<ApiResponse<any>> {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('userId không hợp lệ');
+    }
+
+    const enrollments = await this.enrollmentModel.find({
+      user_id: new Types.ObjectId(userId),
+      status: 'active',
+    });
+
+    const enrolledCourseIds = enrollments.map((e) => e.course_id);
+
+    const courses = await this.courseModel
+      .find({
+        status: CourseStatus.ACTIVE,
+        _id: { $nin: enrolledCourseIds },
+      })
+      .populate('category', 'category_name')
+      .lean()
+      .exec();
+
+    return new ApiResponse('Danh sách khóa học chưa đăng ký', courses);
   }
 }

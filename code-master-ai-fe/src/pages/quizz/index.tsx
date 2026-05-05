@@ -1,21 +1,110 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { quizData } from "./fakeData";
-import { lessons } from "../lesson/fakeData";
 import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import {
+  getQuizzesByAssignmentId,
+  getQuestionsByQuizId,
+  submitQuiz,
+} from "../../api/quizz";
 
-const Quizz = () => {
+type QuizQuestion = {
+  id: string;
+  question: string;
+  options: string[];
+  correct: number[];
+  type: "single" | "multiple";
+};
+
+type QuizzProps = {
+  assignment?: any;
+  nextPath?: string;
+  onComplete?: (score: number) => void;
+};
+
+const normalizeQuestion = (question: any): QuizQuestion => {
+  const options = [
+    question.option_a,
+    question.option_b,
+    question.option_c,
+    question.option_d,
+  ].filter(Boolean);
+
+  return {
+    id: question._id || question.id,
+    question: question.question_text || question.text || "",
+    options,
+    correct: [],
+    type: "single",
+  };
+};
+
+const Quizz = ({ assignment, nextPath, onComplete }: QuizzProps) => {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  // Auto scroll to top on mount
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [id]);
-
   const [answers, setAnswers] = useState<number[][]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [validationError, setValidationError] = useState<string>("");
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [quizId, setQuizId] = useState<string>("");
+  const [score, setScore] = useState(0);
+  const [quizResults, setQuizResults] = useState<any[]>([]);
+  const [fetchingQuestions, setFetchingQuestions] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id, assignment?._id]);
+
+  useEffect(() => {
+    const loadQuestions = async () => {
+      const assignmentId = assignment?._id || id;
+      if (!assignmentId) {
+        setQuizId("");
+        setQuestions([]);
+        return;
+      }
+
+      setFetchingQuestions(true);
+      setValidationError("");
+
+      try {
+        let resolvedQuizId = assignment?.quizzes?.[0]?._id || assignment?.quiz?._id || "";
+
+        if (!resolvedQuizId) {
+          const quizzes = await getQuizzesByAssignmentId(assignmentId);
+          resolvedQuizId = quizzes?.[0]?._id || quizzes?.data?.[0]?._id || "";
+        }
+
+        setQuizId(resolvedQuizId);
+
+        if (!resolvedQuizId) {
+          setQuestions([]);
+          return;
+        }
+
+        if (assignment?.quizzes?.[0]?.questions?.length) {
+          setQuestions(assignment.quizzes[0].questions.map(normalizeQuestion));
+          return;
+        }
+
+        const questionsRes = await getQuestionsByQuizId(resolvedQuizId);
+        const normalizedQuestions = Array.isArray(questionsRes)
+          ? questionsRes
+          : questionsRes?.data || questionsRes?.results || [];
+
+        setQuestions(normalizedQuestions.map(normalizeQuestion));
+      } catch (error: any) {
+        setQuestions([]);
+        setValidationError(error?.message || "Không thể tải danh sách câu hỏi");
+      } finally {
+        setFetchingQuestions(false);
+      }
+    };
+
+    loadQuestions();
+  }, [assignment, id]);
+
+  const resolvedNextPath = nextPath;
 
   const handleSelect = (questionIndex: number, optionIndex: number) => {
     setAnswers((prev) => {
@@ -25,26 +114,26 @@ const Quizz = () => {
     });
   };
 
-  const calcScore = () => {
-    let correct = 0;
+  const completeQuiz = (quizIdValue: string, finalScore: number) => {
+    if (onComplete) {
+      onComplete(finalScore);
+      return;
+    }
 
-    quizData.forEach((q, i) => {
-      const userAns = answers[i] || [];
+    const lessonKey = `${id || assignment?._id}::quiz`;
+    const saved = localStorage.getItem("completed_lessons");
+    const completed = saved ? JSON.parse(saved) : [];
 
-      if (
-        userAns.length === q.correct.length &&
-        userAns.every((a) => q.correct.includes(a))
-      ) {
-        correct++;
-      }
-    });
-
-    return correct;
+    if (!completed.includes(lessonKey)) {
+      completed.push(lessonKey);
+      localStorage.setItem("completed_lessons", JSON.stringify(completed));
+      localStorage.setItem(`quiz_${quizIdValue}_score`, String(finalScore));
+      window.dispatchEvent(new Event("lessonsUpdated"));
+    }
   };
 
-  const handleSubmit = () => {
-    // Validate - kiểm tra nếu tất cả câu hỏi có câu trar lời
-    const unanswered = quizData.findIndex((_, i) => !answers[i] || answers[i].length === 0);
+  const handleSubmit = async () => {
+    const unanswered = questions.findIndex((_, i) => !answers[i] || answers[i].length === 0);
 
     if (unanswered !== -1) {
       setValidationError(`Vui lòng trả lời tất cả câu hỏi (từ câu ${unanswered + 1})`);
@@ -53,207 +142,198 @@ const Quizz = () => {
     }
 
     setValidationError("");
-    const score = calcScore();
-    completeQuiz(id!, score);
-    setSubmitted(true);
-  };
+    setLoading(true);
 
-  const score = calcScore();
+    try {
+      const formatAnswers = questions.map((q, i) => ({
+        question_id: q.id,
+        selected_answer: answers[i].map((idx) => String(idx)),
+      }));
 
-  const currentLessonIndex = lessons.findIndex(
-    (l) => l.path === `/learn/quiz/${id}`,
-  );
-
-  const nextLesson = lessons[currentLessonIndex + 1];
-
-  const completeQuiz = (quizId: string, finalScore: number) => {
-    const saved = localStorage.getItem("completed_lessons");
-    const completed = saved ? JSON.parse(saved) : [];
-
-    const quizItem = lessons.find((l) => l.path === `/learn/quiz/${quizId}`);
-
-    if (quizItem && !completed.includes(quizItem.id)) {
-      completed.push(quizItem.id);
-      localStorage.setItem("completed_lessons", JSON.stringify(completed));
-      localStorage.setItem(`quiz_${quizId}_score`, String(finalScore));
-      window.dispatchEvent(new Event("lessonsUpdated"));
+      const res = await submitQuiz(quizId, formatAnswers);
+      setScore(res.correctCount ?? res.score ?? 0);
+      setQuizResults(res.results ?? []);
+      completeQuiz(quizId || id || assignment?._id || "quiz", res.score ?? res.correctCount ?? 0);
+      setSubmitted(true);
+    } catch (err: any) {
+      setValidationError(err.message || "Có lỗi xảy ra khi nộp bài");
+    } finally {
+      setLoading(false);
     }
-
-    console.log(`Đã hoàn thành quiz ${quizId} với điểm ${finalScore}/${quizData.length}`);
   };
+
+  if (loading || fetchingQuestions) {
+    return <div className="rounded-2xl bg-white p-8 text-center text-slate-500 shadow-sm">Đang tải quiz...</div>;
+  }
 
   return (
     <>
-      <h1 className="text-2xl font-bold mb-6">Quiz: Kiến thức ReactJS</h1>
+      <h1 className="mb-6 text-2xl font-bold">
+        Quiz: {assignment?.title || assignment?.name || "Kiểm tra kiến thức"}
+      </h1>
 
-      {/* VALIDATION ERROR */}
       {validationError && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
-          <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+          <AlertCircle size={20} className="mt-0.5 shrink-0 text-red-600" />
           <div className="flex-1">
             <h3 className="font-semibold text-red-700">Chưa trả lời đủ câu</h3>
-            <p className="text-sm text-red-600 mt-1">{validationError}</p>
+            <p className="mt-1 text-sm text-red-600">{validationError}</p>
           </div>
           <button
             onClick={() => setValidationError("")}
-            className="text-red-600 hover:text-red-700 flex-shrink-0 font-bold"
+            className="shrink-0 font-bold text-red-600 hover:text-red-700"
           >
-            ✕
+            x
           </button>
         </div>
       )}
 
-      {/* ALL QUESTIONS */}
-      <div className="space-y-6 mb-8">
-            {quizData.map((question, qIndex) => {
-              const hasAnswer = answers[qIndex] && answers[qIndex].length > 0;
-              const userAns = answers[qIndex] || [];
-              const isCorrect =
-                userAns.length === question.correct.length &&
-                userAns.every((a) => question.correct.includes(a));
-
-              return (
-                <div key={question.id} className="bg-white p-6 rounded-2xl shadow border border-gray-100">
-                  {/* QUESTION HEADER */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="inline-block px-3 py-1 bg-brand-100 text-brand-700 text-xs font-semibold rounded-full">
-                          Câu {qIndex + 1}/{quizData.length}
-                        </span>
-                        {question.type === "multiple" && (
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                            Chọn nhiều
-                          </span>
-                        )}
-                      </div>
-                      <h2 className="text-lg font-semibold text-gray-600">
-                        {question.question}
-                      </h2>
-                    </div>
-                    {submitted && isCorrect && (
-                      <CheckCircle2 size={24} className="text-green-500 flex-shrink-0 ml-2" />
-                    )}
-                    {submitted && !isCorrect && (
-                      <XCircle size={24} className="text-red-500 flex-shrink-0 ml-2" />
-                    )}
-                    {!submitted && hasAnswer && (
-                      <CheckCircle2 size={24} className="text-green-500 flex-shrink-0 ml-2" />
-                    )}
-                  </div>
-
-                  {/* OPTIONS */}
-                  <div className="space-y-2">
-                    {question.options.map((opt, oIndex) => {
-                      const selected = answers[qIndex]?.includes(oIndex);
-
-                      return (
-                        <button
-                          key={oIndex}
-                          onClick={() => !submitted && handleSelect(qIndex, oIndex)}
-                          disabled={submitted}
-                          className={`w-full text-left p-4 border rounded-xl transition-all ${
-                            submitted ? "cursor-default" : "cursor-pointer"
-                          }
-                            ${
-                              selected
-                                ? "bg-brand-25 border-brand-700 shadow-sm"
-                                : "hover:bg-gray-50 border-gray-200"
-                            }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition relative
-                                ${
-                                  selected
-                                    ? "bg-brand-500 border-brand-500"
-                                    : "border-gray-300"
-                                }`}
-                            >
-                              {selected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                            </div>
-                            <span className="text-gray-700 font-medium">{opt}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* FEEDBACK - CHỈ HIỂN THỊ KHI SAI */}
-                  {submitted && !isCorrect && (
-                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-600 mb-2">
-                        <strong>Đáp án đúng:</strong> {question.correct.map((idx) => question.options[idx]).join(", ")}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* FEEDBACK - ĐÚNG */}
-                  {submitted && isCorrect && (
-                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm font-semibold text-green-700">
-                        Đáp án chính xác
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+      {questions.length === 0 ? (
+        <div className="rounded-2xl bg-white p-8 text-center text-slate-500 shadow-sm">
+          Bài quiz này hiện chưa có câu hỏi nào.
+        </div>
+      ) : submitted ? (
+        <div className="mb-8 rounded-2xl border border-brand-100 bg-brand-50 p-6 shadow-sm">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+            <div className="text-center sm:text-left">
+              <h2 className="text-xl font-bold text-brand-900">Ket qua Quiz</h2>
+              <p className="mt-1 text-sm text-brand-600">Ban da hoan thanh bai kiem tra nay</p>
+            </div>
+            <div className="flex items-center gap-3 rounded-xl bg-white px-6 py-3 shadow-sm">
+              <span className="text-3xl font-black text-brand-600">{score}</span>
+              <span className="text-xl text-slate-300">/</span>
+              <span className="text-xl font-bold text-slate-500">{questions.length}</span>
+            </div>
           </div>
+        </div>
+      ) : null}
 
-          {/* SUBMIT BUTTON - CHỈ HI THỊ KHI CHƯA SUBMIT */}
-          {!submitted && (
-            <div className="flex justify-center gap-4 sticky bottom-6">
-              <button
-                onClick={handleSubmit}
-                className="bg-brand-600 text-white px-8 py-3 rounded-full hover:bg-brand-700 font-semibold shadow-lg transition"
-              >
-                Nộp bài Quiz
-              </button>
+      <div className="mb-8 space-y-6">
+        {questions.map((question, qIndex) => {
+          const hasAnswer = answers[qIndex] && answers[qIndex].length > 0;
+          const resultObj = quizResults.find((r) => r.question_id === question.id);
+          const isCorrect = submitted ? resultObj?.isCorrect : undefined;
+
+          return (
+            <div key={question.id} className="rounded-2xl border border-gray-100 bg-white p-6 shadow">
+              <div className="mb-4 flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">
+                      Cau {qIndex + 1}/{questions.length}
+                    </span>
+                  </div>
+                  <h2 className="text-lg font-semibold text-gray-600">
+                    {question.question}
+                  </h2>
+                </div>
+                {submitted && isCorrect && (
+                  <CheckCircle2 size={24} className="ml-2 shrink-0 text-green-500" />
+                )}
+                {submitted && !isCorrect && (
+                  <XCircle size={24} className="ml-2 shrink-0 text-red-500" />
+                )}
+                {!submitted && hasAnswer && (
+                  <CheckCircle2 size={24} className="ml-2 shrink-0 text-green-500" />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {question.options.map((opt, oIndex) => {
+                  const selected = answers[qIndex]?.includes(oIndex);
+
+                  return (
+                    <button
+                      key={oIndex}
+                      onClick={() => !submitted && handleSelect(qIndex, oIndex)}
+                      disabled={submitted}
+                      className={`w-full rounded-xl border p-4 text-left transition-all ${
+                        submitted ? "cursor-default" : "cursor-pointer"
+                      } ${
+                        selected
+                          ? "border-brand-700 bg-brand-25 shadow-sm"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                            selected ? "border-brand-500 bg-brand-500" : "border-gray-300"
+                          }`}
+                        >
+                          {selected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                        </div>
+                        <span className="font-medium text-gray-700">{opt}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {submitted && !isCorrect && (
+                <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
+                  <p className="text-sm text-red-600">
+                    <strong>Đáp án của bạn chưa chính xác.</strong> Vui lòng xem lại bài giảng để tìm đáp án đúng.
+                  </p>
+                </div>
+              )}
+
+              {submitted && isCorrect && (
+                <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3">
+                  <p className="text-sm font-semibold text-green-700">
+                    Dap an chinh xac
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+          );
+        })}
+      </div>
 
-      {/* RESULT - CHỈ HIỂN THỊ KHI SUBMIT */}
+      {!submitted && questions.length > 0 && (
+        <div className="sticky bottom-6 flex justify-center gap-4">
+          <button
+            onClick={handleSubmit}
+            className="rounded-full bg-brand-600 px-8 py-3 font-semibold text-white shadow-lg transition hover:bg-brand-700"
+          >
+            Nop bai quiz
+          </button>
+        </div>
+      )}
+
       {submitted && (
-        <div className="rounded-3xl border-2 border-brand-400 overflow-hidden bg-brand-50/50">
-          {/* TOP SECTION - SCORE RESULT */}
+        <div className="overflow-hidden rounded-3xl border-2 border-brand-400 bg-brand-50/50">
           <div className="bg-brand-25 px-12 py-8 text-center text-white">
-            {/* TROPHY ICON */}
-            <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center rounded-full bg-white/90">
-              <div className="text-4xl">🏆</div>
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white/90">
+              <div className="text-4xl">✓</div>
             </div>
 
-            {/* SCORE RESULT */}
-            <h2 className="text-3xl font-bold text-brand-700 mb-2">
-              Kết quả: {score}/{quizData.length} câu đúng
+            <h2 className="mb-2 text-3xl font-bold text-brand-700">
+              Ket qua: {score}/{questions.length} cau dung
             </h2>
 
-            {/* PERCENTAGE TEXT */}
             <p className="text-base text-brand-700">
-              Bạn đã hoàn thành {Math.round((score / quizData.length) * 100)}% kiến thức chương này!
+              Ban da hoan thanh {questions.length ? Math.round((score / questions.length) * 100) : 0}% kien thuc chuong nay
             </p>
           </div>
 
-          {/* BOTTOM SECTION - CONGRATULATIONS + ACTION BUTTONS */}
-          <div className="px-12 py-8 text-center bg-white">
-            {/* CONGRATULATIONS MESSAGE */}
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <CheckCircle2 size={28} className="text-brand-600 flex-shrink-0" />
+          <div className="bg-white px-12 py-8 text-center">
+            <div className="mb-6 flex items-center justify-center gap-3">
+              <CheckCircle2 size={28} className="shrink-0 text-brand-600" />
               <p className="text-xl font-semibold text-gray-800">
-                Chúc mừng! Bạn đã hoàn thành bài Quiz.
+                Ban da hoan thanh bai quiz.
               </p>
             </div>
 
-            {/* ACTION BUTTONS */}
             <div className="flex justify-center gap-4">
-              {nextLesson && (
+              {resolvedNextPath && (
                 <button
                   onClick={() => {
-                    navigate(nextLesson.path);
+                    navigate(resolvedNextPath);
                   }}
-                  className="bg-brand-600 hover:bg-brand-700 text-white px-8 py-3 rounded-full font-semibold transition"
+                  className="rounded-full bg-brand-600 px-8 py-3 font-semibold text-white transition hover:bg-brand-700"
                 >
-                  Bài học tiếp theo »
+                  Bai hoc tiep theo
                 </button>
               )}
               <button
@@ -262,9 +342,9 @@ const Quizz = () => {
                   setSubmitted(false);
                   setValidationError("");
                 }}
-                className="bg-white border border-brand-600 hover:bg-brand-50 text-brand-600 px-8 py-3 rounded-full font-semibold transition"
+                className="rounded-full border border-brand-600 bg-white px-8 py-3 font-semibold text-brand-600 transition hover:bg-brand-50"
               >
-                Làm lại
+                Lam lai
               </button>
             </div>
           </div>

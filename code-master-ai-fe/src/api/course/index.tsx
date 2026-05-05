@@ -15,7 +15,18 @@ type CategoryResponse = {
 
 export const GetCourses = async () => {
   try {
-    const res = await axiosInstance.get('/courses');
+    const res = await axiosInstance.get("/courses");
+    console.log("THANH CONG: ", res.data);
+    return res.data;
+  } catch (err) {
+    console.log("THAT BAI: ", err);
+    throw err;
+  }
+};
+
+export const GetNonActiveCourse = async () => {
+  try {
+    const res = await axiosInstance.get("/courses/nonActive");
     console.log("THANH CONG: ", res.data);
     return res.data;
   } catch (err) {
@@ -26,7 +37,7 @@ export const GetCourses = async () => {
 
 export const GetCategories = async (): Promise<Category[]> => {
   try {
-    const res = await axiosInstance.get<CategoryResponse>('/category');
+    const res = await axiosInstance.get<CategoryResponse>("/category");
     console.log("THANH CONG:", res.data);
     return res.data.results;
   } catch (err) {
@@ -47,13 +58,21 @@ export const GetCoursesDetail = async (id: string) => {
 };
 
 // --- NEW COURSE APIs ---
-export const searchCourses = async (params?: { keyword?: string; level?: string; category?: string; minPrice?: number; maxPrice?: number; page?: number; limit?: number }) => {
-  const res = await axiosInstance.get('/courses/search', { params });
+export const searchCourses = async (params?: {
+  keyword?: string;
+  level?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  page?: number;
+  limit?: number;
+}) => {
+  const res = await axiosInstance.get("/courses/search", { params });
   return res.data?.data || res.data;
 };
 
 export const getCourses = async () => {
-  const res = await axiosInstance.get('/courses');
+  const res = await axiosInstance.get("/courses");
   return res.data?.data || res.data;
 };
 
@@ -67,10 +86,15 @@ export const getCourseFullInfo = async (id: string) => {
   return res.data?.data || res.data;
 };
 
+export const getLearningCourse = async (id: string) => {
+  const res = await axiosInstance.get(`/courses/${id}/learning`);
+  return res.data?.data || res.data;
+};
+
 export const createCourse = async (data: FormData | object) => {
   const isFormData = data instanceof FormData;
-  const res = await axiosInstance.post('/courses', data, {
-    headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+  const res = await axiosInstance.post("/courses", data, {
+    headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
   });
   return res.data?.data || res.data;
 };
@@ -78,7 +102,7 @@ export const createCourse = async (data: FormData | object) => {
 export const updateCourse = async (id: string, data: FormData | object) => {
   const isFormData = data instanceof FormData;
   const res = await axiosInstance.patch(`/courses/${id}`, data, {
-    headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+    headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
   });
   return res.data?.data || res.data;
 };
@@ -90,7 +114,7 @@ export const deleteCourse = async (id: string) => {
 
 // --- NEW LESSON APIs ---
 export const getLessons = async () => {
-  const res = await axiosInstance.get('/lessons');
+  const res = await axiosInstance.get("/lessons");
   return res.data?.data || res.data;
 };
 
@@ -100,7 +124,7 @@ export const getLessonById = async (id: string) => {
 };
 
 export const createLesson = async (data: any) => {
-  const res = await axiosInstance.post('/lessons', data);
+  const res = await axiosInstance.post("/lessons", data);
   return res.data?.data || res.data;
 };
 
@@ -111,5 +135,10 @@ export const updateLesson = async (id: string, data: any) => {
 
 export const deleteLesson = async (id: string) => {
   const res = await axiosInstance.delete(`/lessons/${id}`);
+  return res.data?.data || res.data;
+};
+
+export const GetFeaturedCourses = async () => {
+  const res = await axiosInstance.get("/courses/featuredCourses");
   return res.data?.data || res.data;
 };

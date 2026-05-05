@@ -3,60 +3,38 @@ import { ShoppingCartOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { createCartItem, GetCartLength } from "../../api/cart";
 import { useUserCart } from "../../store/cart";
-// const getCategoryBadgeClass = (categoryName: string) => {
-//   switch (categoryName) {
-//     case "Frontend":
-//       return "bg-brand-200 text-brand-900";
-//     case "Backend":
-//       return "bg-brand-700 text-white";
-//     case "AI & Data":
-//       return "bg-brand-400 text-white";
-//     case "Mobile":
-//       return "bg-brand-300 text-brand-900";
-//     case "Cybersecurity":
-//       return "bg-brand-600 text-white";
-//     default:
-//       return "bg-brand-400 text-white";
-//   }
-// };
+import { Modal } from "antd";
+import { useState } from "react";
+import { useUserInfo } from "../../store/user";
 
-// const getLevelLabel = (level: string) => {
-//   switch (level) {
-//     case "beginner":
-//       return "Cơ bản";
-//     case "intermediate":
-//       return "Trung bình";
-//     case "advanced":
-//       return "Nâng cao";
-//     default:
-//       return level;
-//   }
-// };
-
-// const renderStars = (rating: number) => {
-//   const fullStars = Math.floor(rating);
-//   const hasHalfStar = rating % 1 !== 0;
-//   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-//   return (
-//     <div className="flex items-center gap-1">
-//       <div className="flex text-amber-400">
-//         {Array.from({ length: fullStars }).map((_, index) => (
-//           <span key={`full-${index}`}>★</span>
-//         ))}
-//         {hasHalfStar && <span>☆</span>}
-//         {Array.from({ length: emptyStars }).map((_, index) => (
-//           <span key={`empty-${index}`} className="opacity-40">
-//             ★
-//           </span>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
 export const CourseCard = ({ course }: { course: ICourse }) => {
+  const [open, setOpen] = useState(false);
+  const [confirmLoading] = useState(false);
+  const { userInfo } = useUserInfo();
+  const [modalText, setModalText] = useState(
+    "Vui lòng đăng nhập để mua khóa học!",
+  );
   const navigate = useNavigate();
   const { setQuantityCart } = useUserCart();
+  const showModal = () => {
+    setOpen(true);
+  };
+
+  const handleOk = () => {
+    if (!userInfo) {
+      navigate(`/login`);
+      return;
+    } else {
+      if (!userInfo?.phone) {
+        navigate(`/profile`);
+        return;
+      }
+    }
+  };
+
+  const handleCancel = () => {
+    setOpen(false);
+  };
   const onCart = async () => {
     try {
       await createCartItem(course._id);
@@ -65,6 +43,30 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
       console.log("Thêm vào giỏ hàng thành công!");
     } catch (error) {
       console.log("Lỗi khi thêm vào giỏ hàng. Vui lòng thử lại.");
+    }
+  };
+
+  const checkUser = (isBuyNow: boolean) => {
+    if (!userInfo) {
+      setModalText("Vui lòng đăng nhập để mua hàng!");
+      showModal();
+      return;
+    }
+    if (!userInfo?.phone) {
+      setModalText("Vui lòng cập nhật thông tin để mua hàng!");
+      showModal();
+      return;
+    }
+    if (isBuyNow) {
+      if (course.price === 0) {
+        navigate(`/course/${course._id}`);
+        return;
+      } else {
+        navigate(`/checkout/${course._id}`);
+        return;
+      }
+    } else {
+      onCart();
     }
   };
   return (
@@ -133,21 +135,40 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
             {course.price !== 0 && (
               <button
                 type="button"
-                onClick={() => onCart()}
+                // onClick={() => onCart()}
+                onClick={() => {
+                  checkUser(false);
+                }}
                 className="flex size-10 items-center justify-center rounded-xl bg-brand-25 text-brand-600 transition-colors hover:bg-brand-50"
               >
                 <ShoppingCartOutlined />
               </button>
             )}
             <button
-              type="button"
               className="rounded-xl bg-brand-700 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-800"
+              onClick={() => {
+                if (course.price === 0) {
+                  navigate(`/learn/${course._id}`);
+                } else {
+                  checkUser(true);
+                }
+              }}
             >
               {course.price === 0 ? "Học" : "Mua"}
             </button>
           </div>
         </div>
       </div>
+
+      <Modal
+        title="Thông báo"
+        open={open}
+        onOk={handleOk}
+        confirmLoading={confirmLoading}
+        onCancel={handleCancel}
+      >
+        <p>{modalText}</p>
+      </Modal>
     </article>
   );
 };

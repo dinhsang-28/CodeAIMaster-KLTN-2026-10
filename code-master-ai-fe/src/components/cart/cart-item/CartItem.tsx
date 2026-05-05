@@ -2,7 +2,6 @@ import React from "react";
 import { Trash2 } from "lucide-react";
 import { message, Popconfirm, PopconfirmProps } from "antd";
 
-
 export interface CartItemData {
   id: string;
   title: string;
@@ -19,14 +18,14 @@ interface CartItemProps {
 
 export default function CartItem({ item, onRemove }: CartItemProps) {
   const [, holder] = message.useMessage();
-  const confirm: PopconfirmProps['onConfirm'] = (e) => {
+  const confirm: PopconfirmProps["onConfirm"] = (e) => {
     console.log(e);
     onRemove(item.id);
-    
+
     // messageApi.success('Click on Yes');
   };
 
-  const cancel: PopconfirmProps['onCancel'] = (e) => {
+  const cancel: PopconfirmProps["onCancel"] = (e) => {
     console.log(e);
     // messageApi.error('Click on No');
   };
@@ -49,7 +48,7 @@ export default function CartItem({ item, onRemove }: CartItemProps) {
           </span>
         </div>
 
-        <p className="text-sm text-slate-500 mb-2">{item.description}</p>
+        {/* <p className="text-sm text-slate-500 mb-2">{item.description}</p> */}
 
         <div className="flex justify-between items-end">
           <p className="text-xs font-medium text-slate-400">
@@ -79,7 +78,7 @@ export default function CartItem({ item, onRemove }: CartItemProps) {
                 "!bg-brand-50 hover:!bg-brand-100 !text-brand-700 !border-brand-200 !rounded-lg !font-semibold",
             }}
           >
-            <Trash2  size={20} className="text-red-500 cursor-pointer" />
+            <Trash2 size={20} className="text-red-500 cursor-pointer" />
           </Popconfirm>
         </div>
       </div>

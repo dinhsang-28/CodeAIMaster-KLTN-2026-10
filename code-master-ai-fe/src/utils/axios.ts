@@ -29,7 +29,6 @@
 //   failedQueue = [];
 // };
 
-
 // axiosInstance.interceptors.response.use(
 //   (response) => {
 //     return response; // api thanh cong cho qua
@@ -70,7 +69,7 @@
 //         // useUserInfo.getState().clearUserInfo();
 //         // const currentPath = window.location.pathname;
 //         // const publicPaths = ["/", "/introduce", "/blog", "/course"];
-//         // const isPublicPage = publicPaths.some(path => 
+//         // const isPublicPage = publicPaths.some(path =>
 //         //   path === "/" ? currentPath === "/" : currentPath.startsWith(path)
 //         // );
 //         // // if (window.location.pathname !== "/login") {
@@ -105,22 +104,110 @@
 // export default axiosInstance;
 // axios.ts — đơn giản lại, bỏ hết logic thừa
 // axios.ts
-import axios from "axios";
-import { useUserInfo } from "../store/user";
+// import axios from "axios";
+// import { useUserInfo } from "../store/user";
 
 // export const axiosInstance = axios.create({
 //   baseURL: "http://localhost:3001/api/v1",
 //   withCredentials: true,
 // });
+// // // export const axiosInstance = axios.create({
+// // //   baseURL: "https://codeaimaster-kltn-2026-10.onrender.com/api/v1",
+// // //   withCredentials: true,
+// // // });
+
 // // export const axiosInstance = axios.create({
-// //   baseURL: "https://codeaimaster-kltn-2026-10.onrender.com/api/v1",
+// //   baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
 // //   withCredentials: true,
 // // });
 
+// let isRefreshing = false;
+// let failedQueue: { resolve: (v: any) => void; reject: (e: any) => void }[] = [];
+
+// const processQueue = (error: any) => {
+//   failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(null)));
+//   failedQueue = [];
+// };
+
+// axiosInstance.interceptors.response.use(
+//   (response) => response,
+//   async (error) => {
+//     const originalRequest = error.config;
+
+//     const skipRefreshUrls = ["/auth/refresh", "/auth/login", "/auth/logout"];
+//     const isSkipped = skipRefreshUrls.some((url) =>
+//       originalRequest.url?.includes(url)
+//     );
+
+//     // skip nếu request được đánh dấu silent
+//     if (originalRequest._silent) {
+//       return Promise.reject(error);
+//     }
+//     //  const isSilent = originalRequest._silent;
+
+//     if (error.response?.status === 401 && !isSkipped) {
+//       if (isRefreshing) {
+//         return new Promise((resolve, reject) => {
+//           failedQueue.push({ resolve, reject });
+//         })
+//           .then(() => axiosInstance(originalRequest))
+//           .catch((err) => Promise.reject(err));
+//       }
+
+//       if (originalRequest._retry) {
+//         return Promise.reject(error);
+//       }
+
+//       originalRequest._retry = true;
+//       isRefreshing = true;
+
+//       try {
+//         await axiosInstance.post("/auth/refresh");
+//         processQueue(null);
+//         return axiosInstance(originalRequest);
+//       } catch (refreshError) {
+//         processQueue(refreshError);
+//         useUserInfo.getState().clearUserInfo();
+
+//         const currentPath = window.location.pathname;
+//         const publicPaths = ["/", "/introduce", "/blog", "/course"];
+//         const isPublicPage = publicPaths.some((path) =>
+//           path === "/" ? currentPath === "/" : currentPath.startsWith(path)
+//         );
+
+//         if (!isPublicPage && currentPath !== "/login" ) {
+//           window.location.href = "/login";
+//         }
+
+//         return Promise.reject(refreshError);
+//       } finally {
+//         isRefreshing = false;
+//       }
+//     }
+
+//     return Promise.reject(error);
+//   }
+// );
+
+// export default axiosInstance;
+
+import axios from "axios";
+import { useUserInfo } from "../store/user";
+
 export const axiosInstance = axios.create({
-  baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
+  baseURL: "http://localhost:3001/api/v1",
   withCredentials: true,
 });
+// export const axiosInstance = axios.create({
+//   baseURL: "https://codeaimaster-kltn-2026-10.onrender.com/api/v1",
+//   withCredentials: true,
+// });
+
+// export const axiosInstance = axios.create({
+//   // baseURL: "http://localhost:3000/api/v1",
+//   baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
+//   withCredentials: true,
+// });
 
 let isRefreshing = false;
 let failedQueue: { resolve: (v: any) => void; reject: (e: any) => void }[] = [];
@@ -135,16 +222,16 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Đọc từ headers — axios luôn giữ lại headers, không mất như custom property
+    // const isSilent = originalRequest.headers?.["x-silent"] === "true";
+    // if (isSilent) {
+    //   return Promise.reject(error);
+    // }
+
     const skipRefreshUrls = ["/auth/refresh", "/auth/login", "/auth/logout"];
     const isSkipped = skipRefreshUrls.some((url) =>
-      originalRequest.url?.includes(url)
+      originalRequest.url?.includes(url),
     );
-
-    // skip nếu request được đánh dấu silent
-    if (originalRequest._silent) {
-      return Promise.reject(error);
-    }
-    //  const isSilent = originalRequest._silent;
 
     if (error.response?.status === 401 && !isSkipped) {
       if (isRefreshing) {
@@ -169,14 +256,13 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
         useUserInfo.getState().clearUserInfo();
-
         const currentPath = window.location.pathname;
         const publicPaths = ["/", "/introduce", "/blog", "/course"];
         const isPublicPage = publicPaths.some((path) =>
-          path === "/" ? currentPath === "/" : currentPath.startsWith(path)
+          path === "/" ? currentPath === "/" : currentPath.startsWith(path),
         );
 
-        if (!isPublicPage && currentPath !== "/login" ) {
+        if (!isPublicPage && currentPath !== "/login") {
           window.location.href = "/login";
         }
 
@@ -187,7 +273,7 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;

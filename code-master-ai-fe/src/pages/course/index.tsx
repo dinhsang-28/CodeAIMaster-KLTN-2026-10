@@ -10,7 +10,7 @@ import {
   DownOutlined,
 } from "@ant-design/icons";
 import { Dropdown, type MenuProps } from "antd";
-import { GetCourses } from "../../api/course";
+import { GetCourses, GetNonActiveCourse } from "../../api/course";
 import { useCourseStore } from "../../store/course";
 import { useUserInfo } from "../../store/user";
 import AnimateOnScroll from "../../utils/animateOnScroll";
@@ -165,7 +165,7 @@ export default function CoursesPage() {
       setLoading(true);
       try {
         const [coursesRes, categoryNames] = await Promise.all([
-          GetCourses(),
+          userInfo ? GetNonActiveCourse() : GetCourses(),
           GetCategoryNames(),
         ]);
 
@@ -179,6 +179,7 @@ export default function CoursesPage() {
       }
     };
     fetchData();
+    // eslint-disable-next-line
   }, [setGlobalCourses]);
 
   return (
@@ -193,8 +194,8 @@ export default function CoursesPage() {
                   Tất cả khóa học
                 </h1>
                 <p className="text-sm sm:text-base md:text-xl font-normal leading-relaxed text-slate-600">
-                  Khám phá các lộ trình học tập từ cơ bản đến nâng cao cùng chuyên
-                  gia AI hàng đầu Việt Nam.
+                  Khám phá các lộ trình học tập từ cơ bản đến nâng cao cùng
+                  chuyên gia AI hàng đầu Việt Nam.
                 </p>
               </div>
 
@@ -208,7 +209,6 @@ export default function CoursesPage() {
                 </button>
               </div>
             </section>
-
           </AnimateOnScroll>
 
           {/* ── Filter bar ── */}
@@ -262,20 +262,22 @@ export default function CoursesPage() {
                       <button
                         type="button"
                         onClick={() => togglePriceFilter("free")}
-                        className={`rounded-xl px-5 sm:px-7 py-2 sm:py-2.5 text-sm font-bold transition-colors ${priceFilter === "free"
-                          ? "bg-brand-600 text-white shadow"
-                          : "text-slate-600 hover:bg-brand-25"
-                          }`}
+                        className={`rounded-xl px-5 sm:px-7 py-2 sm:py-2.5 text-sm font-bold transition-colors ${
+                          priceFilter === "free"
+                            ? "bg-brand-600 text-white shadow"
+                            : "text-slate-600 hover:bg-brand-25"
+                        }`}
                       >
                         Miễn phí
                       </button>
                       <button
                         type="button"
                         onClick={() => togglePriceFilter("paid")}
-                        className={`rounded-xl px-5 sm:px-7 py-2 sm:py-2.5 text-sm font-bold transition-colors ${priceFilter === "paid"
-                          ? "bg-brand-600 text-white shadow"
-                          : "text-slate-600 hover:bg-brand-25"
-                          }`}
+                        className={`rounded-xl px-5 sm:px-7 py-2 sm:py-2.5 text-sm font-bold transition-colors ${
+                          priceFilter === "paid"
+                            ? "bg-brand-600 text-white shadow"
+                            : "text-slate-600 hover:bg-brand-25"
+                        }`}
                       >
                         Trả phí
                       </button>
@@ -301,10 +303,11 @@ export default function CoursesPage() {
                       key={category}
                       type="button"
                       onClick={() => setSelectedCategory(category)}
-                      className={`whitespace-nowrap rounded-full px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-bold transition-all ${selectedCategory === category
-                        ? "bg-brand-700 text-white shadow-lg"
-                        : "border border-brand-100 bg-white text-slate-600 hover:bg-brand-25"
-                        }`}
+                      className={`whitespace-nowrap rounded-full px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-bold transition-all ${
+                        selectedCategory === category
+                          ? "bg-brand-700 text-white shadow-lg"
+                          : "border border-brand-100 bg-white text-slate-600 hover:bg-brand-25"
+                      }`}
                     >
                       {category}
                     </button>
@@ -312,7 +315,6 @@ export default function CoursesPage() {
                 </div>
               </div>
             </section>
-
           </AnimateOnScroll>
 
           {/* ── Course grid ── */}
@@ -388,12 +390,10 @@ export default function CoursesPage() {
                     </button>
                   </div>
                 </section>
-
               </AnimateOnScroll>
 
               {/* ── Social proof CTA ── */}
               <AnimateOnScroll>
-
                 <section className="mt-10 sm:mt-16 rounded-[1.5rem] sm:rounded-[2rem] border border-brand-100 bg-brand-50 px-4 sm:px-6 md:px-10 py-12 sm:py-16 text-center">
                   <h2 className="mb-4 sm:mb-6 text-2xl sm:text-3xl md:text-4xl font-black text-brand-700">
                     Hàng ngàn học viên đã thay đổi sự nghiệp

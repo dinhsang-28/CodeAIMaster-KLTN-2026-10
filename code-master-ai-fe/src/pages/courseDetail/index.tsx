@@ -4,9 +4,11 @@ import {
   TabKey,
   fakeRelatedCourses,
 } from "../../data/courseDetail";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { GetCoursesDetail } from "../../api/courseDetail";
 import { createCartItem } from "../../api/cart";
+import { Modal } from "antd";
+import { useUserInfo } from "../../store/user";
 const formatPrice = (price: number) =>
   new Intl.NumberFormat("vi-VN").format(price) + "đ";
 
@@ -52,8 +54,14 @@ export default function CourseDetailPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("intro");
   const [openSectionIndex, setOpenSectionIndex] = useState<number>(0);
   const { id } = useParams();
+  const navigate = useNavigate();
   const [courseDetail, setCourseDetail] = useState<CourseDetail | null>(null);
-
+  const [open, setOpen] = useState(false);
+  const [confirmLoading] = useState(false);
+  const { userInfo } = useUserInfo();
+  const [modalText, setModalText] = useState(
+    "Vui lòng đăng nhập để mua khóa học!",
+  );
   useEffect(() => {
     const fetchCourseDetail = async () => {
       try {
@@ -67,6 +75,10 @@ export default function CourseDetailPage() {
 
     fetchCourseDetail();
   }, [id]);
+
+  const showModal = () => {
+    setOpen(true);
+  };
   const onCart = async () => {
     if (!courseDetail) return;
     try {
@@ -92,6 +104,46 @@ export default function CourseDetailPage() {
       value: courseDetail.category.category_name,
     },
   ];
+
+  const handleOk = () => {
+    if (!userInfo) {
+      navigate(`/login`);
+      return;
+    } else {
+      if (!userInfo?.phone) {
+        navigate(`/profile`);
+        return;
+      }
+    }
+  };
+
+  const handleCancel = () => {
+    setOpen(false);
+  };
+
+  const checkUser = (isBuyNow: boolean) => {
+    if (!userInfo) {
+      setModalText("Vui lòng đăng nhập để mua hàng!");
+      showModal();
+      return;
+    }
+    if (!userInfo?.phone) {
+      setModalText("Vui lòng cập nhật thông tin để mua hàng!");
+      showModal();
+      return;
+    }
+    if (isBuyNow) {
+      if (courseDetail.price === 0) {
+        navigate(`/course/${courseDetail._id}`);
+        return;
+      } else {
+        navigate(`/checkout/${courseDetail._id}`);
+        return;
+      }
+    } else {
+      onCart();
+    }
+  };
   return (
     <div className="min-h-screen bg-brand-25 text-slate-900">
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -200,10 +252,6 @@ export default function CourseDetailPage() {
 
                     {(activeTab === "intro" || activeTab === "content") && (
                       <section>
-                        <h3 className="mb-5 text-2xl font-bold text-brand-800">
-                          Nội dung khóa học
-                        </h3>
-
                         <div className="space-y-4">
                           {courseDetail.lessons?.map((lesson, index) => (
                             <div
@@ -311,15 +359,35 @@ export default function CourseDetailPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <button
-                    onClick={() => onCart()}
-                    className="w-full rounded-2xl bg-brand-600 px-5 py-4 font-bold text-white transition hover:bg-brand-700"
-                  >
-                    Thêm vào giỏ hàng
-                  </button>
-                  <button className="w-full rounded-2xl border-2 border-brand-700 px-5 py-4 font-bold text-brand-700 transition hover:bg-brand-700 hover:text-white">
-                    Mua ngay
-                  </button>
+                  {courseDetail.price === 0 ? (
+                    <button
+                      onClick={() => navigate(`/learn/${courseDetail._id}`)}
+                      className="w-full rounded-2xl bg-brand-600 px-5 py-4 font-bold text-white transition hover:bg-brand-700"
+                    >
+                      Học ngay
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => checkUser(false)}
+                        className="w-full rounded-2xl bg-brand-600 px-5 py-4 font-bold text-white transition hover:bg-brand-700"
+                      >
+                        Thêm vào giỏ hàng
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (courseDetail.price === 0) {
+                            navigate(`/learn/${courseDetail._id}`);
+                          } else {
+                            checkUser(true);
+                          }
+                        }}
+                        className="w-full rounded-2xl border-2 border-brand-700 px-5 py-4 font-bold text-brand-700 transition hover:bg-brand-700 hover:text-white"
+                      >
+                        {courseDetail.price === 0 ? "Học" : "Mua ngay"}
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-4 border-t border-brand-100 pt-6 text-sm text-slate-600">
@@ -412,6 +480,15 @@ export default function CourseDetailPage() {
           </div>
         </section>
       </main>
+      <Modal
+        title="Thông báo"
+        open={open}
+        onOk={handleOk}
+        confirmLoading={confirmLoading}
+        onCancel={handleCancel}
+      >
+        <p>{modalText}</p>
+      </Modal>
     </div>
   );
 }

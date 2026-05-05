@@ -1,20 +1,12 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  UseInterceptors,
-  UploadedFile,
-} from '@nestjs/common';
+import { Controller,Get, Post, Body, Patch, Param, Query, UseInterceptors, 
+  UploadedFile, UseGuards, Req, Delete} from '@nestjs/common';
+import { JwtAuthGuard } from '@/auth/passport/jwt-auth.guard';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { SearchCourse } from './dto/search-course.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
 
 @Controller('courses')
 export class CoursesController {
@@ -35,6 +27,11 @@ export class CoursesController {
     return this.coursesService.findAll();
   }
 
+  @Get('featuredCourses')
+  getFeaturedCourses() {
+    return this.coursesService.getFeaturedCourse();
+  }
+
   @Get('search')
   searchCourse(@Query() search: SearchCourse) {
     return this.coursesService.searchCourses(search);
@@ -43,6 +40,24 @@ export class CoursesController {
   @Get(':id/info')
   getCourseInfo(@Param('id') id: string) {
     return this.coursesService.getCourseInfo(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('nonActive')
+  getNonActiveCourses(@CurrentUser() user: any) {
+    return this.coursesService.getNonActiveCourse(user._id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('myCourses')
+  getCourseEnrollment(@CurrentUser() user: any) {
+    return this.coursesService.getCourseEnrollment(user._id);
+  }
+  @Get(':id/learning')
+  @UseGuards(JwtAuthGuard)
+  getLearningCourse(@Req() req, @Param('id') id: string) {
+    const userId = req.user._id;
+    return this.coursesService.getLearningCourse(id, userId);
   }
 
   @Get(':id')

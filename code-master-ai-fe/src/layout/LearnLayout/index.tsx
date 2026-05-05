@@ -10,7 +10,7 @@ const LearnLayout = () => {
 
       <div className="bg-gray-100 min-h-screen flex">
         {/* SIDEBAR */}
-        <Sidebar data={lessons} />
+        <Sidebar data={lessons.map(l => ({ ...l, id: String(l.id), lessonId: String(l.id) })) as any} />
 
         {/* CONTENT */}
         <div className="flex-1 p-6">

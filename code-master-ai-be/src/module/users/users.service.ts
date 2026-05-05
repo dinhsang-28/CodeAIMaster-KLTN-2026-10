@@ -3,13 +3,17 @@ import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model, Types } from 'mongoose';
 import { User } from './entities/user.entity';
 import { generateVerificationCode, hashPasswordHelper } from '@/helpers/util';
-import { CodeAuthDto, CreateAuthDto, changePasswordAuthDto } from '@/auth/dto/create-auth.dto';
+import {
+  CodeAuthDto,
+  CreateAuthDto,
+  changePasswordAuthDto,
+} from '@/auth/dto/create-auth.dto';
 import dayjs from 'dayjs';
 import { MailerService } from '@nestjs-modules/mailer';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-// import aqp from 'api-query-params'; 
-import * as crypto from 'crypto'; 
+// import aqp from 'api-query-params';
+import * as crypto from 'crypto';
 import { Role } from '../roles/entities/role.entity';
 import { UploadService } from '@/upload/upload.service';
 
@@ -20,54 +24,65 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Role.name) private roleModel: Model<Role>,
     private readonly mailerService: MailerService,
-    private readonly uploadService:UploadService
+    private readonly uploadService: UploadService,
   ) {}
 
   isEmailExist = async (email: string) => {
     const user = await this.userModel.exists({ email });
     if (user) return true;
     return false;
-  }
+  };
 
-  async create(createUserDto: CreateUserDto,file?: Express.Multer.File) {
-    const { name, email, password, phone, address, image ,role_id } = createUserDto;
-    
+  async create(createUserDto: CreateUserDto, file?: Express.Multer.File) {
+    const { name, email, password, phone, address, image, role_id } =
+      createUserDto;
+
     // check Email
     const isExist = await this.isEmailExist(email);
     if (isExist) {
-      throw new BadRequestException(`Email đã tồn tại: ${email}, vui lòng sử dụng email khác`);
+      throw new BadRequestException(
+        `Email đã tồn tại: ${email}, vui lòng sử dụng email khác`,
+      );
     }
     let imageUrl = createUserDto.image;
-    if(file){
+    if (file) {
       const uploadResult = await this.uploadService.uploadFile(file);
       imageUrl = uploadResult.secure_url;
     }
     // hash password
     const hashPassword = await hashPasswordHelper(password);
     const user = await this.userModel.create({
-      name, email, password: hashPassword, phone, address, image:imageUrl,
+      name,
+      email,
+      password: hashPassword,
+      phone,
+      address,
+      image: imageUrl,
       role_id: role_id ? new mongoose.Types.ObjectId(role_id) : undefined,
-      isActive: true
+      isActive: true,
     });
-    console.log("image:",user.image)
-    return { _id: user._id ,image:user.image};
+    console.log('image:', user.image);
+    return { _id: user._id, image: user.image };
   }
 
   // quản lý admin bên hệ thống
   async findAll(query: any, current: number, pageSize: number) {
-
     // 1. Tạm thời bỏ qua aqp để test
-    const limit = pageSize? Number(pageSize):10 ;
-    const offset = ((current ?Number(current):1) - 1) * limit;
-
-    
+    const limit = pageSize ? Number(pageSize) : 10;
+    const offset = ((current ? Number(current) : 1) - 1) * limit;
     // Nếu không có trường deleted, hãy để là {}
-    const filter:any = {}; 
-    if(query.search){
+    const filter: any = {};
+    const userRole = await this.roleModel.findOne({ role_name: 'user' });
+    console.log('userRole:', userRole); 
+    if (userRole) {
+      filter.role_id = { $ne: userRole._id };
+    }
+    console.log('filter role_id ne user:', filter.role_id);
+    if (query.search) {
       filter.$or = [
-        {name: { $regex: query.search, $options: 'i' }},
-        {email: { $regex: query.search, $options: 'i' }}
-      ]
+        { name: { $regex: query.search, $options: 'i' } },
+        { email: { $regex: query.search, $options: 'i' } },
+      ];
     }
 
     const [results, totalItems] = await Promise.all([
@@ -75,41 +90,46 @@ export class UsersService {
         .find(filter)
         .limit(limit)
         .skip(offset)
-        .populate('role_id','role_name')
-        .select("-password ")
+        .populate('role_id', 'role_name')
+        .select('-password')
         .exec(),
       this.userModel.countDocuments(filter),
     ]);
 
     const totalPages = Math.ceil(totalItems / limit);
 
-    return { 
+    return {
       meta: {
         current: current || 1,
         pageSize: limit,
         pages: totalPages,
-        total: totalItems
+        total: totalItems,
       },
-      results 
+      results,
     };
-}
+  }
 
-// quản lý học viên
+  // quản lý học viên
   async findOnlyRoleUser(query: any, current: number, pageSize: number) {
     const userRole = await this.roleModel.findOne({ role_name: 'user' });
     if (!userRole) {
-      return { 
-        meta: { current: current || 1, pageSize: pageSize || 10, pages: 0, total: 0 }, 
-        results: [] 
+      return {
+        meta: {
+          current: current || 1,
+          pageSize: pageSize || 10,
+          pages: 0,
+          total: 0,
+        },
+        results: [],
       };
     }
     const limit = pageSize ? Number(pageSize) : 10;
     const offset = ((current ? Number(current) : 1) - 1) * limit;
-    const filter: any = { role_id: userRole._id }; 
+    const filter: any = { role_id: userRole._id };
     if (query.search) {
       filter.$or = [
         { name: { $regex: query.search, $options: 'i' } },
-        { email: { $regex: query.search, $options: 'i' } }
+        { email: { $regex: query.search, $options: 'i' } },
       ];
     }
     const [results, totalItems] = await Promise.all([
@@ -118,7 +138,7 @@ export class UsersService {
         .limit(limit)
         .skip(offset)
         .populate('role_id', 'role_name')
-        .select("-password")
+        .select('-password')
         .sort({ createdAt: -1 })
         .exec(),
       this.userModel.countDocuments(filter),
@@ -126,39 +146,47 @@ export class UsersService {
 
     const totalPages = Math.ceil(totalItems / limit);
 
-    return { 
+    return {
       meta: {
         current: current ? Number(current) : 1,
         pageSize: limit,
         pages: totalPages,
-        total: totalItems
+        total: totalItems,
       },
-      results 
+      results,
     };
   }
-// khoá tài khoản học viên.
-  async toggleUserStatus(userId: string, status: 'active' | 'banned'){
-    if(!mongoose.isValidObjectId(userId)){
-      throw new BadRequestException("ID nguoi dung khong hop le");
+  // khoá tài khoản học viên.
+  async toggleUserStatus(userId: string, status: 'active' | 'banned') {
+    if (!mongoose.isValidObjectId(userId)) {
+      throw new BadRequestException('ID nguoi dung khong hop le');
     }
     const targetUser = await this.userModel.findById(userId);
-    if(!targetUser){
-      throw new BadRequestException("Không tìm thấy người dùng");
+    if (!targetUser) {
+      throw new BadRequestException('Không tìm thấy người dùng');
     }
     const userRole = await this.roleModel.findById(targetUser.role_id);
-    if(userRole?.role_name !== 'user'){
-      throw new BadRequestException("Chỉ có thể thay đổi trạng thái của tài khoản học viên");
+    if (userRole?.role_name !== 'user') {
+      throw new BadRequestException(
+        'Chỉ có thể thay đổi trạng thái của tài khoản học viên',
+      );
     }
     targetUser.status = status;
     await targetUser.save();
-    return { success: true, message: `Tài khoản đã được ${status === 'active' ? 'mở khóa' : 'khóa'} thành công` };
+    return {
+      success: true,
+      message: `Tài khoản đã được ${status === 'active' ? 'mở khóa' : 'khóa'} thành công`,
+    };
   }
 
   async findOne(id: string) {
     if (!mongoose.isValidObjectId(id)) {
-      throw new BadRequestException("ID không đúng định dạng MongoDB");
+      throw new BadRequestException('ID không đúng định dạng MongoDB');
     }
-    return await this.userModel.findById(id).populate('role_id').select("-password");
+    return await this.userModel
+      .findById(id)
+      .populate('role_id')
+      .select('-password');
   }
 
   async findByEmail(email: string) {
@@ -167,20 +195,20 @@ export class UsersService {
 
   async update(updateUserDto: UpdateUserDto, file: Express.Multer.File) {
     const { _id, name, email, phone, address, image, role_id } = updateUserDto;
-    
+
     let imageUrl = image;
-    if(file){
+    if (file) {
       const uploadResult = await this.uploadService.uploadFile(file);
       imageUrl = uploadResult.secure_url;
     }
     const finalUpdateData = {
       ...updateUserDto,
-      image: imageUrl, 
+      image: imageUrl,
     };
 
     return await this.userModel.updateOne(
       { _id: updateUserDto._id },
-      finalUpdateData
+      finalUpdateData,
     );
   }
 
@@ -188,8 +216,8 @@ export class UsersService {
     if (mongoose.isValidObjectId(_id)) {
       return this.userModel.deleteOne({ _id });
     } else {
-      throw new BadRequestException("Id không đúng định dạng MongoDB");
-    }   
+      throw new BadRequestException('Id không đúng định dạng MongoDB');
+    }
   }
   // ho so nguoi dung
   async updateMyProfile(userId: string, data: any, file?: Express.Multer.File) {
@@ -209,32 +237,34 @@ export class UsersService {
     if (imageUrl) finalUpdateData.image = imageUrl;
 
     // Nếu có nhập mật khẩu mới thì băm ra
-    if (password && password.trim() !== "") {
+    if (password && password.trim() !== '') {
       finalUpdateData.password = await hashPasswordHelper(password);
     }
 
-    await this.userModel.updateOne(
-      { _id: userId },
-      { $set: finalUpdateData }
-    );
+    await this.userModel.updateOne({ _id: userId }, { $set: finalUpdateData });
 
     // Trả về thông tin user mới để Frontend cập nhật Zustand
-    const updatedUser = await this.userModel.findById(userId).populate('role_id').select('-password');
-    return { 
-      success: true, 
-      message: "Cập nhật hồ sơ thành công!",
-      user: updatedUser 
+    const updatedUser = await this.userModel
+      .findById(userId)
+      .populate('role_id')
+      .select('-password');
+    return {
+      success: true,
+      message: 'Cập nhật hồ sơ thành công!',
+      user: updatedUser,
     };
   }
   // LUỒNG XÁC THỰC (AUTH) VÀ GỬI MAIL
   async handleRegister(registerDto: CreateAuthDto) {
     const { name, email, password } = registerDto;
-    
+
     if (await this.isEmailExist(email)) {
-      throw new BadRequestException(`Email đã tồn tại: ${email}, vui lòng sử dụng email khác`);
+      throw new BadRequestException(
+        `Email đã tồn tại: ${email}, vui lòng sử dụng email khác`,
+      );
     }
     const hashPassword = await hashPasswordHelper(password);
-    const codeId = await generateVerificationCode(5); 
+    const codeId = await generateVerificationCode(5);
     let defaultRole = await this.roleModel.findOne({ role_name: 'user' });
     if (!defaultRole) {
       defaultRole = await this.roleModel.create({
@@ -242,7 +272,7 @@ export class UsersService {
         description: 'Tài khoản người học mặc định',
       });
     }
-    
+
     const user = await this.userModel.create({
       name,
       email,
@@ -253,23 +283,24 @@ export class UsersService {
       codeExpired: dayjs().add(5, 'minutes'),
     });
 
-     this.mailerService.sendMail({
-      to: user.email!, 
+    this.mailerService.sendMail({
+      to: user.email!,
       subject: 'Kích hoạt tài khoản CodeMaster AI',
       template: 'register',
       context: { name: user?.name ?? user.email, activationCode: codeId },
     });
-    
 
     return { _id: user._id, email: user.email };
   }
   // refresh token
   async updateRefreshToken(_id: string, refreshToken: string | null) {
-  return await this.userModel.findByIdAndUpdate(_id, { refreshToken: refreshToken });
-}
+    return await this.userModel.findByIdAndUpdate(_id, {
+      refreshToken: refreshToken,
+    });
+  }
 
   // lay id de kiem tra refresh token
-  async refreshID(id:string | Types.ObjectId){
+  async refreshID(id: string | Types.ObjectId) {
     return await this.userModel.findById(id);
   }
 
@@ -279,21 +310,27 @@ export class UsersService {
       codeId: data.code,
     });
 
-    if (!user) throw new BadRequestException("Mã xác nhận không hợp lệ hoặc tài khoản không tồn tại");
-    if (dayjs().isAfter(user.codeExpired)) throw new BadRequestException("Mã xác nhận đã hết hạn");
+    if (!user)
+      throw new BadRequestException(
+        'Mã xác nhận không hợp lệ hoặc tài khoản không tồn tại',
+      );
+    if (dayjs().isAfter(user.codeExpired))
+      throw new BadRequestException('Mã xác nhận đã hết hạn');
 
     await this.userModel.updateOne(
       { _id: data._id },
-      { isActive: true, codeId: null, codeExpired: null }
+      { isActive: true, codeId: null, codeExpired: null },
     );
 
-    return { success: true, message: "Kích hoạt tài khoản thành công" };
+    return { success: true, message: 'Kích hoạt tài khoản thành công' };
   }
 
   async retryActive(email: string) {
     const user = await this.userModel.findOne({ email });
-    if (!user) throw new BadRequestException("Tài khoản người dùng không tồn tại");
-    if (user.isActive) throw new BadRequestException("Tài khoản này đã được kích hoạt");
+    if (!user)
+      throw new BadRequestException('Tài khoản người dùng không tồn tại');
+    if (user.isActive)
+      throw new BadRequestException('Tài khoản này đã được kích hoạt');
 
     const codeId = await generateVerificationCode(5);
     await user.updateOne({ codeId, codeExpired: dayjs().add(5, 'minutes') });
@@ -310,10 +347,11 @@ export class UsersService {
 
   async retryPassword(email: string) {
     const user = await this.userModel.findOne({ email });
-    if (!user) throw new BadRequestException("Tài khoản người dùng không tồn tại");
+    if (!user)
+      throw new BadRequestException('Tài khoản người dùng không tồn tại');
 
     const codeId = await generateVerificationCode(5);
-    console.log("check code id",codeId);
+    console.log('check code id', codeId);
     await user.updateOne({ codeId, codeExpired: dayjs().add(5, 'minutes') });
 
     this.mailerService.sendMail({
@@ -327,71 +365,92 @@ export class UsersService {
   }
   // kiem tra nhap otp dung hay sai
   async verifyForgotOTP(data: { email: string; code: string }) {
-    const user = await this.userModel.findOne({ 
-      email: data.email, 
-      codeId: data.code 
+    const user = await this.userModel.findOne({
+      email: data.email,
+      codeId: data.code,
     });
 
-    if (!user) throw new BadRequestException("Mã OTP không hợp lệ hoặc tài khoản không tồn tại");
-    if (dayjs().isAfter(user.codeExpired)) throw new BadRequestException("Mã OTP đã hết hạn");
+    if (!user)
+      throw new BadRequestException(
+        'Mã OTP không hợp lệ hoặc tài khoản không tồn tại',
+      );
+    if (dayjs().isAfter(user.codeExpired))
+      throw new BadRequestException('Mã OTP đã hết hạn');
 
-    return { success: true, message: "Mã OTP hợp lệ" };
+    return { success: true, message: 'Mã OTP hợp lệ' };
   }
 
   async changePassword(data: changePasswordAuthDto) {
     if (data.password !== data.confirmPassword) {
-      throw new BadRequestException("Mật khẩu và xác nhận mật khẩu không khớp");
+      throw new BadRequestException('Mật khẩu và xác nhận mật khẩu không khớp');
     }
 
-    const user = await this.userModel.findOne({ 
+    const user = await this.userModel.findOne({
       email: data.email,
-      codeId: data.code 
+      codeId: data.code,
     });
 
-    if (!user) throw new BadRequestException("Mã xác nhận không hợp lệ hoặc tài khoản không tồn tại");
-    if (dayjs().isAfter(user.codeExpired)) throw new BadRequestException("Mã xác nhận đã hết hạn");
+    if (!user)
+      throw new BadRequestException(
+        'Mã xác nhận không hợp lệ hoặc tài khoản không tồn tại',
+      );
+    if (dayjs().isAfter(user.codeExpired))
+      throw new BadRequestException('Mã xác nhận đã hết hạn');
 
     const newPassword = await hashPasswordHelper(data.password);
-    
-    await user.updateOne({ 
+
+    await user.updateOne({
       password: newPassword,
       codeId: null,
-      codeExpired: null
-    }); 
+      codeExpired: null,
+    });
 
-    return { success: true, message: "Thay đổi mật khẩu thành công" };
+    return { success: true, message: 'Thay đổi mật khẩu thành công' };
   }
-  
+
   //login bang google+github
   async createOAuthUser(profile: any) {
-  const existingUser = await this.userModel.findOne({ email: profile.email });
-  if (existingUser) {
-    const isSameProvider =
-      (profile.provider === 'google' && existingUser.googleId === profile.googleId) ||
-      (profile.provider === 'github' && existingUser.githubId === profile.githubId);
+    const existingUser = await this.userModel
+      .findOne({ email: profile.email })
+      .populate('role_id');
+    if (existingUser) {
+      const isSameProvider =
+        (profile.provider === 'google' &&
+          existingUser.googleId === profile.googleId) ||
+        (profile.provider === 'github' &&
+          existingUser.githubId === profile.githubId);
 
-    if (isSameProvider) return existingUser;
-    throw new BadRequestException(
-      `Email ${profile.email} đã được đăng ký bằng phương thức khác!`
-    );
-  }
-  let defaultRole = await this.roleModel.findOne({ role_name: 'user' });
+      if (isSameProvider) return existingUser;
+      throw new BadRequestException(
+        `Email ${profile.email} đã được đăng ký bằng phương thức khác!`,
+      );
+    }
+    let defaultRole = await this.roleModel.findOne({ role_name: 'user' });
     if (!defaultRole) {
       defaultRole = await this.roleModel.create({
         role_name: 'user',
         description: 'Tài khoản người học mặc định',
       });
     }
-  // Tạo user mới
-  return await this.userModel.create({
-    name: profile.name,
-    email: profile.email,
-    image: profile.image,
-    role_id: defaultRole?._id,
-    googleId: profile.provider === 'google' ? profile.googleId : undefined,
-    githubId: profile.provider === 'github' ? profile.githubId : undefined,
-    provider: profile.provider,
-    isActive: true,
-  });
-}
+    // Tạo user mới
+    const newUser = await this.userModel.create({
+      name: profile.name,
+      email: profile.email,
+      image: profile.image,
+      role_id: defaultRole?._id,
+      googleId: profile.provider === 'google' ? profile.googleId : undefined,
+      githubId: profile.provider === 'github' ? profile.githubId : undefined,
+      provider: profile.provider,
+      isActive: true,
+    });
+    const populatedUser = await this.userModel
+      .findById(newUser._id)
+      .populate('role_id');
+    if (!populatedUser) {
+      throw new BadRequestException(
+        'Không thể tạo tài khoản, vui lòng thử lại!',
+      );
+    }
+    return populatedUser;
+  }
 }

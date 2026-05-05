@@ -12,6 +12,7 @@ import {
   Assignment,
   SchemaAssginment,
 } from '../assignments/entities/assignment.entity';
+import { AssignmentType } from '../assignments/enums/types.enum';
 
 @Injectable()
 export class QuizzesService {
@@ -29,6 +30,11 @@ export class QuizzesService {
     );
     if (!assignment) {
       throw new NotFoundException('Assignment not found');
+    }
+    if (assignment.type !== AssignmentType.QUIZ) {
+      throw new BadRequestException(
+        'Assignment type must be "quiz" to create a quiz',
+      );
     }
 
     return this.quizModel.create(createQuizDto);
@@ -61,6 +67,11 @@ export class QuizzesService {
       );
       if (!assignment) {
         throw new NotFoundException('Assignment not found');
+      }
+      if (assignment.type !== AssignmentType.QUIZ) {
+        throw new BadRequestException(
+          'Assignment type must be "quiz" to attach a quiz',
+        );
       }
     }
 

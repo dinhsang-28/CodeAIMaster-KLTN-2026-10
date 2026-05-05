@@ -43,13 +43,13 @@ export const getExerciseById = async (assignmentId: string): Promise<ExerciseDat
 };
 
 /** Nộp bài và chấm điểm */
-export const submitCode = async (payload: SubmitCodePayload): Promise<SubmissionResult> => {
+export const submitCode = async (payload: SubmitCodePayload & { codeAssignmentId?: string }): Promise<SubmissionResult> => {
   const res = await axiosInstance.post("/submissions/submit", payload);
   return res.data?.data || res.data;
 };
 
 // --- NEW ASSIGNMENT APIs ---
-export const searchAssignments = async (params?: { keyword?: string; lesson_id?: string; type?: string; page?: number; limit?: number }) => {
+export const searchAssignments = async (params?: { keyword?: string; course_id?: string; lesson_id?: string; type?: string; page?: number; limit?: number }) => {
   const res = await axiosInstance.get('/assignments/search', { params });
   return res.data?.data || res.data;
 };
@@ -178,7 +178,13 @@ export const deleteTestcase = async (id: string) => {
   return res.data?.data || res.data;
 };
 
+export const createTestcase = async (data: any) => {
+  const res = await axiosInstance.post('/testcases', data);
+  return res.data?.data || res.data;
+};
+
 export const generateTestcasesByAI = async (assignmentId: string, data?: any) => {
+  console.log('[api.generateTestcasesByAI] assignmentId:', assignmentId, 'data:', data);
   const res = await axiosInstance.post(`/testcases/generate-ai/${assignmentId}`, data);
   return res.data?.data || res.data;
 };
