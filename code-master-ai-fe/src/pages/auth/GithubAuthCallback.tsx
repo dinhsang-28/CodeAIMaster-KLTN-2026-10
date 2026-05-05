@@ -23,16 +23,16 @@ export default function GithubAuthCallback() {
       }
 
       const user = JSON.parse(decodeURIComponent(userString));
-      // if (user.accessToken && user.refreshToken) {
-      //   // Lưu Access Token (Sống 15 phút - 900 giây)
-      //   document.cookie = `access_token=${user.accessToken}; path=/; max-age=900; SameSite=Lax; Secure`;
-      //   // Lưu Refresh Token (Sống 7 ngày - 604800 giây)
-      //   document.cookie = `refresh_token=${user.refreshToken}; path=/; max-age=604800; SameSite=Lax; Secure`;
-      // }
+      if (user.accessToken && user.refreshToken) {
+        // Lưu Access Token (Sống 15 phút - 900 giây)
+        document.cookie = `access_token=${user.accessToken}; path=/; max-age=900; SameSite=Lax; Secure`;
+        // Lưu Refresh Token (Sống 7 ngày - 604800 giây)
+        document.cookie = `refresh_token=${user.refreshToken}; path=/; max-age=604800; SameSite=Lax; Secure`;
+      }
 
-      // // Dọn dẹp token khỏi object trước khi lưu vào Zustand để bảo mật
-      // delete user.accessToken;
-      // delete user.refreshToken;
+      // Dọn dẹp token khỏi object trước khi lưu vào Zustand để bảo mật
+      delete user.accessToken;
+      delete user.refreshToken;
 
       setUserInfo(user);
       showMessage("success", "Đăng nhập GitHub thành công!");

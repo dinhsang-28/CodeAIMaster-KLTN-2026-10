@@ -194,20 +194,20 @@
 import axios from "axios";
 import { useUserInfo } from "../store/user";
 
-// export const axiosInstance = axios.create({
-//   baseURL: "http://localhost:3001/api/v1",
-//   withCredentials: true,
-// });
+export const axiosInstance = axios.create({
+  baseURL: "http://localhost:3001/api/v1",
+  withCredentials: true,
+});
 // export const axiosInstance = axios.create({
 //   baseURL: "https://codeaimaster-kltn-2026-10.onrender.com/api/v1",
 //   withCredentials: true,
 // });
 
-export const axiosInstance = axios.create({
-  // baseURL: "http://localhost:3000/api/v1",
-  baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
-  withCredentials: true,
-});
+// export const axiosInstance = axios.create({
+//   // baseURL: "http://localhost:3000/api/v1",
+//   baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
+//   withCredentials: true,
+// });
 
 let isRefreshing = false;
 let failedQueue: { resolve: (v: any) => void; reject: (e: any) => void }[] = [];
@@ -256,7 +256,6 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
         useUserInfo.getState().clearUserInfo();
-
         const currentPath = window.location.pathname;
         const publicPaths = ["/", "/introduce", "/blog", "/course"];
         const isPublicPage = publicPaths.some((path) =>
