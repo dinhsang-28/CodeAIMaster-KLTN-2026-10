@@ -73,7 +73,7 @@ export class AuthController {
   }
 
   @Post('verify-forgot-otp')
-   @Public()
+  @Public()
   verifyForgotOTP(@Body() data: { email: string; code: string }) {
     return this.authService.verifyForgotOTP(data);
   }
@@ -84,6 +84,30 @@ export class AuthController {
     return this.authService.changePassword(data);
   }
 
+  @Post('oauth/set-cookie')
+  @Public()
+  async setOAuthCookie(
+    @Body() body: { accessToken: string; refreshToken: string },
+    @Res() res: any,
+  ) {
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieBase = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : ('lax' as const),
+    };
+    res.cookie('access_token', body.accessToken, {
+      ...cookieBase,
+      maxAge: 900000,
+    });
+    res.cookie('refresh_token', body.refreshToken, {
+      ...cookieBase,
+      path: '/',
+      maxAge: 604800000,
+    });
+    return res.status(200).json({ message: 'ok' });
+  }
+
   //login google
   @Get('google')
   @Public()
@@ -91,7 +115,7 @@ export class AuthController {
   async googleAuth(@Request() req) {}
 
   @Get('google/callback')
-  // @Public()
+  @Public()
   @UseGuards(GoogleAuthGuard)
   async googleAuthRedirect(@Request() req, @Res() res) {
     return this.authService.validateOAuthLogin(req.user, res);
