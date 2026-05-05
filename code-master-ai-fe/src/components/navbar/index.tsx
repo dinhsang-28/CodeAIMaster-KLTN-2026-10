@@ -16,6 +16,8 @@ import { Dropdown, MenuProps, AutoComplete } from "antd";
 import { useUserInfo } from "../../store/user";
 import { useUserCart } from "../../store/cart";
 import { useCourseStore } from "../../store/course";
+import { CloseOutlined } from "@ant-design/icons";
+import NotificationBell from "../notification-bell";
 
 import { GetCartLength } from "../../api/cart";
 import { PostLogout } from "../../api/auth";
@@ -205,6 +207,21 @@ const Navbar = () => {
                   {countQuantityCart}
                 </span>
               </div>
+            )}
+            <NotificationBell />
+            {userInfo ? (
+              <div>
+                <div className="flex items-center space-x-3">
+                  <Dropdown menu={{ items }} placement="bottomLeft">
+                    <div className="text-lg w-10 h-10 rounded-full bg-brand-600 font-medium text-white cursor-pointer flex items-center justify-center ">
+                      {<UserOutlined />}
+                    </div>
+                  </Dropdown>
+                </div>
+              </div>
+            ) : (
+              <div onClick={() => navigate('/login')} className="rounded-full bg-brand-600 text-white px-5 py-2 cursor-pointer font-semibold hover:text-brand-100 shadow-md">
+                Đăng Nhập
             </>
           )}
 
