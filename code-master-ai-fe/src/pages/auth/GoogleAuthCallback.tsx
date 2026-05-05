@@ -98,6 +98,13 @@ export default function GoogleAuthCallback() {
     const { accessToken, refreshToken, ...userInfoClean } = user;
     console.log("3. userInfoClean:", userInfoClean); // object có rỗng không?
 
+    if (accessToken) {
+      document.cookie = `access_token=${accessToken}; path=/; max-age=900;SameSite=None; Secure`;
+    }
+    if (refreshToken) {
+      document.cookie = `refresh_token=${refreshToken}; path=/; max-age=604800;SameSite=None; Secure`;
+    }
+
     setUserInfo(userInfoClean);
     
     // Kiểm tra ngay sau khi set
