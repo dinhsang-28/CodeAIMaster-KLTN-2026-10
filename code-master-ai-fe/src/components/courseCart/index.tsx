@@ -3,7 +3,7 @@ import { ShoppingCartOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { createCartItem, GetCartLength } from "../../api/cart";
 import { useUserCart } from "../../store/cart";
-import { Button, Modal } from "antd";
+import { Modal } from "antd";
 import { useState } from "react";
 import { useUserInfo } from "../../store/user";
 
@@ -144,12 +144,18 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
                 <ShoppingCartOutlined />
               </button>
             )}
-            <Button
+            <button
               className="rounded-xl bg-brand-700 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-800"
-              onClick={() => checkUser(true)}
+              onClick={() => {
+                if (course.price === 0) {
+                  navigate(`/learn/${course._id}`);
+                } else {
+                  checkUser(true);
+                }
+              }}
             >
               {course.price === 0 ? "Học" : "Mua"}
-            </Button>
+            </button>
           </div>
         </div>
       </div>
