@@ -42,9 +42,14 @@ export default function GithubAuthCallback() {
       // delete user.accessToken;
       // delete user.refreshToken;
 
-      setUserInfo(userInfoClean);
+      // setUserInfo(userInfoClean);
+      localStorage.setItem("userInfo", JSON.stringify({
+      state: { userInfo: userInfoClean },
+      version: 0
+    }));
+    window.location.href = "/";
       showMessage("success", "Đăng nhập GitHub thành công!");
-      navigate("/");
+      // navigate("/");
     } catch (error) {
       console.error("Github callback error:", error);
       showMessage("error", "Có lỗi khi xử lý đăng nhập GitHub!");
