@@ -110,12 +110,18 @@ export default function GoogleAuthCallback() {
     // Kiểm tra ngay sau khi set
     console.log("4. store sau khi set:", useUserInfo.getState().userInfo);
 
-   setTimeout(() => {
-  console.log("sau 100ms:", useUserInfo.getState().userInfo);
-  // Kiểm tra localStorage trực tiếp
-  console.log("localStorage:", localStorage.getItem("userInfo"));
-  navigate("/", { replace: true });
-}, 100);
+    localStorage.setItem("userInfo", JSON.stringify({
+      state: { userInfo: userInfoClean },
+      version: 0
+    }));
+    window.location.href = "/";
+
+  //  setTimeout(() => {
+//   console.log("sau 100ms:", useUserInfo.getState().userInfo);
+//   // Kiểm tra localStorage trực tiếp
+//   console.log("localStorage:", localStorage.getItem("userInfo"));
+//   navigate("/", { replace: true });
+// }, 100);
   } catch (error) {
     console.error("Error:", error);
     navigate("/login");
