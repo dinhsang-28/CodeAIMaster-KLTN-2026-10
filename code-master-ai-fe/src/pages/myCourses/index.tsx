@@ -1,9 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { getMyCourses, ICourse } from "../../api/enrollment";
 import React, { useEffect, useState } from "react";
 
 const MyEnrollment: React.FC = () => {
   const [coursesData, setCourses] = useState<ICourse[]>([]);
-
+  const navigate = useNavigate();
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -88,7 +89,10 @@ const MyEnrollment: React.FC = () => {
                   </div>
                 </div>
 
-                <button className="w-full py-3 sm:py-4 bg-gradient-to-r from-green-900 to-green-700 text-white font-semibold rounded-lg hover:opacity-90 transition">
+                <button
+                  onClick={() => navigate(`/learn/${course._id}`)}
+                  className="w-full py-3 sm:py-4 bg-gradient-to-r from-green-900 to-green-700 text-white font-semibold rounded-lg hover:opacity-90 transition"
+                >
                   Vào học ngay
                 </button>
               </div>

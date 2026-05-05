@@ -125,10 +125,10 @@ export class AuthService {
       }
       const userInfo = await this.usersService.findOne(user._id.toString());
 
-      const payload = { 
-        username: user.email, 
+      const payload = {
+        username: user.email,
         sub: user._id,
-        permissions: userInfo?.role_id?.['permissions'] || [], 
+        permissions: userInfo?.role_id?.['permissions'] || [],
       };
       const newAccessToken = this.jwtService.sign(payload, {
         expiresIn: accessExpire as any,
@@ -238,7 +238,11 @@ export class AuthService {
 
     const user = await this.usersService.createOAuthUser(profile);
 
-    const payload = { username: user.email, sub: user._id };
+    const payload = {
+      username: user.email,
+      sub: user._id,
+      permissions: user.role_id?.['permissions'] || [],
+    };
 
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: accessExpire as any,
@@ -276,8 +280,10 @@ export class AuthService {
         email: user.email,
         name: user.name,
         image: user.image,
-        accessToken: accessToken,
-        refreshToken: refreshToken,
+        permissions: user.role_id?.['permissions'] || [], 
+        phone: user.phone || '',
+        accessToken: accessToken,  
+        refreshToken: refreshToken, 
       }),
     );
     const frontendUrl =

@@ -18,14 +18,23 @@ async function bootstrap() {
   // day la api luon co duoi : vd: api/v1/login
   app.setGlobalPrefix('api/v1',{exclude:['']});
   // config cors
-  app.enableCors(
-    {
-      "origin":true,
-      "methods":"GET,HEAD,PUT,PATCH,POST,DELETE",
-      "preflightContinue":false,
-      credentials:true
-    }
-  )
+  // app.enableCors(
+  //   {
+  //     "origin":true,
+  //     "methods":"GET,HEAD,PUT,PATCH,POST,DELETE",
+  //     "preflightContinue":false,
+  //     credentials:true
+  //   }
+  // )
+  app.enableCors({
+  origin: [
+    'https://code-ai-master-kltn-2026-10.vercel.app', // frontend production
+    'http://localhost:3000',
+  ],
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+});
   await app.listen(port);
 }
 bootstrap();
