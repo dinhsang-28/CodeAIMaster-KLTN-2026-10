@@ -36,51 +36,84 @@
 
 //   return <div>Đang xử lý đăng nhập Google...</div>;
 // }
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { showMessage } from "../../utils/showMessages";
 import { useUserInfo } from "../../store/user";
-
 export default function GoogleAuthCallback() {
   const navigate = useNavigate();
   const { setUserInfo } = useUserInfo();
-  const ran = useRef(false);
-  useEffect(() => {
-    if (ran.current) return;
-    ran.current = true;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const userString = params.get("user");
+  //   if (ran.current) return;
+  //   ran.current = true;
+  //   try {
+  //     const params = new URLSearchParams(window.location.search);
+  //     const userString = params.get("user");
 
-      if (!userString) {
-        showMessage("error", "Đăng nhập Google thất bại!");
-        navigate("/login");
-        return;
-      }
+  //     if (!userString) {
+  //       showMessage("error", "Đăng nhập Google thất bại!");
+  //       navigate("/login");
+  //       return;
+  //     }
 
-      const user = JSON.parse(decodeURIComponent(userString));
-      console.log("User info from Google callback:", user);
-      if (user.accessToken && user.refreshToken) {
-        // Lưu Access Token (Sống 15 phút - 900 giây)
-        document.cookie = `access_token=${user.accessToken}; path=/; max-age=900; SameSite=Lax; Secure`;
-        // Lưu Refresh Token (Sống 7 ngày - 604800 giây)
-        document.cookie = `refresh_token=${user.refreshToken}; path=/; max-age=604800; SameSite=Lax; Secure`;
-      }
-
-      // Dọn dẹp token khỏi object trước khi lưu vào Zustand để bảo mật
-      delete user.accessToken;
-      delete user.refreshToken;
-      setUserInfo(user);
+  //     const user = JSON.parse(decodeURIComponent(userString));
+  //     console.log("User info from Google callback:", user);
+  //     if (user.accessToken && user.refreshToken) {
+  //       // Lưu Access Token (Sống 15 phút - 900 giây)
+  //       document.cookie = `access_token=${user.accessToken}; path=/; max-age=900; SameSite=Lax; Secure`;
+  //       // Lưu Refresh Token (Sống 7 ngày - 604800 giây)
+  //       document.cookie = `refresh_token=${user.refreshToken}; path=/; max-age=604800; SameSite=Lax; Secure`;
+  //     }
+  //     const { accessToken, refreshToken, ...userInfoClean } = user;
       
-      showMessage("success", "Đăng nhập Google thành công!");
-      navigate("/");
-    } catch (error) {
-      console.error("Google callback error:", error);
-      showMessage("error", "Có lỗi khi xử lý đăng nhập Google!");
-      navigate("/login");
-    }
-  }, [navigate, setUserInfo]);
+  //     setUserInfo(userInfoClean); // ✅ gọi trực tiếp, không dùng useRef
 
+  //     showMessage("success", "Đăng nhập Google thành công!");
+  //     navigate("/", { replace: true });
+
+  //     // Dọn dẹp token khỏi object trước khi lưu vào Zustand để bảo mật
+  //     // delete user.accessToken;
+  //     // delete user.refreshToken;
+  //     // setUserInfo(user);
+      
+  //     // showMessage("success", "Đăng nhập Google thành công!");
+  //     // navigate("/");
+  //   } catch (error) {
+  //     console.error("Google callback error:", error);
+  //     showMessage("error", "Có lỗi khi xử lý đăng nhập Google!");
+  //     navigate("/login");
+  //   }
+  // }, [navigate, setUserInfo]);
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const userString = params.get("user");
+  
+  console.log("1. userString:", userString); // có data không?
+  if (!userString) {
+    navigate("/login");
+    return;
+  }
+  try {
+    const user = JSON.parse(decodeURIComponent(userString));
+    console.log("2. user parsed:", user); // có đủ fields không?
+
+    const { accessToken, refreshToken, ...userInfoClean } = user;
+    console.log("3. userInfoClean:", userInfoClean); // object có rỗng không?
+
+    setUserInfo(userInfoClean);
+    
+    // Kiểm tra ngay sau khi set
+    console.log("4. store sau khi set:", useUserInfo.getState().userInfo);
+
+   setTimeout(() => {
+  console.log("sau 100ms:", useUserInfo.getState().userInfo);
+  // Kiểm tra localStorage trực tiếp
+  console.log("localStorage:", localStorage.getItem("userInfo"));
+  navigate("/", { replace: true });
+}, 100);
+  } catch (error) {
+    console.error("Error:", error);
+    navigate("/login");
+  }
+}, [navigate, setUserInfo]);
   return (
     <div className="flex h-screen items-center justify-center">
       <p className="text-brand-600 font-medium">Đang xử lý đăng nhập...</p>
