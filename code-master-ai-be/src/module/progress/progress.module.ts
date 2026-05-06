@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ProgressService } from './progress.service';
+import { ProgressController } from './progress.controller';
 import { Result, ResultSchema } from '../results/entities/result.entity';
 import {
   UserLessonProgress,
@@ -16,6 +17,7 @@ import { Lesson, LessonSchema } from '../lessons/entities/lesson.entity';
       { name: Lesson.name, schema: LessonSchema },
     ]),
   ],
+  controllers: [ProgressController],
   providers: [ProgressService],
   exports: [ProgressService],
 })

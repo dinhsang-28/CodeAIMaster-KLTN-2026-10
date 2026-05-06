@@ -184,14 +184,14 @@ const UserManage: React.FC = () => {
   const displayUsers = users.filter((u) => u.role_id?.role_name !== "user");
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="mx-auto max-w-6xl min-h-screen px-4 sm:px-6 py-6 sm:py-8 md:px-10">
       {/* --- HEADER & TÌM KIẾM --- */}
-      <div className="mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+      <div className="mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-brand-100">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Quản Lý Tài Khoản
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-brand-700">
+            Quản lý người dùng
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm sm:text-base text-gray-500">
             Quản lý nhân sự, giảng viên và quản trị viên trên hệ thống.
           </p>
         </div>
@@ -221,7 +221,7 @@ const UserManage: React.FC = () => {
               placeholder="Tìm tên, email..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full h-[42px] pl-4 pr-10 rounded-xl border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm"
+              className="w-full h-[42px] pl-4 pr-10 rounded-xl border border-brand-100 bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-sm"
             />
 
             <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
@@ -262,19 +262,19 @@ const UserManage: React.FC = () => {
       )}
 
       {/* --- TABLE DANH SÁCH --- */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl shadow-sm border border-brand-100 overflow-hidden flex flex-col">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead className="bg-[#fafaf9] border-b border-gray-100">
               <tr>
-                <th className="px-6 py-4 font-semibold text-gray-900">
+                <th className="px-6 py-4 font-semibold text-gray-700 uppercase tracking-wide text-xs">
                   Họ và Tên
                 </th>
-                <th className="px-6 py-4 font-semibold text-gray-900">Email</th>
-                <th className="px-6 py-4 font-semibold text-gray-900">
+                <th className="px-6 py-4 font-semibold text-gray-700 uppercase tracking-wide text-xs">Email</th>
+                <th className="px-6 py-4 font-semibold text-gray-700 uppercase tracking-wide text-xs">
                   Vai trò (Role)
                 </th>
-                <th className="px-6 py-4 font-semibold text-gray-900 text-center">
+                <th className="px-6 py-4 font-semibold text-gray-700 uppercase tracking-wide text-xs text-center">
                   Thao tác
                 </th>
               </tr>
@@ -297,7 +297,7 @@ const UserManage: React.FC = () => {
                   /* 🚨 Sử dụng displayUsers */
                   const roleName = user.role_id?.role_name || "Chưa cấp quyền";
                   return (
-                    <tr key={user._id} className="hover:bg-gray-50 transition">
+                    <tr key={user._id} className="hover:bg-white/70 transition">
                       <td className="px-6 py-4 font-semibold text-gray-900">
                         {user.name}
                       </td>
@@ -364,7 +364,7 @@ const UserManage: React.FC = () => {
 
         {/* --- CHÂN TRANG: PHÂN TRANG --- */}
         {!loading && totalItems > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-100 p-4 bg-gray-50/50">
+          <div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-100 p-4 bg-[#fafaf9]">
             <span className="text-sm text-gray-500 mb-3 sm:mb-0">
               Hiển thị <strong>{(currentPage - 1) * pageSize + 1}</strong> đến{" "}
               <strong>{Math.min(currentPage * pageSize, totalItems)}</strong>{" "}

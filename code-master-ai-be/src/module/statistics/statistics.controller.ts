@@ -13,7 +13,7 @@ export class StatisticsController {
 
   @Get('revenue-by-week')
   getRevenueByWeek(@Query('date') date: string) {
-    return this.statisticsService.getOrdersByWeekByDate(date);
+    return this.statisticsService.getRevenueByWeekByDate(date);
   }
 
   @Get('export-revenue-by-month')

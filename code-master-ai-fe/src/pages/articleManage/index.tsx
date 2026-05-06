@@ -136,10 +136,18 @@ const ArticleManage = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 md:px-10">
+      <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
       {/* HEADER */}
-      <div className="flex justify-between mb-6">
-        <h1 className="text-xl font-bold">Quản lý bài viết</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-brand-700">
+            Quản lý bài viết
+          </h1>
+          <p className="text-gray-500 mt-1 text-sm sm:text-base">
+            Quản lý nội dung tin tức và bài viết trên hệ thống.
+          </p>
+        </div>
         <PermissionControl permission="articles_create">
         <button
           onClick={() => {
@@ -154,7 +162,7 @@ const ArticleManage = () => {
               author: "",
             });
           }}
-          className="bg-brand-600 text-white px-4 py-2 rounded"
+          className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-full font-semibold transition"
         >
           <PlusOutlined /> Viết bài
         </button>
@@ -162,10 +170,10 @@ const ArticleManage = () => {
       </div>
 
       {/* SEARCH */}
-      <div className="mb-4 relative">
+      <div className="relative">
         <SearchOutlined className="absolute left-3 top-3 text-gray-400" />
         <input
-          className="w-full pl-10 border p-2 rounded"
+          className="w-full pl-10 border border-brand-100 bg-white p-2.5 rounded-xl text-sm"
           placeholder="Tìm kiếm..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -173,9 +181,10 @@ const ArticleManage = () => {
       </div>
 
       {/* TABLE */}
-      <table className="w-full border">
+      <div className="bg-white border border-brand-100 rounded-2xl overflow-hidden">
+      <table className="w-full">
         <thead>
-          <tr className="bg-gray-100">
+          <tr className="bg-[#fafaf9] border-b border-slate-200">
             <th className="p-3 text-left">Tiêu đề</th>
             <th className="p-3">Tác giả</th>
             <th className="p-3">Hành động</th>
@@ -191,7 +200,7 @@ const ArticleManage = () => {
             </tr>
           ) : (
             currentArticles.map((item) => (
-              <tr key={item._id}>
+              <tr key={item._id} className="border-t border-slate-100 hover:bg-white/60">
                 <td className="p-3">{item.title}</td>
                 <td className="p-3 text-center">{item.author}</td>
 
@@ -212,19 +221,21 @@ const ArticleManage = () => {
           )}
         </tbody>
       </table>
+      </div>
 
       {/* PAGINATION */}
-      <div className="flex justify-between mt-4">
-        <span>
+      <div className="flex items-center justify-between mt-2 text-sm text-gray-600">
+        <span className="font-medium">
           Trang {currentPage}/{totalPages || 1}
         </span>
 
         <div className="flex gap-2">
-          <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}>
+          <button className="w-8 h-8 rounded-lg border border-brand-100 bg-white" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}>
             <LeftOutlined />
           </button>
 
           <button
+            className="w-8 h-8 rounded-lg border border-brand-100 bg-white"
             onClick={() =>
               setCurrentPage(Math.min(totalPages, currentPage + 1))
             }
@@ -253,7 +264,7 @@ const ArticleManage = () => {
             </div>
 
             {/* BODY */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* LEFT FORM */}
               <div className="space-y-4">
                 {/* TITLE */}
@@ -375,6 +386,7 @@ const ArticleManage = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

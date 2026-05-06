@@ -19,6 +19,7 @@ export class ProgressService {
     private readonly lessonModel: Model<LessonDocument>,
   ) {}
 
+  // Hàm tính toán lại tiến độ học tập của người dùng cho một khóa học cụ thể
   async recalculate(userId: string, courseId: string) {
     const userObjectId = new Types.ObjectId(userId);
     const courseObjectId = new Types.ObjectId(courseId);
@@ -48,6 +49,32 @@ export class ProgressService {
 
     return {
       userId,
+      courseId,
+      totalLessons,
+      completedLessons,
+      progressPercent,
+    };
+  }
+
+  async getCourseProgress(userId: string, courseId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+    const courseObjectId = new Types.ObjectId(courseId);
+
+    const [totalLessons, completedLessons] = await Promise.all([
+      this.lessonModel.countDocuments({ course_id: courseObjectId }),
+      this.userLessonProgressModel.countDocuments({
+        userId: userObjectId,
+        courseId: courseObjectId,
+        isCompleted: true,
+      }),
+    ]);
+
+    const progressPercent =
+      totalLessons === 0
+        ? 0
+        : Number(((completedLessons / totalLessons) * 100).toFixed(2));
+
+    return {
       courseId,
       totalLessons,
       completedLessons,

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   CodeOutlined,
   BookFilled,
@@ -21,10 +21,8 @@ import { GetCartLength } from "../../api/cart";
 import { PostLogout } from "../../api/auth";
 
 const Navbar = () => {
-  const location = useLocation();
   const navigate = useNavigate();
 
-  const [navSelected, setNavSelected] = useState(location.pathname);
   const [isOpen, setIsOpen] = useState(false);
 
   const { userInfo, clearUserInfo } = useUserInfo();
@@ -84,10 +82,6 @@ const Navbar = () => {
   };
 
   // ===== EFFECT =====
-  useEffect(() => {
-    setNavSelected(location.pathname);
-  }, [location]);
-
   useEffect(() => {
     const getCountCart = async () => {
       try {
@@ -151,16 +145,63 @@ const Navbar = () => {
           </NavLink>
 
           {/* Desktop Menu */}
-          <nav className="hidden md:flex gap-6">
+          <nav
+            id="tour-nav-links"
+            className="hidden md:flex gap-6 items-center"
+          >
             <NavLink
               to="/"
-              className={navSelected === "/" ? "font-bold border-b-2" : ""}
+              end
+              className={({ isActive }) =>
+                [
+                  "relative py-1 text-brand-900/85 transition-colors duration-200 hover:text-brand-700",
+                  isActive
+                    ? "font-bold text-brand-700 after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:rounded-full after:bg-brand-600 after:origin-left after:scale-x-100"
+                    : "font-medium after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:rounded-full after:bg-brand-500 after:transition-all after:duration-300 hover:after:w-full",
+                ].join(" ")
+              }
             >
               Trang chủ
             </NavLink>
-            <NavLink to="/introduce">Giới thiệu</NavLink>
-            <NavLink to="/blog">Tin tức</NavLink>
-            <NavLink to="/course">Khóa học</NavLink>
+            <NavLink
+              to="/introduce"
+              className={({ isActive }) =>
+                [
+                  "relative py-1 text-brand-900/85 transition-colors duration-200 hover:text-brand-700",
+                  isActive
+                    ? "font-bold text-brand-700 after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:rounded-full after:bg-brand-600"
+                    : "font-medium after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:rounded-full after:bg-brand-500 after:transition-all after:duration-300 hover:after:w-full",
+                ].join(" ")
+              }
+            >
+              Giới thiệu
+            </NavLink>
+            <NavLink
+              to="/blog"
+              className={({ isActive }) =>
+                [
+                  "relative py-1 text-brand-900/85 transition-colors duration-200 hover:text-brand-700",
+                  isActive
+                    ? "font-bold text-brand-700 after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:rounded-full after:bg-brand-600"
+                    : "font-medium after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:rounded-full after:bg-brand-500 after:transition-all after:duration-300 hover:after:w-full",
+                ].join(" ")
+              }
+            >
+              Tin tức
+            </NavLink>
+            <NavLink
+              to="/course"
+              className={({ isActive }) =>
+                [
+                  "relative py-1 text-brand-900/85 transition-colors duration-200 hover:text-brand-700",
+                  isActive
+                    ? "font-bold text-brand-700 after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:rounded-full after:bg-brand-600"
+                    : "font-medium after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-0 after:rounded-full after:bg-brand-500 after:transition-all after:duration-300 hover:after:w-full",
+                ].join(" ")
+              }
+            >
+              Khóa học
+            </NavLink>
           </nav>
         </div>
 
@@ -243,26 +284,38 @@ const Navbar = () => {
           </div>
 
           <div
-            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition"
-            onClick={() => navigate("/")}
+            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 active:scale-[0.98] transition"
+            onClick={() => {
+              navigate("/");
+              setIsOpen(false);
+            }}
           >
             Trang chủ
           </div>
           <div
-            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition"
-            onClick={() => navigate("/introduce")}
+            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 active:scale-[0.98] transition"
+            onClick={() => {
+              navigate("/introduce");
+              setIsOpen(false);
+            }}
           >
             Giới thiệu
           </div>
           <div
-            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition"
-            onClick={() => navigate("/blog")}
+            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 active:scale-[0.98] transition"
+            onClick={() => {
+              navigate("/blog");
+              setIsOpen(false);
+            }}
           >
             Tin tức
           </div>
           <div
-            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition"
-            onClick={() => navigate("/course")}
+            className="cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 active:scale-[0.98] transition"
+            onClick={() => {
+              navigate("/course");
+              setIsOpen(false);
+            }}
           >
             Khóa học
           </div>
