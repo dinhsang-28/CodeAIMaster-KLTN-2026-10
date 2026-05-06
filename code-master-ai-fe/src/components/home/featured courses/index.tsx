@@ -3,9 +3,11 @@ import { ArrowRightOutlined } from "@ant-design/icons";
 import AnimateOnScroll from "../../../utils/animateOnScroll";
 import { ICourse } from "../../../api/enrollment";
 import { GetFeaturedCourses } from "../../../api/course";
+import { useNavigate } from "react-router-dom";
 
 const FeaturedCourses = () => {
   const [featuredCourses, setFeaturedCourses] = useState<ICourse[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,17 +35,30 @@ const FeaturedCourses = () => {
             <h2 className="font-bold text-xl sm:text-2xl text-brand-700">
               <span>Khóa học</span> nổi bật
             </h2>
-            <p className="font-medium text-brand-700 flex gap-2 items-center cursor-pointer text-sm sm:text-base">
+            <button
+              type="button"
+              onClick={() => navigate("/course")}
+              className="font-medium text-brand-700 flex gap-2 items-center cursor-pointer text-sm sm:text-base bg-transparent border-none p-0 hover:opacity-90 active:scale-[0.98] transition"
+            >
               Xem tất cả <ArrowRightOutlined />
-            </p>
+            </button>
           </div>
 
           {/* Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
-            {featuredCourses.map((item, index) => (
+            {featuredCourses.map((item) => (
               <div
-                key={index}
-                className="rounded-2xl h-full bg-white shadow overflow-hidden flex flex-col hover:shadow-lg transition"
+                key={item._id}
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate(`/course/${item._id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(`/course/${item._id}`);
+                  }
+                }}
+                className="rounded-2xl h-full bg-white shadow overflow-hidden flex flex-col hover:shadow-lg transition cursor-pointer"
               >
                 {/* Image */}
                 <div className="relative">
@@ -71,7 +86,7 @@ const FeaturedCourses = () => {
                     <div className="font-bold text-brand-600 text-sm sm:text-base">
                       {item.price.toLocaleString()} VND
                     </div>
-                    <div className="text-xs sm:text-sm font-medium bg-brand-25 text-brand-700 px-3 py-1 rounded-full cursor-pointer hover:bg-brand-200">
+                    <div className="text-xs sm:text-sm font-medium bg-brand-25 text-brand-700 px-3 py-1 rounded-full hover:bg-brand-200 pointer-events-none">
                       Xem chi tiết
                     </div>
                   </div>

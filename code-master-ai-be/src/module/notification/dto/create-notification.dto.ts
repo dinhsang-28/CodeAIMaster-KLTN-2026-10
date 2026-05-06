@@ -1,5 +1,3 @@
-// src/notification/dto/create-notification.dto.ts
-
 import {
   IsNotEmpty,
   IsString,
@@ -11,15 +9,15 @@ import { NotificationType } from '../schemas/notification.schema';
 
 export class CreateNotificationDto {
   @IsMongoId()
-  userId: string;
+  userId!: string;
 
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title!: string;
 
   @IsString()
   @IsNotEmpty()
-  message: string;
+  message?: string;
 
   @IsOptional()
   @IsEnum(NotificationType)

@@ -255,7 +255,7 @@ axiosInstance.interceptors.response.use(
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
-        useUserInfo.getState().clearUserInfo();
+        // useUserInfo.getState().clearUserInfo();
         const currentPath = window.location.pathname;
         const publicPaths = ["/", "/introduce", "/blog", "/course"];
         const isPublicPage = publicPaths.some((path) =>
@@ -263,6 +263,7 @@ axiosInstance.interceptors.response.use(
         );
 
         if (!isPublicPage && currentPath !== "/login") {
+          useUserInfo.getState().clearUserInfo();
           window.location.href = "/login";
         }
 

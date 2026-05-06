@@ -1,5 +1,3 @@
-// src/notification/notification.gateway.ts
-
 import {
   WebSocketGateway,
   WebSocketServer,

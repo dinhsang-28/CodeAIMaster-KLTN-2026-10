@@ -49,11 +49,10 @@ const NotificationBell: React.FC = () => {
   useEffect(() => {
     if (!userInfo) return;
 
-    const socketBaseUrl = (
+    const socketBaseUrl =
       (axiosInstance.defaults.baseURL || "")
         .replace(/\/api\/v1\/?$/, "")
-        .replace(/\/$/, "") || window.location.origin
-    );
+        .replace(/\/$/, "") || window.location.origin;
 
     const localToken =
       localStorage.getItem("access_token") ||
@@ -80,7 +79,7 @@ const NotificationBell: React.FC = () => {
         prev.map((item, index) => {
           if (index < payload?.count) return item;
           return { ...item, isRead: true };
-        })
+        }),
       );
     });
 
@@ -94,7 +93,7 @@ const NotificationBell: React.FC = () => {
       if (!item.isRead) {
         await markNotificationAsRead(item._id);
         setItems((prev) =>
-          prev.map((n) => (n._id === item._id ? { ...n, isRead: true } : n))
+          prev.map((n) => (n._id === item._id ? { ...n, isRead: true } : n)),
         );
         setUnreadCount((prev) => Math.max(prev - 1, 0));
       }
@@ -123,14 +122,22 @@ const NotificationBell: React.FC = () => {
     <div className="w-[360px] rounded-xl bg-white shadow-lg border border-gray-100">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <Text strong>Thông báo</Text>
-        <Button type="link" size="small" onClick={onReadAll} disabled={!items.length}>
+        <Button
+          type="link"
+          size="small"
+          onClick={onReadAll}
+          disabled={!items.length}
+        >
           Đánh dấu đã đọc tất cả
         </Button>
       </div>
 
       {items.length === 0 ? (
         <div className="p-4">
-          <Empty description="Chưa có thông báo" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          <Empty
+            description="Chưa có thông báo"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
         </div>
       ) : (
         <List
@@ -174,10 +181,10 @@ const NotificationBell: React.FC = () => {
     >
       <button
         type="button"
-        className="relative text-2xl text-brand-700 hover:text-brand-400"
+        className="relative text-2xl text-brand-700 hover:text-brand-400 flex items-center"
       >
         <Badge count={unreadCount} size="small" offset={[-2, 4]}>
-          <BellOutlined />
+          <BellOutlined  className="text-xl"/>
         </Badge>
       </button>
     </Dropdown>

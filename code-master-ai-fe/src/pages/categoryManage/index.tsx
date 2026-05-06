@@ -15,6 +15,12 @@ type CategoryItem = {
   courseCount?: number;
 };
 
+type MockLesson = {
+  title: string;
+  duration: string;
+  type: "Video" | "Bài đọc" | "Quiz" | "Thực hành";
+};
+
 type NotificationType = {
   type: "success" | "error";
   msg: string;
@@ -35,6 +41,48 @@ const CategoryManage: React.FC = () => {
     category_name: "",
     description: "",
   });
+  const [previewCategoryId, setPreviewCategoryId] = useState<string>("");
+  const [previewCategory, setPreviewCategory] = useState<string>("");
+  const [previewLessons, setPreviewLessons] = useState<MockLesson[]>([]);
+
+  const getMockLessonsByCategory = (categoryName: string): MockLesson[] => {
+    const map: Record<string, MockLesson[]> = {
+      "Front-end": [
+        { title: "Giới thiệu HTML Semantic", duration: "18 phút", type: "Video" },
+        { title: "CSS Flexbox và Grid cơ bản", duration: "26 phút", type: "Video" },
+        { title: "JavaScript DOM thao tác sự kiện", duration: "35 phút", type: "Thực hành" },
+        { title: "React Component và Props", duration: "22 phút", type: "Video" },
+        { title: "Quiz Front-end nền tảng", duration: "12 câu hỏi", type: "Quiz" },
+      ],
+      Database: [
+        { title: "Mô hình quan hệ và khóa chính", duration: "20 phút", type: "Video" },
+        { title: "SQL SELECT / WHERE / JOIN", duration: "40 phút", type: "Video" },
+        { title: "Chuẩn hóa dữ liệu 1NF-3NF", duration: "15 phút", type: "Bài đọc" },
+        { title: "Thực hành truy vấn tổng hợp", duration: "30 phút", type: "Thực hành" },
+        { title: "Quiz SQL cơ bản", duration: "10 câu hỏi", type: "Quiz" },
+      ],
+    };
+
+    return (
+      map[categoryName] || [
+        { title: `Tổng quan ${categoryName}`, duration: "15 phút", type: "Video" },
+        { title: `${categoryName} - Bài thực hành nhập môn`, duration: "25 phút", type: "Thực hành" },
+        { title: `Kiểm tra nhanh ${categoryName}`, duration: "8 câu hỏi", type: "Quiz" },
+      ]
+    );
+  };
+
+  const handlePreviewLessons = (categoryId: string, categoryName: string) => {
+    if (previewCategoryId === categoryId) {
+      setPreviewCategoryId("");
+      setPreviewCategory("");
+      setPreviewLessons([]);
+      return;
+    }
+    setPreviewCategoryId(categoryId);
+    setPreviewCategory(categoryName);
+    setPreviewLessons(getMockLessonsByCategory(categoryName));
+  };
 
   const showNotification = (type: "success" | "error", msg: string) => {
     setNotification({ type, msg });
@@ -174,14 +222,14 @@ const CategoryManage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white px-8 py-10">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 md:px-10">
+      <div className="mx-auto max-w-6xl">
         <div className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-[#062015]">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-700">
               Quản lý thể loại
             </h1>
-            <p className="mt-2 max-w-xl text-sm font-medium text-[#424842]">
+            <p className="mt-1 max-w-xl text-sm sm:text-base text-gray-500">
               Tổ chức và phân loại các nội dung giáo dục của hệ thống CodeMaster
               AI.
             </p>
@@ -202,7 +250,7 @@ const CategoryManage: React.FC = () => {
             <PermissionControl permission="categories_create">
             <button
               onClick={handleAddCategory}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[#23422a] to-[#3a5a40] px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02] active:scale-95"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 hover:bg-brand-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition active:scale-95"
             >
               <Plus className="h-5 w-5" />
               Thêm thể loại mới
@@ -211,104 +259,166 @@ const CategoryManage: React.FC = () => {
           </div>
         </div>
 
-        <div className="mb-12 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((stat, index) => (
             <div
               key={index}
-              className="rounded-[28px] border border-white/60 bg-[#ddfbe9] p-6 shadow-sm"
+              className="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm"
             >
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#5f665f]">
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 {stat.label}
               </p>
-              <p className="truncate text-2xl font-black text-[#23422a]">
+              <p className="truncate text-2xl font-extrabold text-brand-700">
                 {stat.value}
               </p>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
-          {loading ? (
-            <div className="col-span-full rounded-[24px] bg-white p-10 text-center text-gray-500 shadow">
-              Đang tải danh sách thể loại...
-            </div>
-          ) : categories.length === 0 ? (
-            <div className="col-span-full rounded-[24px] bg-white p-10 text-center text-gray-500 shadow">
-              Chưa có thể loại nào.
-            </div>
-          ) : (
-            categories.map((category) => (
-              <div
-                key={category._id}
-                className="group relative overflow-hidden rounded-[24px] border border-transparent bg-white p-8 shadow-[0px_10px_30px_rgba(6,32,21,0.03)] transition-all duration-300 hover:border-[#c7ecca] hover:shadow-xl"
-              >
-                <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-[#23422a]/5 transition-transform group-hover:scale-110" />
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="min-w-0 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {loading ? (
+              <div className="col-span-full rounded-2xl border border-brand-100 bg-white p-10 text-center text-gray-500 shadow-sm">
+                Đang tải danh sách thể loại...
+              </div>
+            ) : categories.length === 0 ? (
+              <div className="col-span-full rounded-2xl border border-brand-100 bg-white p-10 text-center text-gray-500 shadow-sm">
+                Chưa có thể loại nào.
+              </div>
+            ) : (
+              categories.map((category) => (
+                <div
+                  key={category._id}
+                  onClick={() =>
+                    handlePreviewLessons(category._id, category.category_name)
+                  }
+                  className={`group flex min-h-[220px] flex-col overflow-hidden rounded-2xl border bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md ${
+                    previewCategoryId === category._id
+                      ? "border-brand-500 ring-2 ring-brand-500/10"
+                      : "border-brand-100 hover:border-brand-200"
+                  }`}
+                >
+                  <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-[#23422a]/5 transition-transform group-hover:scale-110" />
 
-                <div className="relative z-10">
-                  <h3 className="mb-2 text-2xl font-bold text-[#062015]">
-                    {category.category_name}
-                  </h3>
+                  <div className="relative z-10 flex flex-1 flex-col">
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-bold text-brand-700">
+                        {category.category_name}
+                      </h3>
 
-                  <p className="text-sm font-medium text-[#424842]">
-                    {category.description || "Chưa có mô tả cho thể loại này."}
-                  </p>
+                      <p className="line-clamp-3 text-sm leading-6 text-gray-600">
+                        {category.description || "Chưa có mô tả cho thể loại này."}
+                      </p>
+                    </div>
 
-                  <div className="mt-8 flex items-center justify-between gap-2">
-                    <span className="rounded-full bg-[#ddfbe9] px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-[#23422a]">
-                      {(category.courseCount || 0).toString()} Khóa học
-                    </span>
+                    <div className="mt-auto pt-6 flex items-center justify-between gap-3 border-t border-gray-100">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50/60 px-3 py-1.5 text-xs font-semibold text-brand-700">
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-700 px-1.5 text-[10px] font-bold leading-none text-white">
+                          {(category.courseCount || 0).toString()}
+                        </span>
+                        <span>Khóa học</span>
+                      </div>
 
-                    <div className="flex items-center gap-2">
-                      <PermissionControl permission="categories_edit">
-                      <button
-                        onClick={() => handleEdit(category)}
-                        className="rounded-lg p-2 transition hover:bg-[#beecb9]"
-                        title="Chỉnh sửa"
-                      >
-                        <Pencil className="h-5 w-5 text-[#23422a]" />
-                      </button>
-                      </PermissionControl>
-                      <PermissionControl permission="categories_delete">
-                      <button
-                        onClick={() =>
-                          handleDelete(category._id, category.category_name)
-                        }
-                        className="rounded-lg p-2 transition hover:bg-[#ffdad6]"
-                        title="Xóa"
-                      >
-                        <Trash2 className="h-5 w-5 text-red-600" />
-                      </button>
-                      </PermissionControl>
+                      <div className="flex items-center gap-1.5">
+                        <PermissionControl permission="categories_edit">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(category);
+                            }}
+                            className="rounded-lg p-2 transition hover:bg-gray-50"
+                            title="Chỉnh sửa"
+                          >
+                            <Pencil className="h-5 w-5 text-brand-700" />
+                          </button>
+                        </PermissionControl>
+                        <PermissionControl permission="categories_delete">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(category._id, category.category_name);
+                            }}
+                            className="rounded-lg p-2 transition hover:bg-[#ffdad6]"
+                            title="Xóa"
+                          >
+                            <Trash2 className="h-5 w-5 text-red-600" />
+                          </button>
+                        </PermissionControl>
 
-                      <ArrowRight className="h-5 w-5 text-[#23422a]/40 transition-transform group-hover:translate-x-1" />
+                        <ArrowRight className="h-5 w-5 text-brand-700/40 transition-transform group-hover:translate-x-1" />
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))
+            )}
+            <PermissionControl permission="categories_create">
+              <button
+                onClick={handleAddCategory}
+                className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-200 bg-white p-8 text-center transition hover:border-brand-500"
+              >
+                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gray-50 text-brand-700">
+                  <Plus className="h-10 w-10" />
+                </div>
+                <h3 className="text-xl font-bold text-brand-700">
+                  Tạo thể loại mới
+                </h3>
+                <p className="mt-2 text-sm text-gray-500">
+                  Mở rộng danh mục đào tạo của bạn
+                </p>
+              </button>
+            </PermissionControl>
+          </div>
+
+          <div className="min-w-0 xl:sticky xl:top-6">
+            {previewCategoryId ? (
+              <div className="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm">
+                <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-brand-700">
+                      Danh sách bài học - {previewCategory}
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Giao diện cứng (mock), chưa gọi API.
+                    </p>
+                  </div>
+                  <span className="w-fit rounded-full border border-brand-100 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">
+                    {previewLessons.length} bài
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {previewLessons.map((lesson, i) => (
+                    <div
+                      key={`${lesson.title}-${i}`}
+                      className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5"
+                    >
+                      <p className="text-sm font-semibold text-gray-800 line-clamp-2">
+                        {i + 1}. {lesson.title}
+                      </p>
+                      <div className="mt-1 flex items-center justify-between text-xs text-gray-600">
+                        <span>{lesson.duration}</span>
+                        <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 font-medium">
+                          {lesson.type}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))
-          )}
-         <PermissionControl permission="categories_create">
-          <button
-            onClick={handleAddCategory}
-            className="flex min-h-[320px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#c2c8bf] p-8 text-center transition hover:border-[#23422a]/50"
-          >
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#ddfbe9] text-[#23422a]">
-              <Plus className="h-10 w-10" />
-            </div>
-            <h3 className="text-xl font-bold text-[#062015]">
-              Tạo thể loại mới
-            </h3>
-            <p className="mt-2 text-sm text-[#424842]">
-              Mở rộng danh mục đào tạo của bạn
-            </p>
-          </button>
-          </PermissionControl>
+            ) : (
+              <div className="flex min-h-[280px] items-center justify-center rounded-2xl border border-dashed border-brand-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm">
+                Chọn một thể loại để xem danh sách bài học ở bên phải.
+              </div>
+            )}
+          </div>
         </div>
+
       </div>
 
       {isOpenModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-brand-100">
             <div className="mb-5 flex items-start justify-between">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
@@ -346,7 +456,7 @@ const CategoryManage: React.FC = () => {
                     }))
                   }
                   placeholder="VD: Frontend Development"
-                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-[#23422a] focus:ring-2 focus:ring-[#23422a]/10"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
                 />
               </div>
 
@@ -364,7 +474,7 @@ const CategoryManage: React.FC = () => {
                     }))
                   }
                   placeholder="Nhập mô tả ngắn cho thể loại..."
-                  className="w-full resize-none rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-[#23422a] focus:ring-2 focus:ring-[#23422a]/10"
+                  className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
                 />
               </div>
             </div>
@@ -380,7 +490,7 @@ const CategoryManage: React.FC = () => {
               <button
                 onClick={handleSubmit}
                 disabled={isProcessing}
-                className="rounded-2xl bg-[#23422a] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#1b3521] disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isProcessing
                   ? modalType === "create"

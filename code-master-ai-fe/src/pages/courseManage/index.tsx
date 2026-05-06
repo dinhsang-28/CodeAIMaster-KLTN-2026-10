@@ -371,7 +371,7 @@ const CourseManage: React.FC = () => {
       <Spin spinning={loading} size="large" wrapperClassName="w-full">
         <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
           {/* Title */}
-          <div>
+          <div className="rounded-2xl border border-brand-100 bg-white p-5 sm:p-6 shadow-sm">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-brand-700">
               Quản lý khóa học
             </h2>
@@ -385,7 +385,7 @@ const CourseManage: React.FC = () => {
             {stats.map((item, i) => (
               <div
                 key={i}
-                className="bg-brand-25 border border-brand-100 rounded-2xl p-4 sm:p-5 shadow-sm"
+                className="bg-white border border-brand-100 rounded-2xl p-4 sm:p-5 shadow-sm"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div
@@ -476,7 +476,7 @@ const CourseManage: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="bg-brand-25 border border-brand-100 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-brand-100 rounded-2xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[700px]">
                   <thead>
