@@ -315,7 +315,7 @@ const ExerciseManage: React.FC = () => {
         <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
 
           {/* Header */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start rounded-2xl border border-brand-100 bg-white p-5 sm:p-6 shadow-sm">
             <div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-brand-700">Quản lý bài tập</h2>
               <p className="text-gray-500 mt-1 text-sm sm:text-base">Quản lý và theo dõi tiến độ bài tập của học viên</p>
@@ -331,7 +331,7 @@ const ExerciseManage: React.FC = () => {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {statItems.map((s, i) => (
-              <div key={i} className="flex flex-col justify-center border border-brand-100 rounded-2xl bg-brand-25 shadow-sm px-4 sm:px-8 py-5 sm:py-8">
+              <div key={i} className="flex flex-col justify-center border border-brand-100 rounded-2xl bg-white shadow-sm px-4 sm:px-8 py-5 sm:py-8">
                 <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 flex-wrap">
                   <div style={{ width: 40, height: 40, borderRadius: 12, background: s.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {s.icon}
@@ -417,7 +417,7 @@ const ExerciseManage: React.FC = () => {
               {assignments.length === 0 && <div className="text-center py-6 text-gray-400">Không có bài tập nào</div>}
             </div>
           ) : (
-            <div className="border border-brand-100 bg-brand-25 rounded-2xl overflow-hidden">
+            <div className="border border-brand-100 bg-white rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 820 }}>
                   <thead>
