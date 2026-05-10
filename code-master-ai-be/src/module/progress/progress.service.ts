@@ -19,13 +19,20 @@ export class ProgressService {
     private readonly lessonModel: Model<LessonDocument>,
   ) {}
 
+  private buildCourseLessonQuery(courseObjectId: Types.ObjectId, courseId: string) {
+    return {
+      $or: [{ course_id: courseObjectId }, { course_id: courseId }],
+    };
+  }
+
   // Hàm tính toán lại tiến độ học tập của người dùng cho một khóa học cụ thể
   async recalculate(userId: string, courseId: string) {
     const userObjectId = new Types.ObjectId(userId);
     const courseObjectId = new Types.ObjectId(courseId);
+    const lessonQuery = this.buildCourseLessonQuery(courseObjectId, courseId);
 
     const [totalLessons, completedLessons] = await Promise.all([
-      this.lessonModel.countDocuments({ course_id: courseObjectId }),
+      this.lessonModel.countDocuments(lessonQuery),
       this.userLessonProgressModel.countDocuments({
         userId: userObjectId,
         courseId: courseObjectId,
@@ -59,9 +66,10 @@ export class ProgressService {
   async getCourseProgress(userId: string, courseId: string) {
     const userObjectId = new Types.ObjectId(userId);
     const courseObjectId = new Types.ObjectId(courseId);
+    const lessonQuery = this.buildCourseLessonQuery(courseObjectId, courseId);
 
     const [totalLessons, completedLessons] = await Promise.all([
-      this.lessonModel.countDocuments({ course_id: courseObjectId }),
+      this.lessonModel.countDocuments(lessonQuery),
       this.userLessonProgressModel.countDocuments({
         userId: userObjectId,
         courseId: courseObjectId,

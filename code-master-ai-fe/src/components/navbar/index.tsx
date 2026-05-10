@@ -19,6 +19,7 @@ import { useCourseStore } from "../../store/course";
 
 import { GetCartLength } from "../../api/cart";
 import { PostLogout } from "../../api/auth";
+import NotificationBell from "../notification-bell";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -246,6 +247,7 @@ const Navbar = () => {
                   {countQuantityCart}
                 </span>
               </div>
+              <NotificationBell></NotificationBell>
             </>
           )}
 
