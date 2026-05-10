@@ -48,26 +48,74 @@ const CategoryManage: React.FC = () => {
   const getMockLessonsByCategory = (categoryName: string): MockLesson[] => {
     const map: Record<string, MockLesson[]> = {
       "Front-end": [
-        { title: "Giới thiệu HTML Semantic", duration: "18 phút", type: "Video" },
-        { title: "CSS Flexbox và Grid cơ bản", duration: "26 phút", type: "Video" },
-        { title: "JavaScript DOM thao tác sự kiện", duration: "35 phút", type: "Thực hành" },
-        { title: "React Component và Props", duration: "22 phút", type: "Video" },
-        { title: "Quiz Front-end nền tảng", duration: "12 câu hỏi", type: "Quiz" },
+        {
+          title: "Giới thiệu HTML Semantic",
+          duration: "18 phút",
+          type: "Video",
+        },
+        {
+          title: "CSS Flexbox và Grid cơ bản",
+          duration: "26 phút",
+          type: "Video",
+        },
+        {
+          title: "JavaScript DOM thao tác sự kiện",
+          duration: "35 phút",
+          type: "Thực hành",
+        },
+        {
+          title: "React Component và Props",
+          duration: "22 phút",
+          type: "Video",
+        },
+        {
+          title: "Quiz Front-end nền tảng",
+          duration: "12 câu hỏi",
+          type: "Quiz",
+        },
       ],
       Database: [
-        { title: "Mô hình quan hệ và khóa chính", duration: "20 phút", type: "Video" },
-        { title: "SQL SELECT / WHERE / JOIN", duration: "40 phút", type: "Video" },
-        { title: "Chuẩn hóa dữ liệu 1NF-3NF", duration: "15 phút", type: "Bài đọc" },
-        { title: "Thực hành truy vấn tổng hợp", duration: "30 phút", type: "Thực hành" },
+        {
+          title: "Mô hình quan hệ và khóa chính",
+          duration: "20 phút",
+          type: "Video",
+        },
+        {
+          title: "SQL SELECT / WHERE / JOIN",
+          duration: "40 phút",
+          type: "Video",
+        },
+        {
+          title: "Chuẩn hóa dữ liệu 1NF-3NF",
+          duration: "15 phút",
+          type: "Bài đọc",
+        },
+        {
+          title: "Thực hành truy vấn tổng hợp",
+          duration: "30 phút",
+          type: "Thực hành",
+        },
         { title: "Quiz SQL cơ bản", duration: "10 câu hỏi", type: "Quiz" },
       ],
     };
 
     return (
       map[categoryName] || [
-        { title: `Tổng quan ${categoryName}`, duration: "15 phút", type: "Video" },
-        { title: `${categoryName} - Bài thực hành nhập môn`, duration: "25 phút", type: "Thực hành" },
-        { title: `Kiểm tra nhanh ${categoryName}`, duration: "8 câu hỏi", type: "Quiz" },
+        {
+          title: `Tổng quan ${categoryName}`,
+          duration: "15 phút",
+          type: "Video",
+        },
+        {
+          title: `${categoryName} - Bài thực hành nhập môn`,
+          duration: "25 phút",
+          type: "Thực hành",
+        },
+        {
+          title: `Kiểm tra nhanh ${categoryName}`,
+          duration: "8 câu hỏi",
+          type: "Quiz",
+        },
       ]
     );
   };
@@ -139,13 +187,23 @@ const CategoryManage: React.FC = () => {
     setIsOpenModal(true);
   };
 
-  const handleDelete = async (id: string, title: string) => {
+  const handleDelete = async (
+    id: string,
+    title: string,
+    quantityCourse: number,
+  ) => {
     const confirmed = window.confirm(
       `Bạn có chắc chắn muốn xóa thể loại "${title}" không?`,
     );
 
     if (!confirmed) return;
 
+    if (quantityCourse > 0) {
+      const confirmed = window.alert(
+        `Không thể xóa thể loại "${title}" vì đang có khóa học thuộc thể loại này?`,
+      );
+      return;
+    }
     try {
       await DeleteCategory(id);
       showNotification("success", "Xóa thể loại thành công!");
@@ -248,13 +306,13 @@ const CategoryManage: React.FC = () => {
               </span>
             )}
             <PermissionControl permission="categories_create">
-            <button
-              onClick={handleAddCategory}
-              className="inline-flex items-center gap-2 rounded-full bg-brand-600 hover:bg-brand-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition active:scale-95"
-            >
-              <Plus className="h-5 w-5" />
-              Thêm thể loại mới
-            </button>
+              <button
+                onClick={handleAddCategory}
+                className="inline-flex items-center gap-2 rounded-full bg-brand-600 hover:bg-brand-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition active:scale-95"
+              >
+                <Plus className="h-5 w-5" />
+                Thêm thể loại mới
+              </button>
             </PermissionControl>
           </div>
         </div>
@@ -307,7 +365,8 @@ const CategoryManage: React.FC = () => {
                       </h3>
 
                       <p className="line-clamp-3 text-sm leading-6 text-gray-600">
-                        {category.description || "Chưa có mô tả cho thể loại này."}
+                        {category.description ||
+                          "Chưa có mô tả cho thể loại này."}
                       </p>
                     </div>
 
@@ -336,7 +395,11 @@ const CategoryManage: React.FC = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(category._id, category.category_name);
+                              handleDelete(
+                                category._id,
+                                category.category_name,
+                                Number(category.courseCount),
+                              );
                             }}
                             className="rounded-lg p-2 transition hover:bg-[#ffdad6]"
                             title="Xóa"
@@ -413,7 +476,6 @@ const CategoryManage: React.FC = () => {
             )}
           </div>
         </div>
-
       </div>
 
       {isOpenModal && (

@@ -102,7 +102,7 @@ const NotificationBell: React.FC = () => {
     }
 
     if (item.link) {
-      navigate(item.link);
+      navigate(`/order-detail/${item.link}`);
     }
 
     setOpen(false);

@@ -544,7 +544,7 @@ export class PaymentsService {
         title: 'Thanh toán thành công',
         message: `Bạn đã mua thành công ${courseText}. Chúc bạn học tập hiệu quả!`,
         type: NotificationType.COURSE,
-        link: '/profile/my-courses',
+        link: orderId,
       });
     } catch (error) {
       console.error('Send payment notification failed:', error);
