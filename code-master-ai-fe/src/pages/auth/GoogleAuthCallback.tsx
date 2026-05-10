@@ -175,6 +175,7 @@ export default function GoogleAuthCallback() {
     };
 
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
