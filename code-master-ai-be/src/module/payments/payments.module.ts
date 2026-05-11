@@ -22,6 +22,7 @@ import {
 } from '../enrollments/entities/enrollment.entity';
 import { NotificationModule } from '../notification/notification.module';
 import { Course, CourseSchema } from '../courses/entities/course.entity';
+import { Role, RoleSchema } from '../roles/entities/role.entity';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { Course, CourseSchema } from '../courses/entities/course.entity';
       { name: User.name, schema: UserSchema },
       { name: Enrollment.name, schema: EnrollmentSchema },
       { name: Course.name, schema: CourseSchema },
+      { name: Role.name, schema: RoleSchema },
     ]),
   ],
   controllers: [PaymentsController],
