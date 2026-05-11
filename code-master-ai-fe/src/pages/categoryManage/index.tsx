@@ -350,14 +350,12 @@ const CategoryManage: React.FC = () => {
                   onClick={() =>
                     handlePreviewLessons(category._id, category.category_name)
                   }
-                  className={`group flex min-h-[220px] flex-col overflow-hidden rounded-2xl border bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md ${
+                  className={`group flex min-h-[220px] flex-col overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md ${
                     previewCategoryId === category._id
                       ? "border-brand-500 ring-2 ring-brand-500/10"
                       : "border-brand-100 hover:border-brand-200"
                   }`}
                 >
-                  <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-[#23422a]/5 transition-transform group-hover:scale-110" />
-
                   <div className="relative z-10 flex flex-1 flex-col">
                     <div className="space-y-2">
                       <h3 className="text-xl font-bold text-brand-700">
@@ -370,15 +368,15 @@ const CategoryManage: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="mt-auto pt-6 flex items-center justify-between gap-3 border-t border-gray-100">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50/60 px-3 py-1.5 text-xs font-semibold text-brand-700">
+                    <div className="mt-auto pt-4 flex items-center justify-between gap-3 border-t border-gray-100">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50/60 px-3 py-1 text-xs font-semibold text-brand-700">
                         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-700 px-1.5 text-[10px] font-bold leading-none text-white">
                           {(category.courseCount || 0).toString()}
                         </span>
                         <span>Khóa học</span>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-3">
                         <PermissionControl permission="categories_edit">
                           <button
                             onClick={(e) => {
@@ -435,7 +433,7 @@ const CategoryManage: React.FC = () => {
 
           <div className="min-w-0 xl:sticky xl:top-6">
             {previewCategoryId ? (
-              <div className="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-brand-100 bg-white p-4 shadow-sm">
                 <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="text-xl font-bold text-brand-700">
