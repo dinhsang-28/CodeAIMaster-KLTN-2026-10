@@ -6,6 +6,7 @@ export enum NotificationType {
   SYSTEM = 'system',
   COURSE = 'course',
   ASSIGNMENT = 'assignment',
+  ORDER = 'order',
 }
 
 @Schema({ timestamps: true })
