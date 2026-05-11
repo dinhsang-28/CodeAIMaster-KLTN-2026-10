@@ -206,7 +206,6 @@ import { useUserInfo } from "../store/user";
 export const axiosInstance = axios.create({
   // baseURL: "http://localhost:3000/api/v1",
   baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
-  // baseURL: "http://localhost:3001/api/v1",
   withCredentials: true,
 });
 
@@ -267,13 +266,11 @@ axiosInstance.interceptors.response.use(
           useUserInfo.getState().clearUserInfo();
           window.location.href = "/login";
         }
-
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
-
     return Promise.reject(error);
   },
 );
