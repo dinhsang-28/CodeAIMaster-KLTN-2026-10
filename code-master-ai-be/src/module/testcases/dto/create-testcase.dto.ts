@@ -10,7 +10,8 @@ import { Type } from 'class-transformer';
 export class CreateTestcaseDto {
   @IsMongoId()
   code_assignment_id!: string;
-
+  @IsMongoId()
+  assignment_id!: string;
   @IsString()
   @IsNotEmpty()
   input_data!: string;

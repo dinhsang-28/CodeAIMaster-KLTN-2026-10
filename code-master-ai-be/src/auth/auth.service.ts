@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '@/module/users/users.service';
 import { comparePasswordHelper } from '@/helpers/util';
 import { JwtService } from '@nestjs/jwt';
@@ -20,6 +20,11 @@ export class AuthService {
   async validateUser(username: string, pass: string): Promise<any> {
     const user = await this.usersService.findByEmail(username);
     if (!user) return null;
+    if (user.provider !== 'local') {
+    throw new BadRequestException(
+      `Email ${username} đã được đăng ký bằng phương thức khác. Vui lòng đăng nhập bằng ${user.provider === 'google' ? 'Google' : 'GitHub'}!`
+    );
+  }
     const isValidPassword = await comparePasswordHelper(pass, user.password);
     if (!isValidPassword) return null;
     return user;
@@ -299,7 +304,9 @@ export class AuthService {
   //   return res.redirect(callbackUrl);
   // }
   async validateOAuthLogin(profile: any, res: any) {
-  const accessExpire = process.env.JWT_ACCESS_EXPIRE || '15m';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://code-ai-master-kltn-2026-10.vercel.app';
+    try {
+      const accessExpire = process.env.JWT_ACCESS_EXPIRE || '15m';
   const refreshExpire = process.env.JWT_REFRESH_EXPIRE || '7d';
 
   const user = await this.usersService.createOAuthUser(profile);
@@ -326,13 +333,19 @@ export class AuthService {
     accessToken,
     refreshToken,
   }));
-
-  const frontendUrl = process.env.FRONTEND_URL || 'https://code-ai-master-kltn-2026-10.vercel.app';
   const callbackUrl = profile.provider === 'github'
     ? `${frontendUrl}/auth/github/callback?user=${userInfo}`
     : `${frontendUrl}/auth/google/callback?user=${userInfo}`;
 
-  return res.redirect(callbackUrl);
+  return res.redirect(callbackUrl);  
+    } catch (error:any) {
+      const errorMessage = encodeURIComponent(error.message || 'Đăng nhập thất bại do lỗi hệ thống.');
+      const errorCallbackUrl = profile.provider === 'github'
+        ? `${frontendUrl}/auth/github/callback?error=${errorMessage}`
+        : `${frontendUrl}/auth/google/callback?error=${errorMessage}`;
+
+      return res.redirect(errorCallbackUrl);
+    }
 }
   async getMe(userId: string) {
     const user = await this.usersService.findOne(userId);

@@ -12,6 +12,7 @@ const permissionModules = [
   // { label: "Quản lý Nhóm Quyền", value: "roles" },
   { label: "Quản lý Khóa Học", value: "courses" },
   { label: "Quản lý Bài Tập", value: "exercises" },
+  {label:"Quản lý Testcase", value:"testcases"},
   { label: "Quản lý Thể Loại", value: "categories" },
   { label: "Quản lý Bài Viết", value: "articles" },
   { label: "Quản lý nhóm quyền", value: "roles" },
@@ -28,10 +29,10 @@ const actions = [
 ];
 
 // Quyền đặc biệt không nằm trong ma trận chuẩn
-const specialPermissions = [
-  { label: "Cấu hình Phân quyền (Super Admin)", value: "roles_permissions" },
-  { label: "Quản lý Cài đặt hệ thống", value: "settings_view" },
-];
+// const specialPermissions = [
+//   { label: "Cấu hình Phân quyền (Super Admin)", value: "roles_permissions" },
+//   { label: "Quản lý Cài đặt hệ thống", value: "settings_view" },
+// ];
 
 const RoleManage: React.FC = () => {
   const [roles, setRoles] = useState<any[]>([]);
@@ -90,15 +91,15 @@ const RoleManage: React.FC = () => {
   };
 
   // Xử lý khi Tích/Bỏ tích Quyền Đặc biệt
-  const handleToggleSpecialPermission = (permissionCode: string) => {
-    if (!hasPermissionToEdit) return;
+  // const handleToggleSpecialPermission = (permissionCode: string) => {
+  //   if (!hasPermissionToEdit) return;
 
-    setCurrentPermissions((prev) =>
-      prev.includes(permissionCode)
-        ? prev.filter((p) => p !== permissionCode)
-        : [...prev, permissionCode],
-    );
-  };
+  //   setCurrentPermissions((prev) =>
+  //     prev.includes(permissionCode)
+  //       ? prev.filter((p) => p !== permissionCode)
+  //       : [...prev, permissionCode],
+  //   );
+  // };
 
   // Xử lý Lưu Quyền lên Backend
   const handleSavePermissions = async () => {
@@ -205,22 +206,6 @@ const RoleManage: React.FC = () => {
           size="middle"
         />
 
-        {/* DANH SÁCH QUYỀN ĐẶC BIỆT */}
-        <h3 className="text-md font-bold text-brand-800 mb-3">
-          Quyền Đặc Biệt
-        </h3>
-        <div className="flex flex-col gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          {specialPermissions.map((special) => (
-            <Checkbox
-              key={special.value}
-              checked={currentPermissions.includes(special.value)}
-              onChange={() => handleToggleSpecialPermission(special.value)}
-              disabled={!hasPermissionToEdit}
-            >
-              {special.label}
-            </Checkbox>
-          ))}
-        </div>
       </Spin>
     </div>
   );
