@@ -7,11 +7,15 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { SearchCourse } from './dto/search-course.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { Auth } from '@/auth/entities/auth.entity';
+import { PermissionsGuard } from '@/auth/passport/permissions.guard';
+import { RequirePermissions } from '@/auth/decorators/permisions.decorator';
 
 @Controller('courses')
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
-
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('courses_create')
   @Post()
   @UseInterceptors(FileInterceptor('thumbnail'))
   create(
@@ -64,7 +68,8 @@ export class CoursesController {
   findOne(@Param('id') id: string) {
     return this.coursesService.findOne(id);
   }
-
+    @UseGuards(JwtAuthGuard,PermissionsGuard)
+    @RequirePermissions('courses_edit')
   @Patch(':id')
   @UseInterceptors(FileInterceptor('thumbnail'))
   update(
@@ -75,6 +80,8 @@ export class CoursesController {
     return this.coursesService.update(id, updateCourseDto, file);
   }
 
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('courses_delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.coursesService.remove(id);

@@ -22,6 +22,7 @@ import {
 } from "@ant-design/icons";
 import { useUserInfo } from "../../store/user";
 import { PostLogout } from "../../api/auth";
+import NotificationBell from "../../components/notification-bell";
 
 type MenuItem = {
   to: string;
@@ -246,49 +247,18 @@ const AdminLayout: React.FC = () => {
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-brand-100 shadow-sm bg-white px-6 py-3">
           <div />
 
-          <div
-            ref={dropdownRef}
-            className="relative"
-            onMouseEnter={() => {
-              if (closeTimerRef.current) {
-                clearTimeout(closeTimerRef.current);
-                closeTimerRef.current = null;
-              }
-              if (!dropdownOpen && !openTimerRef.current) {
-                openTimerRef.current = window.setTimeout(() => {
-                  setDropdownOpen(true);
-                  openTimerRef.current = null;
-                }, 150);
-              }
-            }}
-            onMouseLeave={() => {
-              if (openTimerRef.current) {
-                clearTimeout(openTimerRef.current);
-                openTimerRef.current = null;
-              }
-              if (!closeTimerRef.current) {
-                closeTimerRef.current = window.setTimeout(() => {
-                  setDropdownOpen(false);
-                  closeTimerRef.current = null;
-                }, 300);
-              }
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-3 cursor-pointer">
-                <NavLink to="/admin/profile" className="flex h-10 w-10 overflow-hidden items-center justify-center rounded-full bg-brand-100 text-brand-700 shadow-inner border border-brand-100">
-                  {userInfo?.image ? (
-                    <img src={userInfo.image} alt="Avatar" className="h-full w-full object-cover" />
-                  ) : (
-                    <UserOutlined />
-                  )}
-                </NavLink>
-
-                <div className="text-right">
-                  <p className="text-sm font-bold text-brand-700">{userInfo?.name || 'Admin Master'}</p>
-                  <p className="text-[11px] uppercase tracking-widest text-brand-400">{userInfo?.email || 'Super Admin'}</p>
-                </div>
-              </div>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <div className="flex h-10 w-10 overflow-hidden items-center justify-center rounded-full bg-brand-100 text-brand-700 shadow-inner border border-brand-100">
+              {userInfo?.image ? (
+                <img
+                  src={userInfo.image}
+                  alt="Avatar"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <UserOutlined />
+              )}
             </div>
 
             <div

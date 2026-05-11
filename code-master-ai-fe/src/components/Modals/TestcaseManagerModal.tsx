@@ -8,6 +8,7 @@ import {
   generateTestcasesByAI 
 } from "../../api/excersice";
 import { RobotOutlined, EditOutlined, DeleteOutlined, SaveOutlined, CloseOutlined } from "@ant-design/icons";
+import PermissionControl from "../permissionControl";
 
 const { TextArea } = Input;
 
@@ -204,17 +205,21 @@ const TestcaseManagerModal: React.FC<TestcaseManagerModalProps> = ({
       render: (_: any, record: any) => {
         const editable = isEditing(record);
         return editable ? (
+          <PermissionControl permission="testcases_edit">
           <Space>
             <Button icon={<SaveOutlined />} type="primary" size="small" onClick={() => save(record._id)} />
             <Button icon={<CloseOutlined />} size="small" onClick={cancel} />
           </Space>
+          </PermissionControl>
         ) : (
+          <PermissionControl permission="testcases_delete">
           <Space>
             <Button disabled={editingId !== null} icon={<EditOutlined />} size="small" onClick={() => edit(record)} />
             <Popconfirm title="Chắc chắn xóa?" onConfirm={() => handleDelete(record._id)}>
               <Button disabled={editingId !== null} icon={<DeleteOutlined />} danger size="small" />
             </Popconfirm>
           </Space>
+          </PermissionControl>
         );
       },
     },
@@ -227,6 +232,7 @@ const TestcaseManagerModal: React.FC<TestcaseManagerModalProps> = ({
       title={
         <div className="flex items-center justify-between pr-8">
           <span>Quản lý Testcases</span>
+          <PermissionControl permission="testcases_create">
           <Button 
             type="primary" 
             icon={<RobotOutlined />} 
@@ -237,6 +243,7 @@ const TestcaseManagerModal: React.FC<TestcaseManagerModalProps> = ({
           >
             Tạo tự động bằng AI
           </Button>
+          </PermissionControl>
         </div>
       }
       open={visible}
@@ -284,9 +291,11 @@ const TestcaseManagerModal: React.FC<TestcaseManagerModalProps> = ({
                 </Col>
               </Row>
               <div className="flex justify-end">
+                <PermissionControl permission="testcases_create">
                 <Button type="primary" loading={aiLoading} onClick={handleGenerateAI} icon={<RobotOutlined />} style={{ background: '#6d28d9', borderColor: '#6d28d9' }}>
                   Tạo tự động bằng AI
                 </Button>
+                </PermissionControl>
               </div>
             </Form>
           </div>
@@ -307,9 +316,11 @@ const TestcaseManagerModal: React.FC<TestcaseManagerModalProps> = ({
               </div>
               <div className="flex gap-2 justify-end">
                 <Button onClick={() => form.resetFields()}>Xóa form</Button>
+                <PermissionControl permission="testcases_create">
                 <Button type="primary" loading={creating} onClick={handleCreate} style={{ background: '#3a5a40', borderColor: '#3a5a40' }}>
                   Lưu testcase
                 </Button>
+                </PermissionControl>
               </div>
             </Form>
           </div>

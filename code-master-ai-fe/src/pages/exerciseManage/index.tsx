@@ -15,6 +15,7 @@ import { searchCourses, getCourseFullInfo } from "../../api/course";
 
 import AssignmentFormModal from "../../components/Modals/AssignmentFormModal";
 import TestcaseManagerModal from "../../components/Modals/TestcaseManagerModal";
+import PermissionControl from "../../components/permissionControl";
 
 const { Option } = Select;
 
@@ -303,8 +304,12 @@ const ExerciseManage: React.FC = () => {
         {activeTab === 1 && (
           <Button size="small" type="dashed" icon={<RobotOutlined />} onClick={() => handleManageTestcases(item)}>Testcases</Button>
         )}
-        <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(item)} />
-        <Button size="small" danger icon={<MoreOutlined />} onClick={() => handleDelete(item)} />
+        <PermissionControl permission="exercises_edit">
+          <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(item)} />
+        </PermissionControl>
+        <PermissionControl permission="exercises_delete">
+          <Button size="small" danger icon={<MoreOutlined />} onClick={() => handleDelete(item)} />
+        </PermissionControl>
       </div>
     </div>
   );
@@ -320,12 +325,14 @@ const ExerciseManage: React.FC = () => {
               <h2 className="text-2xl sm:text-3xl font-extrabold text-brand-700">Quản lý bài tập</h2>
               <p className="text-gray-500 mt-1 text-sm sm:text-base">Quản lý và theo dõi tiến độ bài tập của học viên</p>
             </div>
+            <PermissionControl permission="exercises_create">
             <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}
               className="w-full sm:w-auto"
               style={{ background: "#3a5a40", borderColor: "#3a5a40", borderRadius: 999, fontWeight: 600, height: 40, paddingLeft: 20, paddingRight: 20, fontSize: 14 }}
             >
               Tạo bài tập mới
             </Button>
+            </PermissionControl>
           </div>
 
           {/* Stats */}
@@ -460,16 +467,22 @@ const ExerciseManage: React.FC = () => {
                         <td style={{ padding: "16px", textAlign: "right" }}>
                           <div style={{ display: "inline-flex", gap: 6 }}>
                             {activeTab === 1 && (
+                              <PermissionControl permission="testcases_view">
                               <button onClick={() => handleManageTestcases(item)} style={{ padding: '0 8px', height: 32, borderRadius: 8, border: "1px solid #e2e8f0", background: "#f0fdf4", color: "#166534", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
                                 <RobotOutlined /> Testcases
                               </button>
+                              </PermissionControl>
                             )}
+                            <PermissionControl permission="exercises_edit">
                             <button onClick={() => handleEdit(item)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer" }}>
                               <EditOutlined style={{ fontSize: 14 }} />
                             </button>
+                            </PermissionControl>
+                            <PermissionControl permission="exercises_delete">
                             <button onClick={() => handleDelete(item)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fee2e2", background: "#fef2f2", color: "#ef4444", cursor: "pointer" }}>
                               <DeleteOutlined style={{ fontSize: 14 }} />
                             </button>
+                            </PermissionControl>
                           </div>
                         </td>
                       </tr>

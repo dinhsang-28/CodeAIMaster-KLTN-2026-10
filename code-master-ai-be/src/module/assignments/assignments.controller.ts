@@ -14,18 +14,23 @@ import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { SearchAssignmentDto } from './dto/search-assigment.dto';
 import { JwtAuthGuard } from '@/auth/passport/jwt-auth.guard';
+import { PermissionsGuard } from '@/auth/passport/permissions.guard';
+import { RequirePermissions } from '@/auth/decorators/permisions.decorator';
 
 @Controller('assignments')
 export class AssignmentsController {
   constructor(private readonly assignmentsService: AssignmentsService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('assignments_create')
   create(@Body() createAssignmentDto: CreateAssignmentDto) {
     return this.assignmentsService.create(createAssignmentDto);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('assignments_view')
   findAll() {
     return this.assignmentsService.findAll();
   }
@@ -39,7 +44,8 @@ export class AssignmentsController {
   findOne(@Param('id') id: string) {
     return this.assignmentsService.findOne(id);
   }
-
+   @UseGuards(JwtAuthGuard,PermissionsGuard)
+   @RequirePermissions('assignments_edit')  
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -47,7 +53,8 @@ export class AssignmentsController {
   ) {
     return this.assignmentsService.update(id, updateAssignmentDto);
   }
-
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('assignments_delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.assignmentsService.remove(id);

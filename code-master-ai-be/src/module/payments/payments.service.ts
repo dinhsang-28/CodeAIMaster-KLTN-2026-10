@@ -44,6 +44,7 @@ import {
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '../notification/schemas/notification.schema';
 import { Course, CourseDocument } from '../courses/entities/course.entity';
+import { Role, RoleDocument } from '../roles/entities/role.entity';
 
 @Injectable()
 export class PaymentsService {
@@ -69,6 +70,9 @@ export class PaymentsService {
 
     @InjectModel(Course.name)
     private readonly courseModel: Model<CourseDocument>,
+
+    @InjectModel(Role.name)
+    private readonly roleModel: Model<RoleDocument>,
 
     private readonly configService: ConfigService,
     private readonly mailerService: MailerService,
@@ -544,10 +548,40 @@ export class PaymentsService {
         title: 'Thanh toán thành công',
         message: `Bạn đã mua thành công ${courseText}. Chúc bạn học tập hiệu quả!`,
         type: NotificationType.COURSE,
-        link: '/profile/my-courses',
+        link: orderId,
       });
+
+      // Gửi notification cho admin
+      await this.sendNotificationToAdmins(courseText, userId);
     } catch (error) {
       console.error('Send payment notification failed:', error);
+    }
+  }
+
+  private async sendNotificationToAdmins(courseText: string, userId: string) {
+    try {
+      const adminRole = await this.roleModel.findOne({ role_name: 'admin' }).lean();
+      if (!adminRole) {
+        console.warn('Admin role not found');
+        return;
+      }
+
+      const adminUsers = await this.userModel.find({ role_id: adminRole._id }).lean();
+      const user = await this.userModel.findById(userId).lean();
+
+      const userName = user?.name || user?.email || 'Người dùng';
+
+      for (const admin of adminUsers) {
+        await this.notificationService.create({
+          userId: admin._id.toString(),
+          title: 'Đơn hàng mới',
+          message: `${userName} đã mua thành công ${courseText}.`,
+          type: NotificationType.ORDER,
+          link: '/admin/orders',
+        });
+      }
+    } catch (error) {
+      console.error('Send notification to admins failed:', error);
     }
   }
 
