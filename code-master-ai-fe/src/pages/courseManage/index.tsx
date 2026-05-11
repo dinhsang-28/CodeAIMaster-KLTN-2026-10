@@ -13,6 +13,7 @@ import {
 } from "@ant-design/icons";
 import { searchCourses, deleteCourse, getCourseFullInfo, GetCategories } from "../../api/course";
 import CourseFormModal from "../../components/Modals/CourseFormModal";
+import PermissionControl from "../../components/permissionControl";
 
 const { Option } = Select;
 
@@ -358,8 +359,12 @@ const CourseManage: React.FC = () => {
           </span>
           <div className="flex gap-2">
             <ActionBtn title="Xem" icon={<EyeOutlined style={{ fontSize: 13 }} />} onClick={() => handleView(course._id)} />
-            <ActionBtn title="Sửa" icon={<EditOutlined style={{ fontSize: 13 }} />} onClick={() => handleEdit(course._id)} />
-            <ActionBtn title="Xóa" icon={<DeleteOutlined style={{ fontSize: 13 }} />} danger onClick={() => handleDelete(course._id)} />
+            <PermissionControl permission="courses_edit">
+              <ActionBtn title="Sửa" icon={<EditOutlined style={{ fontSize: 13 }} />} onClick={() => handleEdit(course._id)} />
+            </PermissionControl>
+            <PermissionControl permission="courses_delete">
+              <ActionBtn title="Xóa" icon={<DeleteOutlined style={{ fontSize: 13 }} />} danger onClick={() => handleDelete(course._id)} />
+            </PermissionControl>
           </div>
         </div>
       </div>
@@ -446,6 +451,7 @@ const CourseManage: React.FC = () => {
                 </Select>
               </div>
             </div>
+            <PermissionControl permission="courses_create">
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -463,6 +469,7 @@ const CourseManage: React.FC = () => {
             >
               Thêm khóa học
             </Button>
+            </PermissionControl>
           </div>
 
           {/* Table (desktop) / Cards (mobile) */}
@@ -605,17 +612,21 @@ const CourseManage: React.FC = () => {
                               icon={<EyeOutlined style={{ fontSize: 14 }} />}
                               onClick={() => handleView(course._id)}
                             />
+                            <PermissionControl permission="courses_edit">
                             <ActionBtn
                               title="Sửa"
                               icon={<EditOutlined style={{ fontSize: 14 }} />}
                               onClick={() => handleEdit(course._id)}
                             />
+                            </PermissionControl>
+                            <PermissionControl permission="courses_delete">
                             <ActionBtn
                               title="Xóa"
                               icon={<DeleteOutlined style={{ fontSize: 14 }} />}
                               danger
                               onClick={() => handleDelete(course._id)}
                             />
+                            </PermissionControl>
                           </div>
                         </td>
                       </tr>
