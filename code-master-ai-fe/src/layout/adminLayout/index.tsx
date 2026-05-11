@@ -24,6 +24,7 @@ import {
 } from "@ant-design/icons";
 import { useUserInfo } from "../../store/user";
 import { PostLogout } from "../../api/auth";
+import NotificationBell from "../../components/notification-bell";
 
 type MenuItem = {
   to: string;
@@ -250,6 +251,7 @@ const AdminLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <div className="flex h-10 w-10 overflow-hidden items-center justify-center rounded-full bg-brand-100 text-brand-700 shadow-inner border border-brand-100">
               {userInfo?.image ? (
                 <img
