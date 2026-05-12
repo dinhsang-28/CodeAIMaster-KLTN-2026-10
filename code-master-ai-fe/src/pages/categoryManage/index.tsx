@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, ArrowRight, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X } from "lucide-react";
 import {
   GetCategories,
   CreateCategory,
@@ -405,8 +405,6 @@ const CategoryManage: React.FC = () => {
                             <Trash2 className="h-5 w-5 text-red-600" />
                           </button>
                         </PermissionControl>
-
-                        <ArrowRight className="h-5 w-5 text-brand-700/40 transition-transform group-hover:translate-x-1" />
                       </div>
                     </div>
                   </div>

@@ -13,7 +13,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ReadOutlined,
-  SettingOutlined,
   UserOutlined,
   UsergroupAddOutlined,
   CodeOutlined,
@@ -52,9 +51,10 @@ const mainMenuItems: MenuItem[] = [
     label: "Quản lý người dùng",
     icon: <UsergroupAddOutlined />,
   },
-  { to: "/admin/students", 
-    label: "Quản lý học viên", 
-    icon: <UsergroupAddOutlined /> 
+  {
+    to: "/admin/students",
+    label: "Quản lý học viên",
+    icon: <UsergroupAddOutlined />,
   },
   { to: "/admin/roles", label: "Quản lý nhóm quyền", icon: <IdcardOutlined /> },
   {
@@ -129,7 +129,8 @@ const AdminLayout: React.FC = () => {
     if (path.includes("/permissions"))
       return permissions.includes("permissions_view");
     if (path.includes("/leads")) return permissions.includes("leads_view");
-    if (path.includes("/students")) return permissions.includes("students_view");
+    if (path.includes("/students"))
+      return permissions.includes("students_view");
     // Tuỳ chỉnh nếu có quyền settings
     return true;
   };
@@ -144,7 +145,6 @@ const AdminLayout: React.FC = () => {
   const filteredBottomMenu = bottomMenuItems.filter((item) =>
     checkPermission(item.to),
   );
-
 
   const getPageTitle = () => {
     if (location.pathname === "/admin") return "Bảng điều khiển";
@@ -276,18 +276,29 @@ const AdminLayout: React.FC = () => {
           >
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-3 cursor-pointer">
-                <NavLink to="/admin/profile" className="flex h-10 w-10 overflow-hidden items-center justify-center rounded-full bg-brand-100 text-brand-700 shadow-inner border border-brand-100">
+                <div className="text-right">
+                  <p className="text-sm font-bold text-brand-700">
+                    {userInfo?.name || "Admin Master"}
+                  </p>
+                  <p className="text-[11px] uppercase tracking-widest text-brand-400">
+                    {userInfo?.email || "Super Admin"}
+                  </p>
+                </div>
+
+                <NavLink
+                  to="/admin/profile"
+                  className="flex h-10 w-10 overflow-hidden items-center justify-center rounded-full bg-brand-100 text-brand-700 shadow-inner border border-brand-100"
+                >
                   {userInfo?.image ? (
-                    <img src={userInfo.image} alt="Avatar" className="h-full w-full object-cover" />
+                    <img
+                      src={userInfo.image}
+                      alt="Avatar"
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <UserOutlined />
                   )}
                 </NavLink>
-
-                <div className="text-right">
-                  <p className="text-sm font-bold text-brand-700">{userInfo?.name || 'Admin Master'}</p>
-                  <p className="text-[11px] uppercase tracking-widest text-brand-400">{userInfo?.email || 'Super Admin'}</p>
-                </div>
               </div>
             </div>
 
@@ -306,13 +317,13 @@ const AdminLayout: React.FC = () => {
                   }, 300);
                 }
               }}
-              className={`${dropdownOpen ? 'block' : 'hidden'} absolute right-0 top-full mt-3 w-48 rounded-lg border bg-white shadow-md z-40` }
+              className={`${dropdownOpen ? "block" : "hidden"} absolute right-0 top-full mt-3 w-48 rounded-lg border bg-white shadow-md z-40`}
             >
               <div className="flex flex-col py-1">
                 <button
                   onClick={() => {
                     setDropdownOpen(false);
-                    navigate('/admin/profile');
+                    navigate("/admin/profile");
                   }}
                   className="text-left px-4 py-2 text-sm text-brand-700 hover:bg-gray-50"
                 >
@@ -326,7 +337,7 @@ const AdminLayout: React.FC = () => {
                     setDropdownOpen(false);
                     await PostLogout();
                     clearUserInfo();
-                    navigate('/login');
+                    navigate("/login");
                   }}
                   className="text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
                 >
