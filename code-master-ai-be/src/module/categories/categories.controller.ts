@@ -37,6 +37,12 @@ export class CategoriesController {
     return this.categoriesService.findAll(query, +current, +pageSize);
   }
   @UseGuards(JwtAuthGuard)
+  @Get(':id/courses')
+  findCoursesByCategory(@Param('id', ParseObjectIdPipe) id: string) {
+    return this.categoriesService.findCoursesByCategory(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id', ParseObjectIdPipe) id: string) {
     return this.categoriesService.findOne(id);

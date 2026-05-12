@@ -123,7 +123,7 @@ const MyEnrollment: React.FC = () => {
                   </div>
 
                   <button
-                    onClick={() => navigate(`/learn/lesson/${course._id}`)}
+                    onClick={() => navigate(`/learn/${course._id}`)}
                     className="w-full py-3 sm:py-4 bg-gradient-to-r from-green-900 to-green-700 text-white font-semibold rounded-lg hover:opacity-90 transition"
                   >
                     Vào học ngay
