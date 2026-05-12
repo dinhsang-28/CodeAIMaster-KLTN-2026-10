@@ -9,12 +9,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Category, CategoryDocument } from './entities/category.entity';
 import { ApiResponse } from '@/common/dto/api-response.dto';
+import { Course, CourseDocument } from '../courses/entities/course.entity';
 
 @Injectable()
 export class CategoriesService {
   constructor(
     @InjectModel(Category.name)
     private readonly categoriesModel: Model<CategoryDocument>,
+
+    @InjectModel(Course.name)
+    private readonly courseModel: Model<CourseDocument>,
   ) {}
 
   async create(
@@ -168,6 +172,25 @@ export class CategoriesService {
     }
 
     return new ApiResponse('Lấy thể loại thành công', category);
+  }
+
+  async findCoursesByCategory(id: string): Promise<ApiResponse<Course[]>> {
+    const category = await this.categoriesModel.exists({ _id: id });
+
+    if (!category) {
+      throw new NotFoundException('Không tìm thấy category');
+    }
+
+    const courses = await this.courseModel
+      .find({
+        category: id,
+      })
+      .populate('category', 'category_name')
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    return new ApiResponse('Danh sách khóa học theo thể loại', courses);
   }
 
   async update(

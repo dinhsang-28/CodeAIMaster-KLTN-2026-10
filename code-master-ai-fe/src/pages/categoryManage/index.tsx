@@ -5,6 +5,7 @@ import {
   CreateCategory,
   UpdateCategory,
   DeleteCategory,
+  GetCoursesByCategory,
 } from "../../api/admin/category";
 import PermissionControl from "../../components/permissionControl";
 
@@ -15,10 +16,13 @@ type CategoryItem = {
   courseCount?: number;
 };
 
-type MockLesson = {
+type CategoryCourse = {
+  _id: string;
   title: string;
-  duration: string;
-  type: "Video" | "Bài đọc" | "Quiz" | "Thực hành";
+  description?: string;
+  price?: number;
+  level?: string;
+  status?: string;
 };
 
 type NotificationType = {
@@ -36,6 +40,7 @@ const CategoryManage: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [notification, setNotification] = useState<NotificationType>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     category_name: "",
@@ -43,93 +48,35 @@ const CategoryManage: React.FC = () => {
   });
   const [previewCategoryId, setPreviewCategoryId] = useState<string>("");
   const [previewCategory, setPreviewCategory] = useState<string>("");
-  const [previewLessons, setPreviewLessons] = useState<MockLesson[]>([]);
+  const [previewCourses, setPreviewCourses] = useState<CategoryCourse[]>([]);
 
-  const getMockLessonsByCategory = (categoryName: string): MockLesson[] => {
-    const map: Record<string, MockLesson[]> = {
-      "Front-end": [
-        {
-          title: "Giới thiệu HTML Semantic",
-          duration: "18 phút",
-          type: "Video",
-        },
-        {
-          title: "CSS Flexbox và Grid cơ bản",
-          duration: "26 phút",
-          type: "Video",
-        },
-        {
-          title: "JavaScript DOM thao tác sự kiện",
-          duration: "35 phút",
-          type: "Thực hành",
-        },
-        {
-          title: "React Component và Props",
-          duration: "22 phút",
-          type: "Video",
-        },
-        {
-          title: "Quiz Front-end nền tảng",
-          duration: "12 câu hỏi",
-          type: "Quiz",
-        },
-      ],
-      Database: [
-        {
-          title: "Mô hình quan hệ và khóa chính",
-          duration: "20 phút",
-          type: "Video",
-        },
-        {
-          title: "SQL SELECT / WHERE / JOIN",
-          duration: "40 phút",
-          type: "Video",
-        },
-        {
-          title: "Chuẩn hóa dữ liệu 1NF-3NF",
-          duration: "15 phút",
-          type: "Bài đọc",
-        },
-        {
-          title: "Thực hành truy vấn tổng hợp",
-          duration: "30 phút",
-          type: "Thực hành",
-        },
-        { title: "Quiz SQL cơ bản", duration: "10 câu hỏi", type: "Quiz" },
-      ],
-    };
-
-    return (
-      map[categoryName] || [
-        {
-          title: `Tổng quan ${categoryName}`,
-          duration: "15 phút",
-          type: "Video",
-        },
-        {
-          title: `${categoryName} - Bài thực hành nhập môn`,
-          duration: "25 phút",
-          type: "Thực hành",
-        },
-        {
-          title: `Kiểm tra nhanh ${categoryName}`,
-          duration: "8 câu hỏi",
-          type: "Quiz",
-        },
-      ]
-    );
-  };
-
-  const handlePreviewLessons = (categoryId: string, categoryName: string) => {
+  const handlePreviewCourses = async (
+    categoryId: string,
+    categoryName: string,
+  ) => {
     if (previewCategoryId === categoryId) {
       setPreviewCategoryId("");
       setPreviewCategory("");
-      setPreviewLessons([]);
+      setPreviewCourses([]);
       return;
     }
+
     setPreviewCategoryId(categoryId);
     setPreviewCategory(categoryName);
-    setPreviewLessons(getMockLessonsByCategory(categoryName));
+    setIsPreviewLoading(true);
+    try {
+      const data = await GetCoursesByCategory(categoryId);
+      setPreviewCourses(data.data || []);
+    } catch (error: any) {
+      setPreviewCourses([]);
+      showNotification(
+        "error",
+        error?.response?.data?.message ||
+          "Lỗi tải danh sách khóa học theo thể loại.",
+      );
+    } finally {
+      setIsPreviewLoading(false);
+    }
   };
 
   const showNotification = (type: "success" | "error", msg: string) => {
@@ -199,7 +146,7 @@ const CategoryManage: React.FC = () => {
     if (!confirmed) return;
 
     if (quantityCourse > 0) {
-      const confirmed = window.alert(
+      window.alert(
         `Không thể xóa thể loại "${title}" vì đang có khóa học thuộc thể loại này?`,
       );
       return;
@@ -348,7 +295,7 @@ const CategoryManage: React.FC = () => {
                 <div
                   key={category._id}
                   onClick={() =>
-                    handlePreviewLessons(category._id, category.category_name)
+                    handlePreviewCourses(category._id, category.category_name)
                   }
                   className={`group flex min-h-[220px] flex-col overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md ${
                     previewCategoryId === category._id
@@ -435,39 +382,55 @@ const CategoryManage: React.FC = () => {
                 <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="text-xl font-bold text-brand-700">
-                      Danh sách bài học - {previewCategory}
+                      Khóa học thuộc thể loại - {previewCategory}
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      Giao diện cứng (mock), chưa gọi API.
+                      Dữ liệu được lấy trực tiếp từ API theo categoryId.
                     </p>
                   </div>
                   <span className="w-fit rounded-full border border-brand-100 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">
-                    {previewLessons.length} bài
+                    {previewCourses.length} khóa học
                   </span>
                 </div>
 
                 <div className="space-y-3">
-                  {previewLessons.map((lesson, i) => (
-                    <div
-                      key={`${lesson.title}-${i}`}
-                      className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5"
-                    >
-                      <p className="text-sm font-semibold text-gray-800 line-clamp-2">
-                        {i + 1}. {lesson.title}
-                      </p>
-                      <div className="mt-1 flex items-center justify-between text-xs text-gray-600">
-                        <span>{lesson.duration}</span>
-                        <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 font-medium">
-                          {lesson.type}
-                        </span>
-                      </div>
+                  {isPreviewLoading ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-4 text-center text-sm text-gray-500">
+                      Đang tải danh sách khóa học...
                     </div>
-                  ))}
+                  ) : previewCourses.length === 0 ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-4 text-center text-sm text-gray-500">
+                      Chưa có khóa học nào thuộc thể loại này.
+                    </div>
+                  ) : (
+                    previewCourses.map((course, i) => (
+                      <div
+                        key={course._id}
+                        className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5"
+                      >
+                        <p className="text-sm font-semibold text-gray-800 line-clamp-2">
+                          {i + 1}. {course.title}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-xs text-gray-600">
+                          {course.description || "Chưa có mô tả khóa học."}
+                        </p>
+                        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-gray-600">
+                          <span className="font-semibold text-brand-700">
+                            {Number(course.price || 0).toLocaleString("vi-VN")}{" "}
+                            Đ
+                          </span>
+                          <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 font-medium">
+                            {course.level || course.status || "Khóa học"}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             ) : (
               <div className="flex min-h-[280px] items-center justify-center rounded-2xl border border-dashed border-brand-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm">
-                Chọn một thể loại để xem danh sách bài học ở bên phải.
+                Chọn một thể loại để xem danh sách khóa học ở bên phải.
               </div>
             )}
           </div>
