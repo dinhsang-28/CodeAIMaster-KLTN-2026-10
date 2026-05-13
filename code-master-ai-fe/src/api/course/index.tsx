@@ -68,7 +68,7 @@ export const searchCourses = async (params?: {
   limit?: number;
 }) => {
   const res = await axiosInstance.get("/courses/search", { params });
-  return res.data?.data || res.data;
+  return res.data;
 };
 
 export const getCourses = async () => {

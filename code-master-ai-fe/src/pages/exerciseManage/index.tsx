@@ -106,12 +106,12 @@ const ExerciseManage: React.FC = () => {
       setTotal(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, debouncedKeyword, activeTab, selectedLesson]);
+  }, [page, limit, debouncedKeyword, activeTab, selectedCourse, selectedLesson]);
 
   const fetchCourses = async () => {
     try {
       const res = await searchCourses({ limit: 100 });
-      setCourses(Array.isArray(res) ? res : res.courses || res.results || []);
+      setCourses(Array.isArray(res) ? res : res.data || res.courses || res.results || []);
     } catch (e) {
       console.error(e);
     }
@@ -137,6 +137,9 @@ const ExerciseManage: React.FC = () => {
     try {
       const type = activeTab === 0 ? "quiz" : "codeAssignment";
       const params: any = { page, limit, keyword: debouncedKeyword, type };
+      if (selectedCourse) {
+        params.course_id = selectedCourse;
+      }
       if (selectedLesson) {
         params.lesson_id = selectedLesson;
       }
@@ -501,6 +504,19 @@ const ExerciseManage: React.FC = () => {
                   <Pagination size="small" current={page} pageSize={limit} total={total} onChange={(p) => setPage(p)} />
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab !== 2 && isMobile && total > limit && (
+            <div className="flex justify-center pt-1">
+              <Pagination
+                size="small"
+                current={page}
+                pageSize={limit}
+                total={total}
+                onChange={(p) => setPage(p)}
+                showSizeChanger={false}
+              />
             </div>
           )}
 

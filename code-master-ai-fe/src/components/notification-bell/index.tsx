@@ -101,12 +101,13 @@ const NotificationBell: React.FC = () => {
     } catch (error) {
       console.error("mark read failed:", error);
     }
-
-    if (item.link) {
-      if (item.link.startsWith("/")) {
-        navigate(item.link);
-      } else {
-        navigate(`/order-detail/${item.link}`);
+    if (userInfo?.roleName !== "Admin") {
+      if (item.link) {
+        if (item.link.startsWith("/")) {
+          navigate(item.link);
+        } else {
+          navigate(`/order-detail/${item.link}`);
+        }
       }
     }
 
