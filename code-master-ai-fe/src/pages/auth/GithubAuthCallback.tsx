@@ -171,7 +171,6 @@ export default function GithubAuthCallback() {
   // --- GIAO DIỆN KHI CÓ LỖI ---
   if (errorMessage) {
     return (
-      <AuthLayout>
         <div className="w-full max-w-md p-8 text-center">
           <CloseCircleFilled className="text-6xl text-red-500 mb-6" />
           
@@ -196,7 +195,6 @@ export default function GithubAuthCallback() {
             Quay lại trang đăng nhập
           </Link>
         </div>
-      </AuthLayout>
     );
   }
 
