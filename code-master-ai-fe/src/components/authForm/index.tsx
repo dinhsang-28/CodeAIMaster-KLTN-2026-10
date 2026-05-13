@@ -626,7 +626,6 @@ import { PostLogin } from "../../api/auth";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "antd";
 import { useUserInfo } from "../../store/user";
-import AuthLayout from "../../layout/authLayout";
 
 type AuthFormProps = {
   type?: "login" | "register";
@@ -824,11 +823,8 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
   useEffect(() => {
     setTab(type);
   }, [type]);
-
-  // ✅ UI lỗi trùng phương thức — giống Google/GitHub callback
   if (conflictError) {
     return (
-      <AuthLayout>
         <div className="w-full max-w-md p-8 text-center">
           <CloseCircleFilled className="text-6xl text-red-500 mb-6" />
 
@@ -853,7 +849,6 @@ export default function AuthForm({ type = "login" }: AuthFormProps) {
             Quay lại đăng nhập
           </button>
         </div>
-      </AuthLayout>
     );
   }
 

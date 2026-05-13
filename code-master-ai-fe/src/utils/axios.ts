@@ -203,6 +203,11 @@ import { useUserInfo } from "../store/user";
 //   withCredentials: true,
 // });
 
+// export const axiosInstance = axios.create({
+//   // baseURL: "http://localhost:3000/api/v1",
+//   baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
+//   withCredentials: true,
+// });
 export const axiosInstance = axios.create({
   // baseURL: "http://localhost:3001/api/v1",
   baseURL: "https://urchin-app-sfff5.ondigitalocean.app/api/v1",
