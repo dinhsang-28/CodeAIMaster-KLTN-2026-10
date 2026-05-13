@@ -28,7 +28,7 @@ export default function OrderSummary({ totalPrice }: OrderSummaryProps) {
   };
 
   const handleCheckout = (totalPrice: number) => {
-    if (totalPrice == 0) {
+    if (totalPrice === 0) {
       setModalText("Vui lòng thêm sản phẩm để thanh toán!");
       showModal();
       return;

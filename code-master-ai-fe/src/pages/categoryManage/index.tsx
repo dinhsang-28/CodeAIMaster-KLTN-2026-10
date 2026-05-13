@@ -199,7 +199,7 @@ const CategoryManage: React.FC = () => {
     if (!confirmed) return;
 
     if (quantityCourse > 0) {
-      const confirmed = window.alert(
+      window.alert(
         `Không thể xóa thể loại "${title}" vì đang có khóa học thuộc thể loại này?`,
       );
       return;

@@ -469,6 +469,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { axiosInstance } from "../../utils/axios";
 import { Select } from "antd";
 import { getCodeAssignments } from "../../api/codeAssignment";
+import { submitCode, submitLessonCode } from "../../api/excersice";
 
 // =============================================
 // TYPES
@@ -507,6 +508,8 @@ interface ExerciseData {
 }
 
 interface ExercisePageProps {
+  courseId?: string;
+  lessonId?: string;
   assignment?: any;
   nextPath?: string;
   onComplete?: () => void;
@@ -645,7 +648,13 @@ function AiTutorModal({
 // =============================================
 // MAIN COMPONENT
 // =============================================
-export default function ExercisePage({ assignment, nextPath, onComplete }: ExercisePageProps) {
+export default function ExercisePage({
+  courseId,
+  lessonId,
+  assignment,
+  nextPath,
+  onComplete,
+}: ExercisePageProps) {
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const navigate = useNavigate();
 
@@ -769,13 +778,24 @@ export default function ExercisePage({ assignment, nextPath, onComplete }: Exerc
     setConsoleOutput(`[${ts}] Compiling project...`);
 
     try {
-      const res = await axiosInstance.post("/submissions/submit", {
-        assignmentId: resolvedAssignmentId,
-        codeAssignmentId: resolvedCodeId,
-        language,
-        sourceCode,
-      });
-      const data: SubmissionResult = res.data;
+      let data: SubmissionResult;
+
+      if (courseId && lessonId) {
+        data = await submitLessonCode({
+          courseId,
+          lessonId,
+          language,
+          code: sourceCode,
+        });
+      } else {
+        data = await submitCode({
+          assignmentId: resolvedAssignmentId,
+          codeAssignmentId: resolvedCodeId,
+          language,
+          sourceCode,
+        });
+      }
+
       const ts2 = new Date().toLocaleTimeString();
       if (data.compileError) {
         setConsoleOutput(
@@ -864,13 +884,13 @@ export default function ExercisePage({ assignment, nextPath, onComplete }: Exerc
 
       {/* Root layout */}
       <div
-        className="flex h-screen bg-slate-50 select-none overflow-hidden"
+        className="flex min-h-[calc(100vh-120px)] flex-col overflow-hidden bg-slate-50 select-none lg:h-[calc(100vh-120px)] lg:flex-row"
         style={{ fontFamily: "'Geist', 'DM Sans', system-ui, sans-serif", fontSize: 13 }}
       >
         {/* ===== LEFT PANEL ===== */}
-        <div className="w-[36%] min-w-[300px] bg-white border-r border-[#e8edf2] flex flex-col overflow-hidden">
+        <div className="w-full max-h-[48vh] bg-white border-b border-[#e8edf2] flex flex-col overflow-hidden lg:w-[36%] lg:min-w-[300px] lg:max-h-none lg:border-b-0 lg:border-r">
           {/* Title area */}
-          <div className="px-[22px] pt-5">
+          <div className="px-4 pt-4 sm:px-[22px] sm:pt-5">
             <h1 className="text-[17px] font-bold text-slate-900 leading-snug mb-[10px]">
               {loadingExercise ? (
                 <div className="h-5 bg-slate-100 rounded-md w-3/4 animate-pulse" />
@@ -904,7 +924,7 @@ export default function ExercisePage({ assignment, nextPath, onComplete }: Exerc
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-[22px] py-[18px]">
+          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-[22px] sm:py-[18px]">
             {/* DESC TAB */}
             {leftTab === "desc" &&
               (loadingExercise ? (
@@ -1095,7 +1115,7 @@ export default function ExercisePage({ assignment, nextPath, onComplete }: Exerc
         </div>
 
         {/* ===== RIGHT PANEL ===== */}
-        <div className="flex-1 flex flex-col gap-4 overflow-hidden bg-white px-2">
+        <div className="flex-1 flex min-h-[56vh] flex-col gap-3 overflow-hidden bg-white px-1.5 py-2 sm:px-2 lg:min-h-0 lg:gap-4">
           {/* Editor block */}
           <div className="flex-1 flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-200 min-h-0">
             {/* Dark editor header */}
@@ -1171,8 +1191,8 @@ export default function ExercisePage({ assignment, nextPath, onComplete }: Exerc
           </div>
 
           {/* Action Bar */}
-          <div className="shadow-lg flex items-center justify-between bg-white rounded-full px-6 py-[10px] border border-slate-200 shrink-0">
-            <div className="flex items-center gap-8">
+          <div className="shadow-lg flex shrink-0 flex-col gap-3 rounded-[24px] border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-full sm:px-6 sm:py-[10px]">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-8">
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
@@ -1202,7 +1222,7 @@ export default function ExercisePage({ assignment, nextPath, onComplete }: Exerc
               onClick={handleSubmit}
               disabled={isSubmitting}
               className={[
-                "flex items-center gap-2 text-sm px-7 py-[10px] rounded-full border-0",
+                "flex w-full items-center justify-center gap-2 rounded-full border-0 px-6 py-[10px] text-sm sm:w-auto sm:px-7",
                 "bg-brand-600 text-white font-semibold transition-colors",
                 isSubmitting
                   ? "cursor-not-allowed opacity-70"
@@ -1228,7 +1248,7 @@ export default function ExercisePage({ assignment, nextPath, onComplete }: Exerc
 
           {/* Console Card */}
           <div
-            className="shadow-lg flex flex-col rounded-2xl overflow-hidden shrink-0"
+            className="shadow-lg flex shrink-0 flex-col overflow-hidden rounded-2xl"
             style={{ height: 180, background: "#111827" }}
           >
             {/* Console header */}
@@ -1351,8 +1371,8 @@ export default function ExercisePage({ assignment, nextPath, onComplete }: Exerc
 
                       {/* Test case list */}
                       <div
-                        className="grid gap-x-3 gap-y-1 border-t pt-2"
-                        style={{ gridTemplateColumns: "1fr 1fr", borderColor: "#1e2530" }}
+                        className="grid gap-x-3 gap-y-1 border-t pt-2 sm:grid-cols-2"
+                        style={{ borderColor: "#1e2530" }}
                       >
                         {Array.from({ length: result.totalCases }).map((_, i) => {
                           const passed = i < result.passedCases;
@@ -1381,7 +1401,7 @@ export default function ExercisePage({ assignment, nextPath, onComplete }: Exerc
 
           {/* Success banner */}
           {isSuccess && (
-            <div className="flex items-center gap-3 px-5 py-3 bg-green-50 border border-green-200 rounded-full shrink-0">
+            <div className="flex shrink-0 flex-col gap-3 rounded-[24px] border border-green-200 bg-green-50 px-4 py-4 sm:flex-row sm:items-center sm:rounded-full sm:px-5 sm:py-3">
               <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shrink-0">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
                   <polyline points="20 6 9 17 4 12" />
@@ -1392,7 +1412,7 @@ export default function ExercisePage({ assignment, nextPath, onComplete }: Exerc
               </span>
               <button
                 onClick={() => nextPath ? navigate(nextPath) : navigate(-1)}
-                className="flex items-center gap-1.5 text-[13px] px-5 py-2 rounded-full bg-green-600 text-white border-0 cursor-pointer font-semibold hover:bg-green-700 transition-colors"
+                className="flex w-full items-center justify-center gap-1.5 rounded-full border-0 bg-green-600 px-5 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-green-700 sm:w-auto"
               >
                 Bài tiếp theo
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
