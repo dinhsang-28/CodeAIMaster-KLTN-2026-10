@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { ChevronRight, Plus, Pencil, Trash2, X } from "lucide-react";
 import {
   GetCategories,
   CreateCategory,
@@ -281,7 +281,7 @@ const CategoryManage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <div className="min-w-0 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="min-w-0 grid grid-cols-1 gap-5 md:grid-cols-2">
             {loading ? (
               <div className="col-span-full rounded-2xl border border-brand-100 bg-white p-10 text-center text-gray-500 shadow-sm">
                 Đang tải danh sách thể loại...
@@ -305,7 +305,7 @@ const CategoryManage: React.FC = () => {
                 >
                   <div className="relative z-10 flex flex-1 flex-col">
                     <div className="space-y-2">
-                      <h3 className="text-xl font-bold text-brand-700">
+                      <h3 className="break-words text-xl font-bold text-brand-700">
                         {category.category_name}
                       </h3>
 
@@ -315,22 +315,22 @@ const CategoryManage: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="mt-auto pt-4 flex items-center justify-between gap-3 border-t border-gray-100">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50/60 px-3 py-1 text-xs font-semibold text-brand-700">
+                    <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
+                      <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-brand-100 bg-brand-50/60 px-3 py-1 text-xs font-semibold text-brand-700">
                         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-700 px-1.5 text-[10px] font-bold leading-none text-white">
                           {(category.courseCount || 0).toString()}
                         </span>
-                        <span>Khóa học</span>
+                        <span className="truncate">Khóa học</span>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex shrink-0 items-center gap-1.5">
                         <PermissionControl permission="categories_edit">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleEdit(category);
                             }}
-                            className="rounded-lg p-2 transition hover:bg-gray-50"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-gray-50"
                             title="Chỉnh sửa"
                           >
                             <Pencil className="h-5 w-5 text-brand-700" />
@@ -346,12 +346,29 @@ const CategoryManage: React.FC = () => {
                                 Number(category.courseCount),
                               );
                             }}
-                            className="rounded-lg p-2 transition hover:bg-[#ffdad6]"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-[#ffdad6]"
                             title="Xóa"
                           >
                             <Trash2 className="h-5 w-5 text-red-600" />
                           </button>
                         </PermissionControl>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePreviewCourses(
+                              category._id,
+                              category.category_name,
+                            );
+                          }}
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${
+                            previewCategoryId === category._id
+                              ? "bg-brand-600 text-white"
+                              : "text-brand-700 hover:bg-brand-50"
+                          }`}
+                          title="Xem khóa học"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
                       </div>
                     </div>
                   </div>
