@@ -17,6 +17,10 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  private getRoleName(user: any): string {
+    return user?.role_id?.role_name || '';
+  }
+
   async validateUser(username: string, pass: string): Promise<any> {
     const user = await this.usersService.findByEmail(username);
     if (!user) return null;
@@ -48,6 +52,7 @@ export class AuthService {
     const payload = {
       username: user.email,
       sub: user._id.toString(),
+      roleName: this.getRoleName(userInfo),
       permissions: userInfo?.role_id?.['permissions'] || [],
     };
 
@@ -84,6 +89,7 @@ export class AuthService {
         email: user.email,
         _id: user._id,
         name: user.name,
+        roleName: payload.roleName,
         permissions: payload.permissions,
         phone: user.phone,
         image: user.image,
@@ -133,6 +139,7 @@ export class AuthService {
       const payload = {
         username: user.email,
         sub: user._id,
+        roleName: this.getRoleName(userInfo),
         permissions: userInfo?.role_id?.['permissions'] || [],
       };
       const newAccessToken = this.jwtService.sign(payload, {
@@ -314,6 +321,7 @@ export class AuthService {
   const payload = {
     username: user.email,
     sub: user._id,
+    roleName: this.getRoleName(user),
     permissions: user.role_id?.['permissions'] || [],
   };
 
@@ -328,6 +336,7 @@ export class AuthService {
     email: user.email,
     name: user.name,
     image: user.image,
+    roleName: this.getRoleName(user),
     permissions: user.role_id?.['permissions'] || [],
     phone: user.phone || '',
     accessToken,
@@ -356,6 +365,7 @@ export class AuthService {
     return {
       email: user.email,
       _id: user._id,
+      roleName: this.getRoleName(user),
       permissions: user.role_id?.['permissions'] || [],
       phone: user.phone,
       image: user.image,

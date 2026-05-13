@@ -21,6 +21,7 @@ import {
 } from "@ant-design/icons";
 import { useUserInfo } from "../../store/user";
 import { PostLogout } from "../../api/auth";
+import NotificationBell from "../../components/notification-bell";
 
 type MenuItem = {
   to: string;
@@ -284,7 +285,6 @@ const AdminLayout: React.FC = () => {
                     {userInfo?.email || "Super Admin"}
                   </p>
                 </div>
-
                 <NavLink
                   to="/admin/profile"
                   className="flex h-10 w-10 overflow-hidden items-center justify-center rounded-full bg-brand-100 text-brand-700 shadow-inner border border-brand-100"
@@ -300,6 +300,7 @@ const AdminLayout: React.FC = () => {
                   )}
                 </NavLink>
               </div>
+              <NotificationBell></NotificationBell>
             </div>
 
             <div

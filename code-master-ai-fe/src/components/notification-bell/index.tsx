@@ -216,7 +216,7 @@ const NotificationBell: React.FC = () => {
         className="relative text-2xl text-brand-700 hover:text-brand-400 flex items-center"
       >
         <Badge count={unreadCount} size="small" offset={[-2, 4]}>
-          <BellOutlined  className="text-xl"/>
+          <BellOutlined className="text-xl" />
         </Badge>
       </button>
     </Dropdown>
