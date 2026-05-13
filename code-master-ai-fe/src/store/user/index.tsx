@@ -5,6 +5,7 @@ interface UserInfo {
   email?: string;
   _id: string;
   name: string;
+  roleName?: string;
   permissions: string[];
   phone: string;
   address: string;
