@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Badge, Button, Dropdown, Empty, List, Typography } from "antd";
-import { BellOutlined } from "@ant-design/icons";
+import { BellOutlined, DeleteOutlined } from "@ant-design/icons";
 import { io, Socket } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 import { useUserInfo } from "../../store/user";
@@ -10,6 +10,7 @@ import {
   markAllNotificationsAsRead,
   markNotificationAsRead,
   NotificationItem,
+  deleteNotification,
 } from "../../api/notification";
 import { axiosInstance } from "../../utils/axios";
 
@@ -102,7 +103,11 @@ const NotificationBell: React.FC = () => {
     }
 
     if (item.link) {
-      navigate(`/order-detail/${item.link}`);
+      if (item.link.startsWith("/")) {
+        navigate(item.link);
+      } else {
+        navigate(`/order-detail/${item.link}`);
+      }
     }
 
     setOpen(false);
@@ -115,6 +120,22 @@ const NotificationBell: React.FC = () => {
       setUnreadCount(0);
     } catch (error) {
       console.error("mark all read failed:", error);
+    }
+  };
+
+  const onDeleteNotification = async (
+    event: React.MouseEvent<HTMLElement>,
+    item: NotificationItem,
+  ) => {
+    event.stopPropagation();
+    try {
+      await deleteNotification(item._id);
+      setItems((prev) => prev.filter((n) => n._id !== item._id));
+      if (!item.isRead) {
+        setUnreadCount((prev) => Math.max(prev - 1, 0));
+      }
+    } catch (error) {
+      console.error("delete notification failed:", error);
     }
   };
 
@@ -161,6 +182,17 @@ const NotificationBell: React.FC = () => {
                 <Text type="secondary" className="!block text-xs mt-1">
                   {formatTime(item.createdAt)}
                 </Text>
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    onClick={(event) => onDeleteNotification(event, item)}
+                  >
+                    Xóa
+                  </Button>
+                </div>
               </div>
             </List.Item>
           )}
