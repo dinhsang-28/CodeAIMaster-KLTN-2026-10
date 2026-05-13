@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -82,6 +82,24 @@ export class NotificationService {
 
     return {
       message: 'Marked all notifications as read',
+    };
+  }
+
+  async remove(userId: string, notificationId: string) {
+    const notification = await this.notificationModel.findOneAndDelete({
+      _id: this.toObjectId(notificationId, 'notificationId'),
+      userId: this.toObjectId(userId, 'userId'),
+    });
+
+    if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+
+    const unreadCount = await this.countUnread(userId);
+    this.notificationGateway.updateUnreadCount(userId, unreadCount);
+
+    return {
+      message: 'Deleted notification successfully',
     };
   }
 }

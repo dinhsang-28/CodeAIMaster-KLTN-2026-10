@@ -188,6 +188,7 @@ export class PaymentsService {
         payment._id.toString(),
         order._id.toString(),
       );
+      await this.notifyAdminsNewOrder(order._id.toString(), userObjectId.toString());
 
       return new ApiResponse('Tạo đơn hàng và thanh toán COD thành công', {
         order,
@@ -530,17 +531,7 @@ export class PaymentsService {
   }
   // Gửi notification sau khi thanh toán thành công
   private async sendPaymentSuccessNotification(userId: string, orderId: string) {
-    const orderDetails = await this.orderDetailModel
-      .find({ order_id: new Types.ObjectId(orderId) })
-      .populate('course_id', 'title')
-      .lean();
-
-    const courseNames = orderDetails
-      .map((item: any) => item.course_id?.title)
-      .filter(Boolean);
-    const topNames = courseNames.slice(0, 2).join(', ');
-    const suffix = courseNames.length > 2 ? ` và ${courseNames.length - 2} khóa học khác` : '';
-    const courseText = topNames ? `${topNames}${suffix}` : 'khóa học của bạn';
+    const courseText = await this.buildCourseTextFromOrder(orderId);
 
     try {
       await this.notificationService.create({
@@ -556,6 +547,26 @@ export class PaymentsService {
     } catch (error) {
       console.error('Send payment notification failed:', error);
     }
+  }
+
+  private async buildCourseTextFromOrder(orderId: string) {
+    const orderDetails = await this.orderDetailModel
+      .find({ order_id: new Types.ObjectId(orderId) })
+      .populate('course_id', 'title')
+      .lean();
+
+    const courseNames = orderDetails
+      .map((item: any) => item.course_id?.title)
+      .filter(Boolean);
+    const topNames = courseNames.slice(0, 2).join(', ');
+    const suffix =
+      courseNames.length > 2 ? ` và ${courseNames.length - 2} khóa học khác` : '';
+    return topNames ? `${topNames}${suffix}` : 'khóa học';
+  }
+
+  private async notifyAdminsNewOrder(orderId: string, userId: string) {
+    const courseText = await this.buildCourseTextFromOrder(orderId);
+    await this.sendNotificationToAdmins(courseText, userId);
   }
 
   private async sendNotificationToAdmins(courseText: string, userId: string) {
