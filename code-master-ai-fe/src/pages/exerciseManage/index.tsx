@@ -72,6 +72,7 @@ const ExerciseManage: React.FC = () => {
   const [limit] = useState(10);
   const [keyword, setKeyword] = useState("");
   const debouncedKeyword = useDebounce(keyword, 300);
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   // Modals
   const [asgModalVisible, setAsgModalVisible] = useState(false);
@@ -106,12 +107,12 @@ const ExerciseManage: React.FC = () => {
       setTotal(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, debouncedKeyword, activeTab, selectedLesson]);
+  }, [page, limit, debouncedKeyword, activeTab, selectedCourse, selectedLesson]);
 
   const fetchCourses = async () => {
     try {
       const res = await searchCourses({ limit: 100 });
-      setCourses(Array.isArray(res) ? res : res.courses || res.results || []);
+      setCourses(Array.isArray(res) ? res : res.data || res.courses || res.results || []);
     } catch (e) {
       console.error(e);
     }
@@ -137,13 +138,27 @@ const ExerciseManage: React.FC = () => {
     try {
       const type = activeTab === 0 ? "quiz" : "codeAssignment";
       const params: any = { page, limit, keyword: debouncedKeyword, type };
+      if (selectedCourse) {
+        params.course_id = selectedCourse;
+      }
       if (selectedLesson) {
         params.lesson_id = selectedLesson;
       }
       const res = await searchAssignments(params);
-      const dataList = Array.isArray(res) ? res : res?.assignments || res?.results || res?.data || [];
+      const dataList = Array.isArray(res)
+        ? res
+        : res?.assignments || res?.results || res?.data || [];
+      const nextTotal = Number(
+        res?.totalAssignments ?? res?.total ?? dataList.length ?? 0,
+      );
+
       setAssignments(dataList);
-      setTotal(res?.totalAssignments || res?.total || dataList.length || 0);
+      setTotal(nextTotal);
+
+      const nextTotalPages = Math.max(1, Math.ceil(nextTotal / limit));
+      if (page > nextTotalPages) {
+        setPage(nextTotalPages);
+      }
     } catch (e) {
       message.error("Lỗi khi lấy danh sách bài tập");
     } finally {
@@ -494,13 +509,38 @@ const ExerciseManage: React.FC = () => {
                 </table>
               </div>
 
-              {/* Pagination */}
-              {total > limit && (
+              {total > 0 && (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderTop: "1px solid #f1f5f9", background: "#fafaf9", flexWrap: "wrap", gap: 8 }}>
-                  <span className="text-gray-500" style={{ fontSize: 13 }}>Hiển thị {assignments.length} trên {total} bài tập</span>
-                  <Pagination size="small" current={page} pageSize={limit} total={total} onChange={(p) => setPage(p)} />
+                  <span className="text-gray-500" style={{ fontSize: 13 }}>
+                    Hiển thị {(page - 1) * limit + 1}-
+                    {Math.min(page * limit, total)} trên {total} bài tập
+                  </span>
+                  <Pagination
+                    size="small"
+                    current={page}
+                    pageSize={limit}
+                    total={total}
+                    onChange={(p) => setPage(p)}
+                    showSizeChanger={false}
+                  />
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab !== 2 && isMobile && total > 0 && (
+            <div className="flex justify-center pt-1">
+              <Pagination
+                size="small"
+                current={page}
+                pageSize={limit}
+                total={total}
+                onChange={(p) => setPage(p)}
+                showSizeChanger={false}
+              />
+              <span className="sr-only">
+                Trang {page} trên {totalPages}
+              </span>
             </div>
           )}
 

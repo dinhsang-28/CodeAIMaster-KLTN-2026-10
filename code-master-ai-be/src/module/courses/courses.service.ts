@@ -477,6 +477,7 @@ export class CoursesService {
 
     const data = await this.courseModel
       .find(filter)
+      .populate('category', 'category_name')
       .skip(skip)
       .limit(Number(limit));
 

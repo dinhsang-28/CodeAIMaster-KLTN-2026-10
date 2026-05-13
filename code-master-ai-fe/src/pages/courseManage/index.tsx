@@ -190,6 +190,10 @@ const CourseManage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, debouncedKeyword, filterCategory]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedKeyword, filterCategory]);
+
   const fetchCategories = async () => {
     try {
       const cats = await GetCategories();
@@ -208,7 +212,9 @@ const CourseManage: React.FC = () => {
       // Do not send status as requested
       
       const res = await searchCourses(params);
-      const dataList = Array.isArray(res?.courses || res?.results || res) ? (res?.courses || res?.results || res) : [];
+      const dataList = Array.isArray(res?.data || res?.courses || res?.results || res)
+        ? (res?.data || res?.courses || res?.results || res)
+        : [];
       setCourses(dataList);
       setTotal(res?.totalCourses || res?.total || dataList.length || 0);
     } catch (error) {

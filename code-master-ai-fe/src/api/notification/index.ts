@@ -1,6 +1,6 @@
 import { axiosInstance } from "../../utils/axios";
 
-export type NotificationType = "system" | "course" | "assignment";
+export type NotificationType = "system" | "course" | "assignment" | "order";
 
 export interface NotificationItem {
   _id: string;
@@ -31,5 +31,10 @@ export const markNotificationAsRead = async (id: string) => {
 
 export const markAllNotificationsAsRead = async () => {
   const res = await axiosInstance.patch("/notifications/read-all");
+  return res.data?.data || res.data;
+};
+
+export const deleteNotification = async (id: string) => {
+  const res = await axiosInstance.delete(`/notifications/${id}`);
   return res.data?.data || res.data;
 };

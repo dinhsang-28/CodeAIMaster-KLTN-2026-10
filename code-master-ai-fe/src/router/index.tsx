@@ -95,14 +95,7 @@ export const router = createBrowserRouter([
         path: "/profile/password",
         element: <ProfilePage />,
       },
-      {
-        path: "/admin/profile",
-        element: <ProfilePage />,
-      },
-      {
-        path: "/admin/profile/password",
-        element: <ProfilePage />,
-      },
+      
     ],
   },
   {
@@ -163,6 +156,7 @@ export const router = createBrowserRouter([
         path: "profile",
         element: <ProfilePage />,
       },
+          { path: "profile/password", element: <ProfilePage /> },
     ],
   },
 ]);

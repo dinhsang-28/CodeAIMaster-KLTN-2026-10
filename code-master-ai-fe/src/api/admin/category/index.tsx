@@ -24,3 +24,9 @@ export const DeleteCategory = async (categoryId: string) => {
   const response = await axiosInstance.delete(`/category/${categoryId}`);
   return response.data;
 };
+
+// 🔹 LẤY DANH SÁCH KHÓA HỌC THEO CATEGORY
+export const GetCoursesByCategory = async (categoryId: string) => {
+  const response = await axiosInstance.get(`/category/${categoryId}/courses`);
+  return response.data;
+};

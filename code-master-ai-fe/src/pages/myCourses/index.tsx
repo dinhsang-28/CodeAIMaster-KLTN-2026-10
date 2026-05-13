@@ -6,8 +6,11 @@ import {
 } from "../../api/enrollment";
 import React, { useEffect, useState } from "react";
 
+type CourseFilter = "all" | "learning" | "completed";
+
 const MyEnrollment: React.FC = () => {
   const [coursesData, setCourses] = useState<ICourseWithProgress[]>([]);
+  const [activeFilter, setActiveFilter] = useState<CourseFilter>("all");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -48,6 +51,21 @@ const MyEnrollment: React.FC = () => {
     fetchData();
   }, []);
 
+  const filteredCourses = coursesData.filter((course) => {
+    const progressPercent = Number(course.progress?.progressPercent || 0);
+
+    if (activeFilter === "completed") return progressPercent >= 100;
+    if (activeFilter === "learning") return progressPercent < 100;
+
+    return true;
+  });
+
+  const filterOptions: { label: string; value: CourseFilter }[] = [
+    { label: "Tất cả", value: "all" },
+    { label: "Đang học", value: "learning" },
+    { label: "Hoàn thành", value: "completed" },
+  ];
+
   return (
     <main className="min-h-screen">
       <section className="px-4 sm:px-6 lg:px-12 pt-10 sm:pt-16 pb-8 max-w-[1440px] mx-auto">
@@ -64,75 +82,89 @@ const MyEnrollment: React.FC = () => {
 
       <section className="px-4 sm:px-6 lg:px-12 mb-8 max-w-[1440px] mx-auto">
         <div className="flex flex-wrap gap-2 p-1 bg-surface-container w-fit rounded-xl">
-          <button className="px-5 sm:px-8 py-2 rounded-lg text-sm font-semibold bg-white text-primary shadow">
-            Tất cả
-          </button>
-          <button className="px-5 sm:px-8 py-2 rounded-lg text-sm text-on-surface-variant hover:text-primary">
-            Đang học
-          </button>
-          <button className="px-5 sm:px-8 py-2 rounded-lg text-sm text-on-surface-variant hover:text-primary">
-            Hoàn thành
-          </button>
+          {filterOptions.map((option) => {
+            const isActive = activeFilter === option.value;
+
+            return (
+              <button
+                key={option.value}
+                onClick={() => setActiveFilter(option.value)}
+                className={`px-5 sm:px-8 py-2 rounded-lg text-sm font-semibold transition ${
+                  isActive
+                    ? "bg-white text-primary shadow"
+                    : "text-on-surface-variant hover:text-primary"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
         </div>
       </section>
 
       <section className="px-4 sm:px-6 lg:px-12 pb-16 max-w-[1440px] mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {coursesData.map((course) => {
-            const progressPercent = course.progress?.progressPercent || 0;
-            const completedLessons = course.progress?.completedLessons || 0;
-            const totalLessons = course.progress?.totalLessons || 0;
+        {filteredCourses.length === 0 ? (
+          <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center text-gray-500">
+            Không có khóa học nào trong bộ lọc này.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {filteredCourses.map((course) => {
+              const progressPercent = course.progress?.progressPercent || 0;
+              const completedLessons = course.progress?.completedLessons || 0;
+              const totalLessons = course.progress?.totalLessons || 0;
 
-            return (
-              <div
-                key={course._id}
-                className="group bg-white rounded-xl overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300"
-              >
-                <div className="aspect-video overflow-hidden relative">
-                  <img
-                    src={course.thumbnail}
-                    alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 left-3">
-                    <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
-                      {course.category?.category_name || "Chưa phân loại"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-5 sm:p-6">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-1">
-                    {course.title}
-                  </h3>
-
-                  <div className="mb-5">
-                    <div className="flex justify-between text-xs font-medium text-gray-600 mb-1">
-                      <span>Tiến độ: {progressPercent}%</span>
-                      <span>
-                        {completedLessons}/{totalLessons} bài học
+              return (
+                <div
+                  key={course._id}
+                  className="group bg-white rounded-xl overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300"
+                >
+                  <div className="aspect-video overflow-hidden relative">
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3 left-3">
+                      <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                        {course.category?.category_name || "Chưa phân loại"}
                       </span>
                     </div>
-
-                    <div className="w-full h-2 bg-gray-200 rounded-full">
-                      <div
-                        className="h-full bg-green-700 rounded-full"
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
                   </div>
 
-                  <button
-                    onClick={() => navigate(`/learn/lesson/${course._id}`)}
-                    className="w-full py-3 sm:py-4 bg-gradient-to-r from-green-900 to-green-700 text-white font-semibold rounded-lg hover:opacity-90 transition"
-                  >
-                    Vào học ngay
-                  </button>
+                  <div className="p-5 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-1">
+                      {course.title}
+                    </h3>
+
+                    <div className="mb-5">
+                      <div className="flex justify-between text-xs font-medium text-gray-600 mb-1">
+                        <span>Tiến độ: {progressPercent}%</span>
+                        <span>
+                          {completedLessons}/{totalLessons} bài học
+                        </span>
+                      </div>
+
+                      <div className="w-full h-2 bg-gray-200 rounded-full">
+                        <div
+                          className="h-full bg-green-700 rounded-full"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => navigate(`/learn/${course._id}`)}
+                      className="w-full py-3 sm:py-4 bg-gradient-to-r from-green-900 to-green-700 text-white font-semibold rounded-lg hover:opacity-90 transition"
+                    >
+                      Vào học ngay
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </main>
   );

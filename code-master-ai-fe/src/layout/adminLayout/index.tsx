@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   NavLink,
   Outlet,
@@ -10,12 +10,9 @@ import {
   AppstoreOutlined,
   DashboardOutlined,
   FileTextOutlined,
-  LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ReadOutlined,
-  SearchOutlined,
-  SettingOutlined,
   UserOutlined,
   UsergroupAddOutlined,
   CodeOutlined,
@@ -55,9 +52,10 @@ const mainMenuItems: MenuItem[] = [
     label: "Quản lý người dùng",
     icon: <UsergroupAddOutlined />,
   },
-  { to: "/admin/students", 
-    label: "Quản lý học viên", 
-    icon: <UsergroupAddOutlined /> 
+  {
+    to: "/admin/students",
+    label: "Quản lý học viên",
+    icon: <UsergroupAddOutlined />,
   },
   { to: "/admin/roles", label: "Quản lý nhóm quyền", icon: <IdcardOutlined /> },
   {
@@ -72,15 +70,37 @@ const mainMenuItems: MenuItem[] = [
   },
 ];
 
-const bottomMenuItems: MenuItem[] = [
-  { to: "/admin/profile", label: "Hồ sơ cá nhân", icon: <UserOutlined /> },
-  { to: "/admin/settings", label: "Settings", icon: <SettingOutlined /> },
-];
+const bottomMenuItems: MenuItem[] = [];
 
 const AdminLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const openTimerRef = useRef<number | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (!dropdownRef.current) return;
+      if (!dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("click", onDocClick);
+    return () => {
+      document.removeEventListener("click", onDocClick);
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current);
+        openTimerRef.current = null;
+      }
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
+  }, [dropdownRef]);
 
   const userInfo = useUserInfo((state) => state.userInfo);
   const clearUserInfo = useUserInfo((state) => state.clearUserInfo);
@@ -110,7 +130,8 @@ const AdminLayout: React.FC = () => {
     if (path.includes("/permissions"))
       return permissions.includes("permissions_view");
     if (path.includes("/leads")) return permissions.includes("leads_view");
-    if (path.includes("/students")) return permissions.includes("students_view");
+    if (path.includes("/students"))
+      return permissions.includes("students_view");
     // Tuỳ chỉnh nếu có quyền settings
     return true;
   };
@@ -144,7 +165,7 @@ const AdminLayout: React.FC = () => {
   const pageTitle = getPageTitle();
 
   return (
-    <div className="flex min-h-screen bg-brand-25 text-brand-900">
+    <div className="flex min-h-screen bg-brand-25 text-brand-900 overflow-x-hidden">
       {/* --- SIDEBAR --- */}
       <aside
         className={`flex min-h-screen flex-col border-r border-brand-100 bg-brand-50 transition-all duration-300 ${collapsed ? "w-[88px]" : "w-[280px]"}`}
@@ -212,24 +233,7 @@ const AdminLayout: React.FC = () => {
             </NavLink>
           ))}
 
-          <button
-            onClick={async () => {
-              await PostLogout();
-              clearUserInfo();
-              // localStorage.removeItem("access_token");
-              navigate("/login");
-            }}
-            className={`group flex w-full items-center rounded-2xl transition-all duration-200 text-brand-900 hover:bg-red-50 hover:text-red-600 ${collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-3"}`}
-          >
-            <span className="text-lg leading-none">
-              <LogoutOutlined />
-            </span>
-            {!collapsed && (
-              <span className="text-base font-medium tracking-tight">
-                Logout
-              </span>
-            )}
-          </button>
+          {/* sidebar profile/settings/logout removed - use header dropdown for account actions */}
         </div>
         <button
           onClick={() => setCollapsed((prev) => !prev)}
@@ -240,36 +244,107 @@ const AdminLayout: React.FC = () => {
       </aside>
 
       <div className="flex min-h-screen flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex  items-center justify-between border-b border-brand-100 shadow-sm bg-white px-6 py-3">
-          <div className="relative w-full max-w-[320px]">
-            <SearchOutlined className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-brand-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm thể loại..."
-              className="h-11 w-full rounded-2xl border border-brand-200 bg-white pl-11 pr-4 text-[15px] text-brand-900 outline-none transition placeholder:text-brand-300 focus:border-brand-400 focus:ring-2 focus:ring-brand-400/15"
-            />
-          </div>
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-brand-100 shadow-sm bg-white px-6 py-3">
+          <div />
 
-          <div className="flex items-center gap-3">
-            <NotificationBell />
-            <div className="flex h-10 w-10 overflow-hidden items-center justify-center rounded-full bg-brand-100 text-brand-700 shadow-inner border border-brand-100">
-              {userInfo?.image ? (
-                <img
-                  src={userInfo.image}
-                  alt="Avatar"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <UserOutlined />
-              )}
+          <div
+            ref={dropdownRef}
+            className="relative"
+            onMouseEnter={() => {
+              if (closeTimerRef.current) {
+                clearTimeout(closeTimerRef.current);
+                closeTimerRef.current = null;
+              }
+              if (!dropdownOpen && !openTimerRef.current) {
+                openTimerRef.current = window.setTimeout(() => {
+                  setDropdownOpen(true);
+                  openTimerRef.current = null;
+                }, 150);
+              }
+            }}
+            onMouseLeave={() => {
+              if (openTimerRef.current) {
+                clearTimeout(openTimerRef.current);
+                openTimerRef.current = null;
+              }
+              if (!closeTimerRef.current) {
+                closeTimerRef.current = window.setTimeout(() => {
+                  setDropdownOpen(false);
+                  closeTimerRef.current = null;
+                }, 300);
+              }
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 cursor-pointer">
+                <div className="text-right">
+                  <p className="text-sm font-bold text-brand-700">
+                    {userInfo?.name || "Admin Master"}
+                  </p>
+                  <p className="text-[11px] uppercase tracking-widest text-brand-400">
+                    {userInfo?.email || "Super Admin"}
+                  </p>
+                </div>
+                <NavLink
+                  to="/admin/profile"
+                  className="flex h-10 w-10 overflow-hidden items-center justify-center rounded-full bg-brand-100 text-brand-700 shadow-inner border border-brand-100"
+                >
+                  {userInfo?.image ? (
+                    <img
+                      src={userInfo.image}
+                      alt="Avatar"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <UserOutlined />
+                  )}
+                </NavLink>
+              </div>
+              <NotificationBell></NotificationBell>
             </div>
-            <div className="text-right">
-              <p className="text-sm font-bold text-brand-700">
-                {userInfo?.name || "Admin Master"}
-              </p>
-              <p className="text-[11px] uppercase tracking-widest text-brand-400">
-                {userInfo?.email || "Super Admin"}
-              </p>
+
+            <div
+              onMouseEnter={() => {
+                if (closeTimerRef.current) {
+                  clearTimeout(closeTimerRef.current);
+                  closeTimerRef.current = null;
+                }
+              }}
+              onMouseLeave={() => {
+                if (!closeTimerRef.current) {
+                  closeTimerRef.current = window.setTimeout(() => {
+                    setDropdownOpen(false);
+                    closeTimerRef.current = null;
+                  }, 300);
+                }
+              }}
+              className={`${dropdownOpen ? "block" : "hidden"} absolute right-0 top-full mt-3 w-48 rounded-lg border bg-white shadow-md z-40`}
+            >
+              <div className="flex flex-col py-1">
+                <button
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    navigate("/admin/profile");
+                  }}
+                  className="text-left px-4 py-2 text-sm text-brand-700 hover:bg-gray-50"
+                >
+                  Thông tin cá nhân
+                </button>
+
+                <div className="border-t border-brand-100" />
+
+                <button
+                  onClick={async () => {
+                    setDropdownOpen(false);
+                    await PostLogout();
+                    clearUserInfo();
+                    navigate("/login");
+                  }}
+                  className="text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                >
+                  Đăng xuất
+                </button>
+              </div>
             </div>
           </div>
         </header>

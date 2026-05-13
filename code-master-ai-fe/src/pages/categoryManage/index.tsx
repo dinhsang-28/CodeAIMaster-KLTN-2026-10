@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, ArrowRight, X } from "lucide-react";
+import { ChevronRight, Plus, Pencil, Trash2, X } from "lucide-react";
 import {
   GetCategories,
   CreateCategory,
   UpdateCategory,
   DeleteCategory,
+  GetCoursesByCategory,
 } from "../../api/admin/category";
 import PermissionControl from "../../components/permissionControl";
 
@@ -15,10 +16,14 @@ type CategoryItem = {
   courseCount?: number;
 };
 
-type MockLesson = {
+type CategoryCourse = {
+  _id: string;
   title: string;
-  duration: string;
-  type: "Video" | "Bài đọc" | "Quiz" | "Thực hành";
+  description?: string;
+  thumbnail?: string;
+  price?: number;
+  level?: string;
+  status?: string;
 };
 
 type NotificationType = {
@@ -36,6 +41,7 @@ const CategoryManage: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [notification, setNotification] = useState<NotificationType>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     category_name: "",
@@ -43,93 +49,35 @@ const CategoryManage: React.FC = () => {
   });
   const [previewCategoryId, setPreviewCategoryId] = useState<string>("");
   const [previewCategory, setPreviewCategory] = useState<string>("");
-  const [previewLessons, setPreviewLessons] = useState<MockLesson[]>([]);
+  const [previewCourses, setPreviewCourses] = useState<CategoryCourse[]>([]);
 
-  const getMockLessonsByCategory = (categoryName: string): MockLesson[] => {
-    const map: Record<string, MockLesson[]> = {
-      "Front-end": [
-        {
-          title: "Giới thiệu HTML Semantic",
-          duration: "18 phút",
-          type: "Video",
-        },
-        {
-          title: "CSS Flexbox và Grid cơ bản",
-          duration: "26 phút",
-          type: "Video",
-        },
-        {
-          title: "JavaScript DOM thao tác sự kiện",
-          duration: "35 phút",
-          type: "Thực hành",
-        },
-        {
-          title: "React Component và Props",
-          duration: "22 phút",
-          type: "Video",
-        },
-        {
-          title: "Quiz Front-end nền tảng",
-          duration: "12 câu hỏi",
-          type: "Quiz",
-        },
-      ],
-      Database: [
-        {
-          title: "Mô hình quan hệ và khóa chính",
-          duration: "20 phút",
-          type: "Video",
-        },
-        {
-          title: "SQL SELECT / WHERE / JOIN",
-          duration: "40 phút",
-          type: "Video",
-        },
-        {
-          title: "Chuẩn hóa dữ liệu 1NF-3NF",
-          duration: "15 phút",
-          type: "Bài đọc",
-        },
-        {
-          title: "Thực hành truy vấn tổng hợp",
-          duration: "30 phút",
-          type: "Thực hành",
-        },
-        { title: "Quiz SQL cơ bản", duration: "10 câu hỏi", type: "Quiz" },
-      ],
-    };
-
-    return (
-      map[categoryName] || [
-        {
-          title: `Tổng quan ${categoryName}`,
-          duration: "15 phút",
-          type: "Video",
-        },
-        {
-          title: `${categoryName} - Bài thực hành nhập môn`,
-          duration: "25 phút",
-          type: "Thực hành",
-        },
-        {
-          title: `Kiểm tra nhanh ${categoryName}`,
-          duration: "8 câu hỏi",
-          type: "Quiz",
-        },
-      ]
-    );
-  };
-
-  const handlePreviewLessons = (categoryId: string, categoryName: string) => {
+  const handlePreviewCourses = async (
+    categoryId: string,
+    categoryName: string,
+  ) => {
     if (previewCategoryId === categoryId) {
       setPreviewCategoryId("");
       setPreviewCategory("");
-      setPreviewLessons([]);
+      setPreviewCourses([]);
       return;
     }
+
     setPreviewCategoryId(categoryId);
     setPreviewCategory(categoryName);
-    setPreviewLessons(getMockLessonsByCategory(categoryName));
+    setIsPreviewLoading(true);
+    try {
+      const data = await GetCoursesByCategory(categoryId);
+      setPreviewCourses(data.data || []);
+    } catch (error: any) {
+      setPreviewCourses([]);
+      showNotification(
+        "error",
+        error?.response?.data?.message ||
+          "Lỗi tải danh sách khóa học theo thể loại.",
+      );
+    } finally {
+      setIsPreviewLoading(false);
+    }
   };
 
   const showNotification = (type: "success" | "error", msg: string) => {
@@ -199,7 +147,7 @@ const CategoryManage: React.FC = () => {
     if (!confirmed) return;
 
     if (quantityCourse > 0) {
-      const confirmed = window.alert(
+      window.alert(
         `Không thể xóa thể loại "${title}" vì đang có khóa học thuộc thể loại này?`,
       );
       return;
@@ -333,8 +281,8 @@ const CategoryManage: React.FC = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <div className="min-w-0 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
+          <div className="min-w-0 grid grid-cols-1 gap-5 md:grid-cols-2">
             {loading ? (
               <div className="col-span-full rounded-2xl border border-brand-100 bg-white p-10 text-center text-gray-500 shadow-sm">
                 Đang tải danh sách thể loại...
@@ -348,19 +296,17 @@ const CategoryManage: React.FC = () => {
                 <div
                   key={category._id}
                   onClick={() =>
-                    handlePreviewLessons(category._id, category.category_name)
+                    handlePreviewCourses(category._id, category.category_name)
                   }
-                  className={`group flex min-h-[220px] flex-col overflow-hidden rounded-2xl border bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md ${
+                  className={`group flex min-h-[220px] flex-col overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md ${
                     previewCategoryId === category._id
                       ? "border-brand-500 ring-2 ring-brand-500/10"
                       : "border-brand-100 hover:border-brand-200"
                   }`}
                 >
-                  <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-[#23422a]/5 transition-transform group-hover:scale-110" />
-
                   <div className="relative z-10 flex flex-1 flex-col">
                     <div className="space-y-2">
-                      <h3 className="text-xl font-bold text-brand-700">
+                      <h3 className="break-words text-xl font-bold text-brand-700">
                         {category.category_name}
                       </h3>
 
@@ -370,22 +316,22 @@ const CategoryManage: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="mt-auto pt-6 flex items-center justify-between gap-3 border-t border-gray-100">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50/60 px-3 py-1.5 text-xs font-semibold text-brand-700">
+                    <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
+                      <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-brand-100 bg-brand-50/60 px-3 py-1 text-xs font-semibold text-brand-700">
                         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-700 px-1.5 text-[10px] font-bold leading-none text-white">
                           {(category.courseCount || 0).toString()}
                         </span>
-                        <span>Khóa học</span>
+                        <span className="truncate">Khóa học</span>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex shrink-0 items-center gap-1.5">
                         <PermissionControl permission="categories_edit">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleEdit(category);
                             }}
-                            className="rounded-lg p-2 transition hover:bg-gray-50"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-gray-50"
                             title="Chỉnh sửa"
                           >
                             <Pencil className="h-5 w-5 text-brand-700" />
@@ -401,14 +347,29 @@ const CategoryManage: React.FC = () => {
                                 Number(category.courseCount),
                               );
                             }}
-                            className="rounded-lg p-2 transition hover:bg-[#ffdad6]"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-[#ffdad6]"
                             title="Xóa"
                           >
                             <Trash2 className="h-5 w-5 text-red-600" />
                           </button>
                         </PermissionControl>
-
-                        <ArrowRight className="h-5 w-5 text-brand-700/40 transition-transform group-hover:translate-x-1" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePreviewCourses(
+                              category._id,
+                              category.category_name,
+                            );
+                          }}
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${
+                            previewCategoryId === category._id
+                              ? "bg-brand-600 text-white"
+                              : "text-brand-700 hover:bg-brand-50"
+                          }`}
+                          title="Xem khóa học"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -435,43 +396,65 @@ const CategoryManage: React.FC = () => {
 
           <div className="min-w-0 xl:sticky xl:top-6">
             {previewCategoryId ? (
-              <div className="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm">
-                <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold text-brand-700">
-                      Danh sách bài học - {previewCategory}
+              <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm">
+                <div className="border-b border-gray-100 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="min-w-0 break-words text-lg font-bold text-brand-700">
+                      Khóa học: {previewCategory}
                     </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Giao diện cứng (mock), chưa gọi API.
-                    </p>
+                    <span className="shrink-0 rounded-full border border-brand-100 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">
+                      {previewCourses.length}
+                    </span>
                   </div>
-                  <span className="w-fit rounded-full border border-brand-100 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">
-                    {previewLessons.length} bài
-                  </span>
                 </div>
 
-                <div className="space-y-3">
-                  {previewLessons.map((lesson, i) => (
-                    <div
-                      key={`${lesson.title}-${i}`}
-                      className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5"
-                    >
-                      <p className="text-sm font-semibold text-gray-800 line-clamp-2">
-                        {i + 1}. {lesson.title}
-                      </p>
-                      <div className="mt-1 flex items-center justify-between text-xs text-gray-600">
-                        <span>{lesson.duration}</span>
-                        <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 font-medium">
-                          {lesson.type}
-                        </span>
-                      </div>
+                <div className="max-h-[70vh] space-y-3 overflow-y-auto p-4">
+                  {isPreviewLoading ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-4 text-center text-sm text-gray-500">
+                      Đang tải danh sách khóa học...
                     </div>
-                  ))}
+                  ) : previewCourses.length === 0 ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-4 text-center text-sm text-gray-500">
+                      Chưa có khóa học nào thuộc thể loại này.
+                    </div>
+                  ) : (
+                    previewCourses.map((course, i) => (
+                      <div
+                        key={course._id}
+                        className="flex min-w-0 gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3"
+                      >
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-brand-50 text-sm font-bold text-brand-700">
+                          {course.thumbnail ? (
+                            <img
+                              src={course.thumbnail}
+                              alt={course.title}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            i + 1
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 text-sm font-semibold leading-5 text-gray-800">
+                            {course.title}
+                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                            <span className="font-semibold text-brand-700">
+                              {Number(course.price || 0).toLocaleString("vi-VN")} Đ
+                            </span>
+                            <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 font-medium text-gray-600">
+                              {course.level || course.status || "Khóa học"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             ) : (
               <div className="flex min-h-[280px] items-center justify-center rounded-2xl border border-dashed border-brand-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm">
-                Chọn một thể loại để xem danh sách bài học ở bên phải.
+                Chọn một thể loại để xem danh sách khóa học ở bên phải.
               </div>
             )}
           </div>

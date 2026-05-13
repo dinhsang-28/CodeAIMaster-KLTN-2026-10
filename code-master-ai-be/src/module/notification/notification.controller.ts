@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Patch,
   Param,
@@ -44,5 +45,10 @@ export class NotificationController {
   @Patch('read-all')
   markAllAsRead(@Req() req) {
     return this.notificationService.markAllAsRead(this.getUserId(req));
+  }
+
+  @Delete(':id')
+  remove(@Req() req, @Param('id') id: string) {
+    return this.notificationService.remove(this.getUserId(req), id);
   }
 }
