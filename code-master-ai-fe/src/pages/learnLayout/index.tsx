@@ -74,7 +74,7 @@ const LearnLayout = () => {
         );
         setError("");
       } catch (err: any) {
-        setError(err?.message || "Khong the tai khoa hoc");
+        setError(err?.message || "Không thể tải khóa học");
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -140,7 +140,7 @@ const LearnLayout = () => {
   }, [loadLearningState]);
 
   if (loading) {
-    return <div className="p-8 text-center text-slate-500">Dang tai khoa hoc...</div>;
+    return <div className="p-8 text-center text-slate-500">Đang tải khóa học...</div>;
   }
 
   if (error) {
@@ -151,7 +151,7 @@ const LearnLayout = () => {
     if (!currentLessonItem) {
       return (
         <div className="rounded-2xl bg-white p-8 text-center text-slate-500 shadow-sm">
-          Vui long chon mot bai hoc.
+          Vui lòng chọn một bài học.
         </div>
       );
     }
@@ -175,11 +175,11 @@ const LearnLayout = () => {
             </svg>
           </div>
           <h2 className="mb-2 text-xl font-bold text-gray-800">
-            Bai hoc dang bi khoa
+            Bài học đang bị khóa
           </h2>
           <p className="text-gray-500">
             {currentLessonItem.activity?.message ||
-              "Vui long hoan thanh cac buoc truoc do de mo khoa noi dung nay."}
+              "Vui lòng hoàn thành các bước trước đó để mở khóa nội dung này."}
           </p>
         </div>
       );
@@ -236,7 +236,7 @@ const LearnLayout = () => {
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 py-3 sm:px-4 md:px-6 md:py-6">
             {refreshing && (
               <div className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-2 text-sm text-brand-700">
-                Dang dong bo tien do hoc tap...
+                Đang đồng bộ tiến độ học tập...
               </div>
             )}
 

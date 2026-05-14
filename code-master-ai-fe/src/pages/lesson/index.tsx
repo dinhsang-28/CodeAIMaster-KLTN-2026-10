@@ -173,7 +173,7 @@ const LessonPage = ({
 
     timerRef.current = window.setTimeout(
       () => setCanProceed(true),
-      4 * 60 * 1000,
+      1 * 60 * 1000,
     );
 
     return () => {

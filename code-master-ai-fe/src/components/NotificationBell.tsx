@@ -3,15 +3,15 @@ import { Badge, Button, Dropdown, Empty, List, Typography } from "antd";
 import { BellOutlined } from "@ant-design/icons";
 import { io, Socket } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
-import { useUserInfo } from "../../store/user";
+import { useUserInfo } from "../store/user";
 import {
   getNotifications,
   getUnreadCount,
   markAllNotificationsAsRead,
   markNotificationAsRead,
   NotificationItem,
-} from "../../api/notification";
-import { axiosInstance } from "../../utils/axios";
+} from "../api/notification";
+import { axiosInstance } from "../utils/axios";
 
 const { Text } = Typography;
 

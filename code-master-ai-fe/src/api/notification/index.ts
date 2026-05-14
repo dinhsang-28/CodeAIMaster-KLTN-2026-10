@@ -1,6 +1,6 @@
 import { axiosInstance } from "../../utils/axios";
 
-export type NotificationType = "system" | "course" | "assignment";
+export type NotificationType = "system" | "course" | "assignment" | "order";
 
 export interface NotificationItem {
   _id: string;

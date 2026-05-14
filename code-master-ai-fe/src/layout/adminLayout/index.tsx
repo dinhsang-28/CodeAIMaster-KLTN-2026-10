@@ -24,7 +24,7 @@ import {
 } from "@ant-design/icons";
 import { useUserInfo } from "../../store/user";
 import { PostLogout } from "../../api/auth";
-import NotificationBell from "../../components/notification-bell";
+import NotificationBell from "../../components/NotificationBell";
 
 type MenuItem = {
   to: string;
