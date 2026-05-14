@@ -569,17 +569,28 @@ export class PaymentsService {
     await this.sendNotificationToAdmins(courseText, userId);
   }
 
+  // Gửi notification cho tất cả admin khi có đơn hàng mới
   private async sendNotificationToAdmins(courseText: string, userId: string) {
     try {
-      const adminRole = await this.roleModel.findOne({ role_name: 'admin' }).lean();
-      if (!adminRole) {
-        console.warn('Admin role not found');
+      const adminRoles = await this.roleModel
+        .find({ role_name: { $regex: /admin/i } })
+        .lean();
+      if (!adminRoles?.length) {
+        console.warn('Admin roles not found');
         return;
       }
 
-      const adminUsers = await this.userModel.find({ role_id: adminRole._id }).lean();
-      const user = await this.userModel.findById(userId).lean();
+      const roleIds = adminRoles.map((role) => role._id);
+      const adminUsers = await this.userModel
+        .find({ role_id: { $in: roleIds } })
+        .lean();
 
+      if (!adminUsers?.length) {
+        console.warn('No admin users found for admin roles');
+        return;
+      }
+
+      const user = await this.userModel.findById(userId).lean();
       const userName = user?.name || user?.email || 'Người dùng';
 
       for (const admin of adminUsers) {
