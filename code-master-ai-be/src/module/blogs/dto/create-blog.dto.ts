@@ -19,8 +19,8 @@ export class CreateBlogDto {
   @IsNotEmpty()
   short_description!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   cover_image!: string;
 
   @IsString()
