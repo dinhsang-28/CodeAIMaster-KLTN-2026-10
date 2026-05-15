@@ -2,10 +2,11 @@ import React from "react";
 import RecommendedCard from "./RecommendedCard";
 
 export interface RecommendedCourse {
-  id: number;
+  id: string;
   title: string;
   price: string;
   image: string;
+  level?: string;
 }
 
 interface RecommendedSectionProps {
@@ -15,6 +16,8 @@ interface RecommendedSectionProps {
 export default function RecommendedSection({
   courses,
 }: RecommendedSectionProps) {
+  if (courses.length === 0) return null;
+
   return (
     <div className="mt-8">
       <h2 className="text-2xl font-bold text-[#3a473c] mb-6">Khóa học gợi ý</h2>

@@ -71,7 +71,7 @@ export const submitLessonCode = async (
 // --- NEW ASSIGNMENT APIs ---
 export const searchAssignments = async (params?: { keyword?: string; course_id?: string; lesson_id?: string; type?: string; page?: number; limit?: number }) => {
   const res = await axiosInstance.get('/assignments/search', { params });
-  return res.data?.data || res.data;
+  return res.data;
 };
 
 export const getAssignments = async () => {

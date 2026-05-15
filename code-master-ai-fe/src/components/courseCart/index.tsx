@@ -127,7 +127,7 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
                 course.price === 0 ? "text-brand-600" : "text-brand-600"
               }`}
             >
-              {course.price} Đ
+              {course.price.toLocaleString("vi-VN")} Đ
             </span>
           </div>
 

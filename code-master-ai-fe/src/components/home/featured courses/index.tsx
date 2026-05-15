@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { ArrowRightOutlined } from "@ant-design/icons";
+import { ArrowRightOutlined, BookOutlined } from "@ant-design/icons";
 import AnimateOnScroll from "../../../utils/animateOnScroll";
 import { ICourse } from "../../../api/enrollment";
 import { GetFeaturedCourses } from "../../../api/course";
 import { useNavigate } from "react-router-dom";
 
+type FeaturedCourse = ICourse & {
+  totalEnrollments?: number;
+};
+
 const FeaturedCourses = () => {
-  const [featuredCourses, setFeaturedCourses] = useState<ICourse[]>([]);
+  const [featuredCourses, setFeaturedCourses] = useState<FeaturedCourse[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,7 +18,6 @@ const FeaturedCourses = () => {
       try {
         const data = await GetFeaturedCourses();
         setFeaturedCourses(data);
-        console.log("Khóa học nổi bật: " + featuredCourses);
       } catch (error) {
         console.error("Lỗi:", error);
       }
@@ -26,26 +29,31 @@ const FeaturedCourses = () => {
   return (
     <section
       id="tour-featured-courses"
-      className="w-full py-10 sm:py-16 bg-brand-50"
+      className="w-full bg-brand-50 py-12 sm:py-16"
     >
       <AnimateOnScroll>
-        <div className="w-full mx-auto px-4 sm:px-8 lg:px-12 flex flex-col gap-6 sm:gap-8">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-7 px-4 sm:px-8 lg:px-12">
           {/* Header */}
-          <div className="flex justify-between items-center">
-            <h2 className="font-bold text-xl sm:text-2xl text-brand-700">
-              <span>Khóa học</span> nổi bật
-            </h2>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-brand-500">
+                Được học viên lựa chọn
+              </p>
+              <h2 className="text-2xl font-black text-brand-800 sm:text-3xl">
+                Khóa học nổi bật
+              </h2>
+            </div>
             <button
               type="button"
               onClick={() => navigate("/course")}
-              className="font-medium text-brand-700 flex gap-2 items-center cursor-pointer text-sm sm:text-base bg-transparent border-none p-0 hover:opacity-90 active:scale-[0.98] transition"
+              className="flex w-fit items-center gap-2 rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-bold text-brand-700 shadow-sm transition hover:border-brand-400 hover:bg-brand-25 active:scale-[0.98]"
             >
               Xem tất cả <ArrowRightOutlined />
             </button>
           </div>
 
           {/* Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {featuredCourses.map((item) => (
               <div
                 key={item._id}
@@ -58,36 +66,44 @@ const FeaturedCourses = () => {
                     navigate(`/course/${item._id}`);
                   }
                 }}
-                className="rounded-2xl h-full bg-white shadow overflow-hidden flex flex-col hover:shadow-lg transition cursor-pointer"
+                className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
               >
                 {/* Image */}
-                <div className="relative">
+                <div className="relative aspect-[16/9] overflow-hidden">
                   <img
                     src={item.thumbnail}
-                    alt=""
-                    className="w-full h-40 sm:h-48 object-cover"
+                    alt={item.title}
+                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                   />
+                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent p-4">
+                    <span className="rounded-full bg-white/95 px-3 py-1 text-[10px] font-extrabold uppercase text-brand-800">
+                      {item.category?.category_name || "Khóa học"}
+                    </span>
+                    <span className="rounded-full bg-brand-600 px-3 py-1 text-[10px] font-extrabold uppercase text-white">
+                      {item.level}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="p-5 sm:p-8 flex flex-col gap-4 sm:gap-8 flex-1">
-                  <div className="flex flex-col gap-1">
-                    <div className="text-xs sm:text-sm font-medium bg-gray-100 text-gray-800 w-max px-2 py-1 rounded-full">
-                      {item.level}
-                    </div>
-                    <div className="font-bold text-base sm:text-lg text-brand-700 break-words">
+                <div className="flex flex-1 flex-col gap-5 p-5">
+                  <div className="flex flex-col gap-2">
+                    <div className="line-clamp-2 min-h-[3.5rem] text-lg font-extrabold leading-7 text-brand-800">
                       {item.title}
                     </div>
-                    <div className="text-xs sm:text-sm text-gray-600 break-words line-clamp-2">
+                    <div className="line-clamp-2 text-sm leading-6 text-slate-600">
                       {item.description}
                     </div>
                   </div>
 
-                  <div className="mt-auto flex items-center justify-between border-t pt-4">
-                    <div className="font-bold text-brand-600 text-sm sm:text-base">
-                      {item.price.toLocaleString()} VND
+                  <div className="mt-auto flex items-center justify-between border-t border-brand-50 pt-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-brand-500">
+                      <BookOutlined />
+                      <span>{item.totalEnrollments || 0} học viên</span>
                     </div>
-                    <div className="text-xs sm:text-sm font-medium bg-brand-25 text-brand-700 px-3 py-1 rounded-full hover:bg-brand-200 pointer-events-none">
-                      Xem chi tiết
+                    <div className="text-base font-black text-brand-700">
+                      {Number(item.price || 0) === 0
+                        ? "Miễn phí"
+                        : `${Number(item.price || 0).toLocaleString("vi-VN")}đ`}
                     </div>
                   </div>
                 </div>
