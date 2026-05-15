@@ -9,7 +9,8 @@ import {
 import {
   searchAssignments, deleteAssignment,
   getQuizzesByAssignmentId, deleteQuiz, getQuestionsByQuizId, deleteQuestion,
-  getCodeAssignmentsByAssignmentId, deleteCodeAssignment, getTestcasesByCodeAssignmentId, deleteTestcase
+  getCodeAssignmentsByAssignmentId, deleteCodeAssignment, getTestcasesByCodeAssignmentId, deleteTestcase,
+  exportAssignmentsExcel
 } from "../../api/excersice";
 import { searchCourses, getCourseFullInfo } from "../../api/course";
 
@@ -28,7 +29,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-const TABS = ["Bài tập thường", "Code Assignment", "Ngân hàng câu hỏi"];
+const TABS = ["Bài tập thường", "Code Assignment"];
 
 const StatusPill = ({ status }: { status: "open" | "closed" }) =>
   status === "open" ? (
@@ -57,7 +58,7 @@ const pickNewestChild = (items: any[], entityName: string, assignmentId: string)
 };
 
 const ExerciseManage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState(0); // 0: quiz, 1: codeAssignment, 2: questions
+  const [activeTab, setActiveTab] = useState(0); // 0: quiz, 1: codeAssignment
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const [loading, setLoading] = useState(false);
@@ -99,13 +100,7 @@ const ExerciseManage: React.FC = () => {
   }, [activeTab, debouncedKeyword, selectedLesson, selectedCourse]);
 
   useEffect(() => {
-    if (activeTab === 0 || activeTab === 1) {
-      fetchAssignments();
-    } else {
-      // Tab 2: Ngân hàng câu hỏi - mock logic empty
-      setAssignments([]);
-      setTotal(0);
-    }
+    fetchAssignments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, debouncedKeyword, activeTab, selectedCourse, selectedLesson]);
 
@@ -167,25 +162,43 @@ const ExerciseManage: React.FC = () => {
   };
 
   const handleCreate = () => {
-    if (activeTab === 2) {
-      message.info("Tính năng ngân hàng câu hỏi đang phát triển.");
-      return;
-    }
     setAsgModalMode("create");
     setCurrentAsg(null);
     setAsgModalVisible(true);
   };
 
-  const handleCourseChange = (courseId: string) => {
-    setSelectedCourse(courseId);
+  const handleCourseChange = (courseId?: string) => {
+    setSelectedCourse(courseId || "");
     setSelectedLesson("");
     setPage(1);
-    fetchLessons(courseId);
+    fetchLessons(courseId || "");
   };
 
-  const handleLessonChange = (lessonId: string) => {
-    setSelectedLesson(lessonId);
+  const handleLessonChange = (lessonId?: string) => {
+    setSelectedLesson(lessonId || "");
     setPage(1);
+  };
+
+  const handleExport = async () => {
+    try {
+      const type = activeTab === 0 ? "quiz" : "codeAssignment";
+      const params: any = { type };
+      if (debouncedKeyword) params.keyword = debouncedKeyword;
+      if (selectedCourse) params.course_id = selectedCourse;
+      if (selectedLesson) params.lesson_id = selectedLesson;
+
+      const blob = await exportAssignmentsExcel(params);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `danh-sach-bai-tap-${type}-${Date.now()}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      message.error("Export danh sách bài tập thất bại");
+    }
   };
 
   const handleEdit = (record: any) => {
@@ -424,16 +437,18 @@ const ExerciseManage: React.FC = () => {
               <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
                 <FilterOutlined style={{ fontSize: 13 }} /> LỌC
               </button>
-              <button style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", cursor: "pointer" }}>
+              <button
+                onClick={handleExport}
+                style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", cursor: "pointer" }}
+                title="Export Excel"
+              >
                 <DownloadOutlined style={{ fontSize: 15 }} />
               </button>
             </div>
           </div>
 
           {/* Table (desktop) / Cards (mobile) */}
-          {activeTab === 2 ? (
-            <div className="py-10 text-center text-gray-400 bg-gray-50 rounded-lg">Chưa có dữ liệu Ngân hàng câu hỏi.</div>
-          ) : isMobile ? (
+          {isMobile ? (
             <div className="space-y-3">
               {assignments.map((item) => <AssignmentCard key={item._id} item={item} />)}
               {assignments.length === 0 && <div className="text-center py-6 text-gray-400">Không có bài tập nào</div>}
@@ -528,7 +543,7 @@ const ExerciseManage: React.FC = () => {
             </div>
           )}
 
-          {activeTab !== 2 && isMobile && total > 0 && (
+          {isMobile && total > 0 && (
             <div className="flex justify-center pt-1">
               <Pagination
                 size="small"
@@ -548,7 +563,7 @@ const ExerciseManage: React.FC = () => {
           <div className="rounded-2xl p-6 sm:p-8 text-white mt-4" style={{ background: "linear-gradient(135deg, #3a5a40 0%, #588157 100%)" }}>
             <h4 style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>Thông tin hệ thống</h4>
             <p style={{ fontSize: 14, opacity: 0.82, lineHeight: 1.6, maxWidth: 480 }}>
-              Bạn đang xem danh sách các bài tập của loại "{activeTab === 0 ? 'Bài tập thường' : activeTab === 1 ? 'Code Assignment' : 'Ngân hàng câu hỏi'}". Để quản lý testcase cho code assignment, hãy bấm vào nút Testcases tương ứng.
+              Bạn đang xem danh sách các bài tập của loại "{activeTab === 0 ? 'Bài tập thường' : 'Code Assignment'}". Để quản lý testcase cho code assignment, hãy bấm vào nút Testcases tương ứng.
             </p>
           </div>
         </div>

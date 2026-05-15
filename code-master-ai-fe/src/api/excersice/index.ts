@@ -74,6 +74,14 @@ export const searchAssignments = async (params?: { keyword?: string; course_id?:
   return res.data;
 };
 
+export const exportAssignmentsExcel = async (params?: { keyword?: string; course_id?: string; lesson_id?: string; type?: string }) => {
+  const res = await axiosInstance.get('/assignments/export', {
+    params,
+    responseType: 'blob',
+  });
+  return res.data;
+};
+
 export const getAssignments = async () => {
   const res = await axiosInstance.get('/assignments');
   return res.data?.data || res.data;
