@@ -18,6 +18,7 @@ import {
   CodeAssignment,
   CodeAssignmentDocument,
 } from '../code-assignments/entities/code-assignment.entity';
+import { AiAssistantService } from '@/ai-assistant/ai-assistant.service';
 
 @Injectable()
 export class TestcasesService {
@@ -29,6 +30,7 @@ export class TestcasesService {
     private assignmentModel: Model<AssignmentDocument>,
     @InjectModel(CodeAssignment.name)
     private codeAssignmentModel: Model<CodeAssignmentDocument>,
+    private readonly aiAssistantService: AiAssistantService,
   ) {
     this.aiApiKey = (process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '').trim();
     this.genAI = this.aiApiKey ? new GoogleGenerativeAI(this.aiApiKey) : null;
@@ -200,7 +202,7 @@ export class TestcasesService {
       throw new BadRequestException('Chưa cấu hình AI API key.');
     }
 
-    // 1. Cải tiến Prompt để AI không sinh ra Object và bỏ chữ "Kết quả:"
+    //  Cải tiến Prompt để AI không sinh ra Object và bỏ chữ "Kết quả:"
     const prompt = `
       Bạn là chuyên gia thuật toán. Hãy tạo ra ${numberOfTestCases} test cases cho bài toán sau.
       
@@ -285,6 +287,75 @@ export class TestcasesService {
       throw new BadRequestException('AI tạo dữ liệu không hợp lệ, vui lòng thử lại.');
     }
   }
+  //đang test
+//   async generateTestCaseByAI(
+//   assignmentId: string,
+//   solutionCode: string,
+//   constraints: string,
+//   numberOfTestCases: number = 5,
+//   hiddenTestCases?: number,
+// ) {
+//   if (!Types.ObjectId.isValid(assignmentId)) {
+//     throw new BadRequestException('assignmentId không hợp lệ');
+//   }
+
+//   const assignmentObjectId = new Types.ObjectId(assignmentId);
+//   const assignment = await this.assignmentModel
+//     .findById(assignmentObjectId)
+//     .lean()
+//     .exec();
+
+//   if (!assignment) {
+//     throw new BadRequestException('Không tìm thấy assignment cho bài tập này.');
+//   }
+
+//   const codeAssignment = await this.codeAssignmentModel
+//     .findOne({ assignment_id: assignmentObjectId })
+//     .lean()
+//     .exec();
+
+//   if (!codeAssignment) {
+//     throw new BadRequestException('Bài tập này chưa có CodeAssignment để sinh testcase.');
+//   }
+
+//   try {
+//     // Gọi qua AiAssistantService → tự động key rotation
+//     const parsedTestCases = await this.aiAssistantService.generateTestCases(
+//       codeAssignment.title,
+//       codeAssignment.problem_description,
+//       constraints,
+//       solutionCode,
+//       numberOfTestCases,
+//     );
+
+//     const hiddenCount =
+//       typeof hiddenTestCases === 'number' && hiddenTestCases >= 0
+//         ? hiddenTestCases
+//         : Math.max(numberOfTestCases - 2, 0);
+
+//     // Gắn thêm assignment_id và code_assignment_id trước khi lưu
+//     const testCasesToSave = parsedTestCases.map((tc, index) => ({
+//       ...tc,
+//       assignment_id: assignmentObjectId,
+//       code_assignment_id: codeAssignment._id,
+//       // Ghi đè is_hidden nếu caller truyền hiddenTestCases cụ thể
+//       is_hidden:
+//         typeof hiddenTestCases === 'number'
+//           ? index >= parsedTestCases.length - hiddenCount
+//           : tc.is_hidden,
+//     }));
+
+//     const savedTestCases = await this.testCaseModel.insertMany(testCasesToSave);
+
+//     return {
+//       message: `Đã tự động tạo và lưu ${savedTestCases.length} Test Cases thành công!`,
+//       data: savedTestCases,
+//     };
+//   } catch (error) {
+//     this.logger.error('[generate-ai] Error:', error);
+//     throw new BadRequestException('AI tạo dữ liệu không hợp lệ, vui lòng thử lại.');
+//   }
+// }
   async findAll(code_assignment_id?: string): Promise<TestCase[]> {
     const filter: Record<string, any> = {};
     if (code_assignment_id) {
