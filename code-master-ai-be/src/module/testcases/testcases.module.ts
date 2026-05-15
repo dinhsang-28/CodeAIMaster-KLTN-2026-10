@@ -11,6 +11,7 @@ import {
   AssignmentSchema,
 } from '../assignments/entities/assignment.entity';
 import { TestCase, TestCaseSchema } from './entities/testcase.entity';
+import { AiAssistantService } from '@/ai-assistant/ai-assistant.service';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { TestCase, TestCaseSchema } from './entities/testcase.entity';
     ]),
   ],
   controllers: [TestcasesController],
-  providers: [TestcasesService],
+  providers: [TestcasesService, AiAssistantService],
 })
 export class TestcasesModule {}

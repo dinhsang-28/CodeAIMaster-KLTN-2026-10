@@ -13,7 +13,7 @@ import { use } from 'passport';
 @Controller('admin/roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
-
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('roles_create')
   // @Public()
   @Post()
