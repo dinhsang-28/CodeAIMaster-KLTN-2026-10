@@ -5,13 +5,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Blog, BlogDocument } from './entities/blog.entity';
 import { ApiResponse } from '@/common/dto/api-response.dto';
 import { Model } from 'mongoose';
+import { UploadService } from '@/upload/upload.service';
 
 @Injectable()
 export class BlogsService {
-  uploadService: any;
   constructor(
     @InjectModel(Blog.name)
     private readonly blogsModel: Model<BlogDocument>,
+    private readonly uploadService: UploadService,
   ) {}
 
   async create(createBlogDto: CreateBlogDto,file:Express.Multer.File): Promise<ApiResponse<Blog>> {
