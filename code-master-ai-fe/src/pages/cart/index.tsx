@@ -7,33 +7,13 @@ import OrderSummary from "../../components/cart/order-summary/OrderSummary";
 import Footer from "../../components/footer";
 import { GetCartLength, getCartListQuick, removeCartItem } from "../../api/cart";
 import { useUserCart } from "../../store/cart";
-const recommendedCourses = [
-  {
-    id: 1,
-    title: "An ninh mạng cho người mới",
-    price: "850.000đ",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAYcYtygdRE313omw7lm6O5CwdwDQjiN4nmyocivCDGsNrEa17LGafSFUQjr83UkgZG-QQuSSYrarsP9fsAxGvVJ5CWFQ2H6KIhJDUNleY7lKxQqWS5LJ1Uw7RFA3C8RP6MVvI0Eb7FqbtfG659frQvo6uRH3249UjI5ZOVLujPfWtvp1FVj8tSjw4ysaSRM2hh30b7mH5jaJxuiYxxP9A77YFRONL5O_06kU8JiZ1badVWo1ZJmQh9ooblGYzLMFSDEh7NX3BOD9TH",
-  },
-  {
-    id: 2,
-    title: "Machine Learning cơ bản",
-    price: "1.500.000đ",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDuqNKzN6R2H6Ht3iLh87OFlbgDKp4HE3QdJ_hJjkL2IJjWjpPr0YuhFTyq62r49paXoEC_-x_GIdjBW2lfI8GnJf80Rg-31YvyG39JPQu1lHsJ3dLVDdvZoVlTmMslrUMXFOkcP9NQkCOZ2dEd6rBCQQtlB14E39_fR5KKdBVvGfn-W4CrybAclvlaD67xBR13BznFBtO9iqt0d8H5tWiOIkcL6JJ1TS8Ha1Zm76GVv7HrvrO3yU-4Tk8wSfHYuxl3msNYRc7P_bSO",
-  },
-  {
-    id: 3,
-    title: "Fullstack Web Development",
-    price: "2.100.000đ",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBXsKXB2mqdlrnxkrY6q6N5JeipDlFfeb0VN5-yrigYWoR6P9NqiYRqAvH3dz9yBsUL8pebrf8BZqF3j8auLkimw66a9bKio4hKECNnv8-2e9EnDPV8ukp1nFRidNtgF1FZIxZjtpTT3buomvO_yxtOiv7uxusm3SughiE0BSFTVoTv_WiFyNrzi2xDz46h1IcemcZn2gsR0xWyrUerDveCMPnisrMyjOCLZi8YSKgdYGpP9tG1ldl4D_arl_wwTYE6jnKr4TFxFkt4",
-  },
-];
+import { GetFeaturedCourses } from "../../api/course";
+import { RecommendedCourse } from "../../components/cart/recommended/RecommendedSection";
 
 const Cart = () => {
   const [cartList, setCartList] = useState<CartItemData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [recommendedCourses, setRecommendedCourses] = useState<RecommendedCourse[]>([]);
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const { setQuantityCart } = useUserCart();
   useEffect(() => {
@@ -67,6 +47,30 @@ const Cart = () => {
     };
 
     fetchCart();
+  }, []);
+
+  useEffect(() => {
+    const fetchRecommendedCourses = async () => {
+      try {
+        const courses = await GetFeaturedCourses();
+        const mappedCourses: RecommendedCourse[] = (courses || []).map((course: any) => ({
+          id: course._id,
+          title: course.title,
+          price:
+            Number(course.price || 0) === 0
+              ? "Miễn phí"
+              : `${Number(course.price || 0).toLocaleString("vi-VN")}đ`,
+          image: course.thumbnail || "",
+          level: course.level,
+        }));
+        setRecommendedCourses(mappedCourses);
+      } catch (error) {
+        console.error("Lỗi load khóa học gợi ý:", error);
+        setRecommendedCourses([]);
+      }
+    };
+
+    fetchRecommendedCourses();
   }, []);
 
   const handleRemove = async (id: string) => {

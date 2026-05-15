@@ -107,7 +107,9 @@ export class AssignmentsService {
     if (type) filter.type = type;
 
     // Phân trang
-    const skip = (Number(page) - 1) * Number(limit);
+    const pageNumber = Number(page) || 1;
+    const limitNumber = Number(limit) || 10;
+    const skip = (pageNumber - 1) * limitNumber;
 
     const data = await this.assigmentModel
       .find(filter)
@@ -118,7 +120,7 @@ export class AssignmentsService {
         },
       })
       .skip(skip)
-      .limit(limit)
+      .limit(limitNumber)
       .lean();
 
     const normalizedData = data.map((assignment: any) => ({
@@ -129,12 +131,12 @@ export class AssignmentsService {
 
     const total = await this.assigmentModel.countDocuments(filter);
 
-    const sumPage = Math.ceil(total / Number(limit));
+    const sumPage = Math.ceil(total / limitNumber);
 
     return {
       data: normalizedData,
-      page: page,
-      limit: limit,
+      page: pageNumber,
+      limit: limitNumber,
       total,
       sumPage,
     };
