@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   SearchOutlined,
   PlusOutlined,
@@ -21,6 +21,8 @@ const ArticleManage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -31,6 +33,17 @@ const ArticleManage = () => {
 
   const generateSlug = (title: string) => {
     return title.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      cover_image: "",
+      content: "",
+      author: "",
+    });
+    setCoverImageFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   // FETCH
@@ -66,23 +79,34 @@ const ArticleManage = () => {
 
   // ===================== CREATE / UPDATE =====================
   const handleSubmit = async () => {
+    if (!formData.title.trim()) return alert("Vui lòng nhập tiêu đề!");
+    if (!formData.author.trim()) return alert("Vui lòng nhập tác giả!");
+    if (!formData.content.trim()) return alert("Vui lòng nhập nội dung!");
+    if (!isEdit && !coverImageFile) return alert("Vui lòng chọn ảnh thumbnail!");
+
     try {
+      const submitData = new FormData();
+      submitData.append("title", formData.title);
+      submitData.append("author", formData.author);
+      submitData.append("content", formData.content);
+      submitData.append("short_description", formData.content.slice(0, 100));
+      if (coverImageFile) submitData.append("cover_image", coverImageFile);
+
       if (isEdit && editingId) {
         await axiosInstance.patch(
           `/blogs/${editingId}`,
-          formData
+          submitData,
+          { headers: { "Content-Type": "multipart/form-data" } },
         );
 
         alert("Cập nhật thành công!");
       } else {
         //CREATE
+        submitData.append("slug", generateSlug(formData.title));
         await axiosInstance.post(
           "/blogs",
-          {
-            ...formData,
-            slug: generateSlug(formData.title),
-            short_description: formData.content.slice(0, 100),
-          },
+          submitData,
+          { headers: { "Content-Type": "multipart/form-data" } },
         );
 
         alert("Thêm bài viết thành công!");
@@ -91,13 +115,7 @@ const ArticleManage = () => {
       setIsModalOpen(false);
       setIsEdit(false);
       setEditingId(null);
-
-      setFormData({
-        title: "",
-        cover_image: "",
-        content: "",
-        author: "",
-      });
+      resetForm();
 
       fetchArticles();
     } catch (error: any) {
@@ -116,7 +134,21 @@ const ArticleManage = () => {
       content: item.content,
       author: item.author,
     });
+    setCoverImageFile(null);
     setIsModalOpen(true);
+  };
+
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Vui lòng chọn file ảnh!");
+      return;
+    }
+
+    setCoverImageFile(file);
+    setFormData({ ...formData, cover_image: URL.createObjectURL(file) });
   };
 
   // ===================== DELETE =====================
@@ -154,13 +186,7 @@ const ArticleManage = () => {
             setIsModalOpen(true);
             setIsEdit(false);
             setEditingId(null);
-
-            setFormData({
-              title: "",
-              cover_image: "",
-              content: "",
-              author: "",
-            });
+            resetForm();
           }}
           className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-full font-semibold transition"
         >
@@ -300,16 +326,22 @@ const ArticleManage = () => {
                 {/* IMAGE */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Link ảnh
+                    Ảnh thumbnail
                   </label>
                   <input
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none transition"
-                    placeholder="https://..."
-                    value={formData.cover_image}
-                    onChange={(e) =>
-                      setFormData({ ...formData, cover_image: e.target.value })
-                    }
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverImageChange}
+                    className="hidden"
                   />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-600 transition hover:border-brand-500 hover:bg-brand-50"
+                  >
+                    {coverImageFile ? coverImageFile.name : "Chọn ảnh từ máy"}
+                  </button>
                 </div>
 
                 {/* CONTENT */}

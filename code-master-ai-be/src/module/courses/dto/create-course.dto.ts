@@ -13,6 +13,7 @@ export class CreateCourseDto {
   @IsNumber()
   price: number;
 
+  @IsOptional()
   @IsString()
   thumbnail: string;
 
