@@ -1,4 +1,5 @@
 import { axiosInstance } from "../../utils/axios";
+import { CourseProgressDetail } from "../userLessonProgress";
 
 type Category = {
   _id: string;
@@ -69,6 +70,13 @@ export const searchCourses = async (params?: {
 }) => {
   const res = await axiosInstance.get("/courses/search", { params });
   return res.data;
+};
+
+export const getLearningCourseProgress = async (
+  id: string,
+): Promise<CourseProgressDetail> => {
+  const res = await axiosInstance.get(`/courses/${id}/progress`);
+  return res.data?.data || res.data;
 };
 
 export const getCourses = async () => {

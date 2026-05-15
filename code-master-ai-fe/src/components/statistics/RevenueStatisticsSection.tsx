@@ -5,6 +5,7 @@ import RevenueChart, { RevenueReport } from "../revenueChart";
 import WeekNavigator from "./WeekNavigator";
 import SummaryCard from "./SummaryCard";
 import { getRevenueByWeek, type WeeklyRevenueResponse } from "../../api/admin/statistics";
+import { GetRevenueExport } from "../../api/admin/revenue";
 
 const yearItems: MenuProps["items"] = [2022, 2023, 2024, 2025, 2026].map((year) => ({
   key: String(year),
@@ -129,6 +130,10 @@ export default function RevenueStatisticsSection() {
               </p>
             </Dropdown>
           </div>
+          <div onClick={() => GetRevenueExport(String(year))} className="flex items-center justify-center gap-2 bg-brand-25 rounded-lg border border-brand-50 hover:border-brand-200 font-bold text-xs sm:text-sm px-3 sm:px-4 py-2 cursor-pointer whitespace-nowrap">
+                      <span className="hidden sm:inline">Export file</span>
+                      <span>↓</span>
+                    </div>
         </div>
       </div>
 

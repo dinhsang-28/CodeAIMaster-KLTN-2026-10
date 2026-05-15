@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Submission } from './entities/submission.entity';
@@ -18,6 +20,10 @@ import { Advisory } from './entities/advisory.entity';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { Quiz } from '../quizzes/entities/quiz.entity';
 import { Question } from '../questions/entities/question.entity';
+import { Assignment } from '../assignments/entities/assignment.entity';
+import { Lesson } from '../lessons/entities/lesson.entity';
+import { AssignmentType } from '../assignments/enums/types.enum';
+import { QuizSubmission } from '../quiz-submissions/entities/quiz-submission.entity';
 
 // const JUDGE0_LANGUAGES = {
 //   'javascript': 63,
@@ -43,6 +49,11 @@ export class SubmissionsService {
     @InjectModel('Advisory') private readonly advisoryModel: Model<Advisory>,
     @InjectModel(Quiz.name) private readonly quizModel: Model<Quiz>,
     @InjectModel(Question.name) private readonly questionModel: Model<Question>,
+    @InjectModel(Assignment.name)
+    private readonly assignmentModel: Model<Assignment>,
+    @InjectModel(Lesson.name) private readonly lessonModel: Model<Lesson>,
+    @InjectModel(QuizSubmission.name)
+    private readonly quizSubmissionModel: Model<QuizSubmission>,
     private readonly aiAssistantService: AiAssistantService,
     private readonly httpService: HttpService,
     private readonly userLessonProgressService: UserLessonProgressService,
@@ -492,9 +503,10 @@ public class Main {
     codeAssignmentId: string,
     language: string,
     sourceCode: string,
+    courseId?: string,
+    lessonId?: string,
   ) {
     try {
-      // 1. LẤY CẤU HÌNH BÀI TẬP & TEST CASES
       const codeAssignment = await this.codeAssignmentModel
         .findOne({
           $or: [{ _id: codeAssignmentId }, { assignment_id: assignmentId }],
@@ -502,23 +514,61 @@ public class Main {
         .lean()
         .exec();
 
-      if (!codeAssignment)
-        throw new BadRequestException('Không tìm thấy bài tập.');
+      if (!codeAssignment) {
+        throw new BadRequestException('Kh??ng t??m th???y b??i t???p.');
+      }
+
+      const assignment = await this.assignmentModel
+        .findById(codeAssignment.assignment_id)
+        .lean()
+        .exec();
+
+      if (!assignment) {
+        throw new NotFoundException('Assignment not found');
+      }
+
+      const lesson = await this.lessonModel
+        .findById(assignment.lesson_id)
+        .lean()
+        .exec();
+
+      if (!lesson) {
+        throw new NotFoundException('Lesson not found');
+      }
+
+      if (courseId && String(lesson.course_id) !== courseId) {
+        throw new ForbiddenException('Assignment kh??ng thu???c kh??a h???c n??y.');
+      }
+
+      if (lessonId && String(lesson._id) !== lessonId) {
+        throw new ForbiddenException('Assignment kh??ng thu???c lesson n??y.');
+      }
+
+      const access = await this.userLessonProgressService.computeLessonAccess(
+        userId,
+        String(lesson.course_id),
+        String(lesson._id),
+      );
+
+      if (!access.assignment.unlocked) {
+        throw new ForbiddenException(access.assignment.message);
+      }
 
       const testCases = await this.testCaseModel
         .find({ code_assignment_id: codeAssignment._id })
         .lean()
         .exec();
 
-      if (!testCases.length)
-        throw new BadRequestException('Bài tập chưa có testcase.');
+      if (!testCases.length) {
+        throw new BadRequestException('B??i t???p ch??a c?? testcase.');
+      }
 
       const normalizedLang = language.toLowerCase().trim();
       const languageId = JUDGE0_LANGUAGES[normalizedLang];
-      if (!languageId)
-        throw new BadRequestException(`Chưa hỗ trợ: ${language}`);
+      if (!languageId) {
+        throw new BadRequestException(`Ch??a h??? tr???: ${language}`);
+      }
 
-      // 2. SMART INJECTION: CHỌN WRAPPER PHÙ HỢP
       let finalSourceCode = sourceCode;
       const wrapperKey =
         normalizedLang.includes('js') || normalizedLang.includes('javascript')
@@ -535,10 +585,9 @@ public class Main {
         finalSourceCode = this.WRAPPERS[wrapperKey](sourceCode);
       }
 
-      // 3. GỬI LÊN JUDGE0 VÀ CHẤM ĐIỂM
       let passedCases = 0;
-      let maxTime = 0,
-        maxMemory = 0;
+      let maxTime = 0;
+      let maxMemory = 0;
       let finalStatus = 'ACCEPTED';
       let errorDetail: string | null = null;
 
@@ -551,7 +600,6 @@ public class Main {
         );
 
         if (result.status.id === 6) {
-          // Compile Error
           finalStatus = 'COMPILATION_ERROR';
           errorDetail = this.decodeBase64(result.compile_output);
           break;
@@ -569,20 +617,32 @@ public class Main {
         maxMemory = Math.max(maxMemory, result.memory || 0);
       }
 
-      // 4. LƯU KẾT QUẢ
+      const score = (passedCases / testCases.length) * 10;
       const submission = await this.submissionModel.create({
         user_id: userId,
         codeAssignment_id: codeAssignment._id,
         language,
         code: sourceCode,
         status: finalStatus,
-        score: (passedCases / testCases.length) * 10,
+        score,
         execute_time: maxTime,
         execute_memory: maxMemory,
       });
 
+      await this.userLessonProgressService.recordAssignmentSubmissionResult(
+        userId,
+        String(lesson.course_id),
+        String(lesson._id),
+        {
+          score,
+          passed: finalStatus === 'ACCEPTED',
+          submissionId: submission._id,
+          submittedAt: new Date(),
+        },
+      );
+
       return {
-        message: 'Chấm bài hoàn tất',
+        message: 'Ch???m b??i ho??n t???t',
         submission,
         passedCases,
         totalCases: testCases.length,
@@ -590,6 +650,9 @@ public class Main {
       };
     } catch (error: any) {
       console.error('Judge Error:', error);
+      if (error instanceof BadRequestException || error instanceof ForbiddenException || error instanceof NotFoundException) {
+        throw error;
+      }
       throw new InternalServerErrorException(error.message);
     }
   }
@@ -859,17 +922,72 @@ public class Main {
   //     }
   //   }
 
-  async submitQuiz(userId: string, submitQuizDto: SubmitQuizDto) {
+  async submitQuiz(
+    userId: string,
+    submitQuizDto: SubmitQuizDto,
+    courseId?: string,
+    lessonId?: string,
+  ) {
     const { quiz_id, answers } = submitQuizDto;
 
     const quiz = await this.quizModel.findById(quiz_id).lean().exec();
     if (!quiz) {
-      throw new BadRequestException('Không tìm thấy Quiz.');
+      throw new BadRequestException('Kh??ng t??m th???y Quiz.');
+    }
+
+    const assignment = await this.assignmentModel
+      .findById(quiz.assignment_id)
+      .lean()
+      .exec();
+    if (!assignment) {
+      throw new NotFoundException('Assignment not found');
+    }
+    const normalizedAssignmentType = String(assignment.type || '').toLowerCase();
+    const isQuizAssignment =
+      normalizedAssignmentType === String(AssignmentType.QUIZ).toLowerCase();
+
+    const lesson = await this.lessonModel.findById(assignment.lesson_id).lean().exec();
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    if (!isQuizAssignment) {
+      const lessonAssignments = await this.assignmentModel
+        .find({ lesson_id: lesson._id })
+        .lean()
+        .exec();
+      const lessonAssignmentIds = lessonAssignments.map((item) =>
+        String(item._id),
+      );
+      const belongsToLesson = lessonAssignmentIds.includes(
+        String(assignment._id),
+      );
+
+      if (!belongsToLesson) {
+        throw new BadRequestException('Assignment type is not quiz.');
+      }
+    }
+
+    if (courseId && String(lesson.course_id) !== courseId) {
+      throw new ForbiddenException('Quiz kh??ng thu???c kh??a h???c n??y.');
+    }
+    if (lessonId && String(lesson._id) !== lessonId) {
+      throw new ForbiddenException('Quiz kh??ng thu???c lesson n??y.');
+    }
+
+    const access = await this.userLessonProgressService.computeLessonAccess(
+      userId,
+      String(lesson.course_id),
+      String(lesson._id),
+    );
+
+    if (!access.quiz.unlocked) {
+      throw new ForbiddenException(access.quiz.message);
     }
 
     const questions = await this.questionModel.find({ quiz_id }).lean().exec();
     if (!questions || questions.length === 0) {
-      throw new BadRequestException('Quiz không có câu hỏi nào.');
+      throw new BadRequestException('Quiz kh??ng c?? c??u h???i n??o.');
     }
 
     let correctCount = 0;
@@ -903,27 +1021,87 @@ public class Main {
     }
 
     const totalQuestions = questions.length;
-    const passed = correctCount === totalQuestions; // Require 100% to pass? Or 80%? Let's use 100% for now or calculate score
+    const passed = correctCount === totalQuestions;
     const score = (correctCount / totalQuestions) * 10;
 
-    // Update lesson progress
-    if (quiz.assignment_id) {
-      await this.userLessonProgressService.handleAssignmentGraded(
-        userId,
-        quiz.assignment_id.toString(),
+    const quizSubmission = await this.quizSubmissionModel.create({
+      userId: new Types.ObjectId(userId),
+      courseId: new Types.ObjectId(String(lesson.course_id)),
+      lessonId: new Types.ObjectId(String(lesson._id)),
+      quizId: new Types.ObjectId(quiz_id),
+      answers: answers.map((answer) => ({
+        questionId: new Types.ObjectId(answer.question_id),
+        selectedAnswers: answer.selected_answer,
+      })),
+      score,
+      passed,
+      submittedAt: new Date(),
+    });
+
+    await this.userLessonProgressService.recordQuizSubmissionResult(
+      userId,
+      String(lesson.course_id),
+      String(lesson._id),
+      {
+        score,
         passed,
-      );
-    }
+        submissionId: quizSubmission._id,
+        submittedAt: quizSubmission.submittedAt,
+      },
+    );
 
     return {
-      message: 'Chấm bài hoàn tất',
+      message: 'Ch???m b??i ho??n t???t',
       quizId: quiz_id,
       score,
       passed,
       correctCount,
       totalQuestions,
       results,
+      submissionId: quizSubmission._id,
     };
+  }
+
+
+  async submitQuizForLesson(
+    userId: string,
+    courseId: string,
+    lessonId: string,
+    answers: SubmitQuizDto['answers'],
+  ) {
+    const quiz = await this.findQuizForLesson(courseId, lessonId);
+    return this.submitQuiz(
+      userId,
+      {
+        quiz_id: String(quiz._id),
+        answers,
+      },
+      courseId,
+      lessonId,
+    );
+  }
+
+  async submitCodeForLesson(
+    userId: string,
+    courseId: string,
+    lessonId: string,
+    language: string,
+    sourceCode: string,
+  ) {
+    const codeAssignment = await this.findCodeAssignmentForLesson(
+      courseId,
+      lessonId,
+    );
+
+    return this.submitCode(
+      userId,
+      String(codeAssignment.assignment_id),
+      String(codeAssignment._id),
+      language,
+      sourceCode,
+      courseId,
+      lessonId,
+    );
   }
 
   // gia su tra loi khi nguoi dung muon hieu sai gi
@@ -1216,4 +1394,111 @@ public class Main {
       data: updatedLead,
     };
   }
+
+
+  private async findQuizForLesson(courseId: string, lessonId: string) {
+    const lesson = await this.lessonModel
+      .findOne({ _id: lessonId, course_id: courseId })
+      .lean()
+      .exec();
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    const lessonIdVariants = [lesson._id];
+    const lessonIdAsString = String(lesson._id);
+
+    const lessonAssignments = await this.assignmentModel
+      .find({
+        $or: [
+          { lesson_id: { $in: lessonIdVariants } },
+          { lesson_id: lessonIdAsString },
+        ],
+      })
+      .lean()
+      .exec();
+
+    if (!lessonAssignments.length) {
+      throw new NotFoundException('Quiz assignment not found');
+    }
+
+    const normalizedQuizAssignment = lessonAssignments.find((assignment) => {
+      const normalizedType = String(assignment.type || '').toLowerCase();
+      return normalizedType === String(AssignmentType.QUIZ).toLowerCase();
+    });
+
+    const assignmentIds = lessonAssignments.map((assignment) => assignment._id);
+
+    const quiz = normalizedQuizAssignment
+      ? await this.quizModel
+          .findOne({ assignment_id: normalizedQuizAssignment._id })
+          .lean()
+          .exec()
+      : await this.quizModel
+          .findOne({ assignment_id: { $in: assignmentIds } })
+          .lean()
+          .exec();
+
+    if (!quiz) {
+      throw new NotFoundException('Quiz not found');
+    }
+
+    return quiz;
+  }
+
+  private async findCodeAssignmentForLesson(courseId: string, lessonId: string) {
+    const lesson = await this.lessonModel
+      .findOne({ _id: lessonId, course_id: courseId })
+      .lean()
+      .exec();
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    const lessonIdVariants = [lesson._id];
+    const lessonIdAsString = String(lesson._id);
+
+    const lessonAssignments = await this.assignmentModel
+      .find({
+        $or: [
+          { lesson_id: { $in: lessonIdVariants } },
+          { lesson_id: lessonIdAsString },
+        ],
+      })
+      .lean()
+      .exec();
+
+    if (!lessonAssignments.length) {
+      throw new NotFoundException('Code assignment not found');
+    }
+
+    const normalizedCodeAssignment = lessonAssignments.find((assignment) => {
+      const normalizedType = String(assignment.type || '').toLowerCase();
+      return (
+        normalizedType ===
+        String(AssignmentType.CODEASSIGNMENT).toLowerCase()
+      );
+    });
+
+    const assignmentIds = lessonAssignments.map((assignment) => assignment._id);
+
+    const codeAssignment = normalizedCodeAssignment
+      ? await this.codeAssignmentModel
+          .findOne({ assignment_id: normalizedCodeAssignment._id })
+          .lean()
+          .exec()
+      : await this.codeAssignmentModel
+          .findOne({ assignment_id: { $in: assignmentIds } })
+          .lean()
+          .exec();
+
+    if (!codeAssignment) {
+      throw new NotFoundException('CodeAssignment not found');
+    }
+
+    return codeAssignment;
+  }
+
 }

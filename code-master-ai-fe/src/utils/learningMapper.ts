@@ -1,3 +1,9 @@
+import {
+  ActivityProgressView,
+  CourseProgressDetail,
+  CourseProgressLesson,
+} from "../api/userLessonProgress";
+
 export interface UILessonItem {
   id: string;
   lessonId: string;
@@ -10,150 +16,120 @@ export interface UILessonItem {
   status: "locked" | "learning" | "done";
   originalLesson: any;
   assignment?: any | null;
+  activity: ActivityProgressView;
 }
 
-const ASSIGNMENT_KIND = {
-  quiz: ["quiz", "quizAssignment"],
-  code: ["code", "codeAssignment"],
-} as const;
-
-const hasExplicitLock = (lesson: any) =>
-  lesson?.access?.isLocked === true ||
-  lesson?.locked === true ||
-  lesson?.isLocked === true ||
-  lesson?.locked_by_backend === true;
-
-const getAssignments = (lesson: any) => (Array.isArray(lesson?.assignments) ? lesson.assignments : []);
-
-const hasKind = (assignment: any, kinds: readonly string[]) => {
-  const rawType = String(assignment?.type || "").trim();
-  return kinds.includes(rawType) || kinds.includes(rawType.toLowerCase());
-};
-
-const getQuizAssignment = (lesson: any) => {
-  const assignments = getAssignments(lesson);
-  return (
-    assignments.find(
-      (a: any) =>
-        hasKind(a, ASSIGNMENT_KIND.quiz) ||
-        Boolean(a?.quiz) ||
-        (Array.isArray(a?.quizzes) && a.quizzes.length > 0)
-    ) || null
-  );
-};
-
-const getCodeAssignment = (lesson: any) => {
-  const assignments = getAssignments(lesson);
-  return (
-    assignments.find(
-      (a: any) =>
-        hasKind(a, ASSIGNMENT_KIND.code) ||
-        Boolean(a?.codeAssignment) ||
-        Boolean(a?.code_assignment) ||
-        (Array.isArray(a?.code_assignments) && a.code_assignments.length > 0)
-    ) || null
-  );
-};
-
 const getLessonOrder = (lesson: any, fallbackIndex: number) => {
-  const order = Number(lesson?.lesson_order ?? lesson?.order ?? lesson?.sort_order);
-  return Number.isFinite(order) && order > 0 ? order : fallbackIndex + 1;
+  const rawOrder = Number(lesson?.lesson_order ?? lesson?.lessonOrder);
+  return Number.isFinite(rawOrder) && rawOrder > 0 ? rawOrder : fallbackIndex + 1;
 };
 
 const getStepLabel = (stepType: "video" | "quiz" | "code") => {
   if (stepType === "quiz") return "Quiz";
   if (stepType === "code") return "Code";
-  return "Bài học";
+  return "Video";
 };
 
-const getStepTitle = (lesson: any, stepType: "video" | "quiz" | "code", lessonOrder: number) => {
-  const baseTitle = `Bài ${lessonOrder}: ${lesson.title}`;
+const getStepTitle = (
+  lesson: any,
+  stepType: "video" | "quiz" | "code",
+  lessonOrder: number,
+) => {
+  const baseTitle = `Bai ${lessonOrder}: ${lesson?.title || "Lesson"}`;
   if (stepType === "video") return baseTitle;
   return `${baseTitle} - ${getStepLabel(stepType)}`;
 };
 
-const getStepStatus = (
-  lesson: any,
-  progress: any,
-  stepType: "video" | "quiz" | "code",
-  hasStep: boolean
+const toStatus = (
+  activity?: ActivityProgressView | null,
 ): "locked" | "learning" | "done" => {
-  if (hasExplicitLock(lesson)) return "locked";
-  if (!hasStep) return "learning";
-
-  const isCompleted =
-    progress?.isCompleted === true ||
-    String(progress?.status || "").toUpperCase() === "COMPLETED";
-  const watchPercent = Number(progress?.watchPercent ?? 0);
-
-  if (stepType === "video") {
-    return watchPercent >= 80 || isCompleted ? "done" : "learning";
-  }
-
-  if (stepType === "quiz") {
-    return isCompleted ? "done" : "learning";
-  }
-
-  return isCompleted ? "done" : "learning";
+  if (!activity) return "locked";
+  if (activity.completed) return "done";
+  if (activity.unlocked) return "learning";
+  return "locked";
 };
+
+const toFallbackActivity = (source: any): ActivityProgressView => ({
+  status: source?.status || "LOCKED",
+  completed: Boolean(source?.completed),
+  unlocked: Boolean(source?.unlocked),
+  lockedReason: source?.lockedReason ?? null,
+  message: source?.message ?? null,
+  completedAt: source?.completedAt ?? null,
+  watchPercent: source?.watchPercent,
+  passed: source?.passed,
+  score: source?.score,
+  submittedAt: source?.submittedAt,
+  attemptsCount: source?.attemptsCount,
+});
 
 export const mapCourseToUILessons = (
   courseId: string,
   lessons: any[],
-  progressMap: Record<string, any> = {}
+  progressDetail?: CourseProgressDetail | null,
 ): UILessonItem[] => {
+  const progressByLessonId = new Map<string, CourseProgressLesson>(
+    (progressDetail?.lessons || []).map((lesson) => [lesson.lessonId, lesson]),
+  );
+
   return [...lessons]
     .sort((a, b) => getLessonOrder(a, 0) - getLessonOrder(b, 0))
     .flatMap((lesson, index) => {
-      const progress = progressMap[lesson._id];
+      const lessonId = String(lesson?._id || lesson?.lessonId || "");
       const lessonOrder = getLessonOrder(lesson, index);
-      const quizAssignment = getQuizAssignment(lesson);
-      const codeAssignment = getCodeAssignment(lesson);
+      const progressLesson = progressByLessonId.get(lessonId);
       const items: UILessonItem[] = [];
 
+      const videoActivity = progressLesson?.video ?? toFallbackActivity(lesson?.video);
       items.push({
-        id: `${lesson._id}::video`,
-        lessonId: lesson._id,
+        id: `${lessonId}::video`,
+        lessonId,
         lessonOrder,
         stepType: "video",
-        stepLabel: getStepLabel("video"),
+        stepLabel: "Video",
         title: getStepTitle(lesson, "video", lessonOrder),
         type: "video",
-        path: `/learn/${courseId}/lesson/${lesson._id}/video`,
-        status: getStepStatus(lesson, progress, "video", true),
+        path: `/learn/${courseId}/lesson/${lessonId}/video`,
+        status: toStatus(videoActivity),
         originalLesson: lesson,
         assignment: null,
+        activity: videoActivity,
       });
 
-      if (quizAssignment) {
+      if (lesson?.quiz) {
+        const quizActivity = progressLesson?.quiz ?? toFallbackActivity(lesson.quiz);
         items.push({
-          id: `${lesson._id}::quiz`,
-          lessonId: lesson._id,
+          id: `${lessonId}::quiz`,
+          lessonId,
           lessonOrder,
           stepType: "quiz",
-          stepLabel: getStepLabel("quiz"),
+          stepLabel: "Quiz",
           title: getStepTitle(lesson, "quiz", lessonOrder),
           type: "quiz",
-          path: `/learn/${courseId}/lesson/${lesson._id}/quiz`,
-          status: getStepStatus(lesson, progress, "quiz", true),
+          path: `/learn/${courseId}/lesson/${lessonId}/quiz`,
+          status: toStatus(quizActivity),
           originalLesson: lesson,
-          assignment: quizAssignment,
+          assignment: lesson.quiz,
+          activity: quizActivity,
         });
       }
 
-      if (codeAssignment) {
+      if (lesson?.assignment) {
+        const assignmentActivity =
+          progressLesson?.assignment ?? toFallbackActivity(lesson.assignment);
         items.push({
-          id: `${lesson._id}::code`,
-          lessonId: lesson._id,
+          id: `${lessonId}::code`,
+          lessonId,
           lessonOrder,
           stepType: "code",
-          stepLabel: getStepLabel("code"),
+          stepLabel: "Code",
           title: getStepTitle(lesson, "code", lessonOrder),
           type: "code",
-          path: `/learn/${courseId}/lesson/${lesson._id}/code`,
-          status: getStepStatus(lesson, progress, "code", true),
+          path: `/learn/${courseId}/lesson/${lessonId}/code`,
+          status: toStatus(assignmentActivity),
           originalLesson: lesson,
-          assignment: codeAssignment,
+          assignment: lesson.assignment,
+          activity: assignmentActivity,
         });
       }
 

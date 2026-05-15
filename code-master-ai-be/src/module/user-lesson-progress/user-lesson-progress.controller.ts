@@ -37,4 +37,20 @@ export class UserLessonProgressController {
       body.watchPercent,
     );
   }
+
+  @Patch('courses/:courseId/lessons/:lessonId/video-progress')
+  updateVideoProgressByCourse(
+    @Req() req,
+    @Param('courseId', ParseObjectIdPipe) courseId: string,
+    @Param('lessonId', ParseObjectIdPipe) lessonId: string,
+    @Body('watchPercent') watchPercent: number,
+  ) {
+    const userId = req.user._id;
+    return this.userLessonProgressService.markVideoProgress(
+      userId,
+      courseId,
+      lessonId,
+      watchPercent,
+    );
+  }
 }

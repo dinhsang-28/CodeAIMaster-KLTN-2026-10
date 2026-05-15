@@ -29,3 +29,15 @@ export const submitQuiz = async (quizId: string, answers: any[]) => {
   });
   return res.data;
 };
+
+export const submitLessonQuiz = async (
+  courseId: string,
+  lessonId: string,
+  answers: any[],
+) => {
+  const res = await axiosInstance.post(
+    `/courses/${courseId}/lessons/${lessonId}/quiz/submit`,
+    { answers },
+  );
+  return normalizeResponse<any>(res);
+};

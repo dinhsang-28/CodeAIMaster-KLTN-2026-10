@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Result, ResultDocument } from '../results/entities/result.entity';
 import {
+  ActivityProgressStatus,
   UserLessonProgress,
   UserLessonProgressDocument,
 } from '../user-lesson-progress/entities/user-lesson-progress.entity';
@@ -19,73 +20,68 @@ export class ProgressService {
     private readonly lessonModel: Model<LessonDocument>,
   ) {}
 
-  private buildCourseLessonQuery(courseObjectId: Types.ObjectId, courseId: string) {
-    return {
-      $or: [{ course_id: courseObjectId }, { course_id: courseId }],
-    };
-  }
-
-  // Hàm tính toán lại tiến độ học tập của người dùng cho một khóa học cụ thể
-  async recalculate(userId: string, courseId: string) {
+  async recalculateCourseProgress(userId: string, courseId: string) {
+    const summary = await this.getCourseProgress(userId, courseId);
     const userObjectId = new Types.ObjectId(userId);
     const courseObjectId = new Types.ObjectId(courseId);
-    const lessonQuery = this.buildCourseLessonQuery(courseObjectId, courseId);
-
-    const [totalLessons, completedLessons] = await Promise.all([
-      this.lessonModel.countDocuments(lessonQuery),
-      this.userLessonProgressModel.countDocuments({
-        userId: userObjectId,
-        courseId: courseObjectId,
-        isCompleted: true,
-      }),
-    ]);
-
-    const progressPercent =
-      totalLessons === 0
-        ? 0
-        : Number(((completedLessons / totalLessons) * 100).toFixed(2));
 
     await this.resultModel.findOneAndUpdate(
       { user_id: userObjectId, course_id: courseObjectId },
       {
-        progress_percent: progressPercent,
-        completed: totalLessons > 0 && completedLessons >= totalLessons,
+        progress_percent: summary.progressPercent,
+        completed:
+          summary.totalActivities > 0 &&
+          summary.completedActivities >= summary.totalActivities,
       },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
-    return {
-      userId,
-      courseId,
-      totalLessons,
-      completedLessons,
-      progressPercent,
-    };
+    return summary;
+  }
+
+  async recalculate(userId: string, courseId: string) {
+    return this.recalculateCourseProgress(userId, courseId);
   }
 
   async getCourseProgress(userId: string, courseId: string) {
     const userObjectId = new Types.ObjectId(userId);
     const courseObjectId = new Types.ObjectId(courseId);
-    const lessonQuery = this.buildCourseLessonQuery(courseObjectId, courseId);
 
-    const [totalLessons, completedLessons] = await Promise.all([
-      this.lessonModel.countDocuments(lessonQuery),
-      this.userLessonProgressModel.countDocuments({
-        userId: userObjectId,
-        courseId: courseObjectId,
-        isCompleted: true,
+    const [totalLessons, progresses] = await Promise.all([
+      this.lessonModel.countDocuments({
+        $or: [{ course_id: courseObjectId }, { course_id: courseId }],
       }),
+      this.userLessonProgressModel
+        .find({
+          userId: userObjectId,
+          courseId: courseObjectId,
+        })
+        .lean()
+        .exec(),
     ]);
 
+    const totalActivities = totalLessons * 3;
+    const completedActivities = progresses.reduce((count, progress) => {
+      return (
+        count +
+        Number(progress.video?.status === ActivityProgressStatus.COMPLETED) +
+        Number(progress.quiz?.status === ActivityProgressStatus.COMPLETED) +
+        Number(
+          progress.assignment?.status === ActivityProgressStatus.COMPLETED,
+        )
+      );
+    }, 0);
+
     const progressPercent =
-      totalLessons === 0
+      totalActivities === 0
         ? 0
-        : Number(((completedLessons / totalLessons) * 100).toFixed(2));
+        : Number(((completedActivities / totalActivities) * 100).toFixed(2));
 
     return {
       courseId,
       totalLessons,
-      completedLessons,
+      totalActivities,
+      completedActivities,
       progressPercent,
     };
   }

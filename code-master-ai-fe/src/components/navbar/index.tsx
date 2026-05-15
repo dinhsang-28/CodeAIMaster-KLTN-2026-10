@@ -21,6 +21,7 @@ import { GetCartLength } from "../../api/cart";
 import { PostLogout } from "../../api/auth";
 import NotificationBell from "../notification-bell";
 
+
 const Navbar = () => {
   const navigate = useNavigate();
 
@@ -135,14 +136,20 @@ const Navbar = () => {
     <header className="bg-brand-50 shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 md:px-10 py-3 flex items-center justify-between">
         {/* ===== LEFT ===== */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 md:gap-6">
           {/* Logo */}
+          <div className="md:hidden flex items-center">
+            <MenuOutlined
+              className="text-xl cursor-pointer"
+              onClick={() => setIsOpen(true)}
+            />
+          </div>
           <NavLink
             to="/"
-            className="flex items-center gap-2 text-xl font-bold text-brand-700"
+            className="flex items-center gap-2 text-xl font-bold text-brand-700 "
           >
             <CodeOutlined />
-            CodeMaster AI
+            <h1 className="hidden md:flex">CodeMaster AI</h1>
           </NavLink>
 
           {/* Desktop Menu */}
@@ -204,6 +211,7 @@ const Navbar = () => {
               Khóa học
             </NavLink>
           </nav>
+
         </div>
 
         {/* ===== RIGHT ===== */}
@@ -268,20 +276,15 @@ const Navbar = () => {
           )}
 
           {/* Hamburger */}
-          <div className="md:hidden">
-            <MenuOutlined
-              className="text-xl cursor-pointer"
-              onClick={() => setIsOpen(true)}
-            />
-          </div>
+
         </div>
       </div>
 
       {/* ===== MOBILE MENU ===== */}
       {isOpen && (
         <div className="md:hidden bg-white shadow-lg px-6 py-4 space-y-4">
-          <div className="flex justify-between">
-            <div className="font-bold">Menu</div>
+          <div className="flex justify-end">
+            {/* <div className="font-bold">Menu</div> */}
             <CloseOutlined onClick={() => setIsOpen(false)} />
           </div>
 

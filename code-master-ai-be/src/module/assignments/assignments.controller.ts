@@ -23,14 +23,14 @@ export class AssignmentsController {
 
   @Post()
   @UseGuards(JwtAuthGuard,PermissionsGuard)
-  @RequirePermissions('exercises_create')
+  @RequirePermissions('assignments_create')
   create(@Body() createAssignmentDto: CreateAssignmentDto) {
     return this.assignmentsService.create(createAssignmentDto);
   }
 
   @Get()
   @UseGuards(JwtAuthGuard,PermissionsGuard)
-  @RequirePermissions('exercises_view')
+  @RequirePermissions('assignments_view')
   findAll() {
     return this.assignmentsService.findAll();
   }
@@ -45,7 +45,7 @@ export class AssignmentsController {
     return this.assignmentsService.findOne(id);
   }
    @UseGuards(JwtAuthGuard,PermissionsGuard)
-   @RequirePermissions('exercises_edit')  
+   @RequirePermissions('assignments_edit')  
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -54,7 +54,7 @@ export class AssignmentsController {
     return this.assignmentsService.update(id, updateAssignmentDto);
   }
   @UseGuards(JwtAuthGuard,PermissionsGuard)
-  @RequirePermissions('exercises_delete')
+  @RequirePermissions('assignments_delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.assignmentsService.remove(id);

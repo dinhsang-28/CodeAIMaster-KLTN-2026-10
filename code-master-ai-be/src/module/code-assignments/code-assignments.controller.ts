@@ -19,12 +19,13 @@ import { PermissionsGuard } from '@/auth/passport/permissions.guard';
 import { RequirePermissions } from '@/auth/decorators/permisions.decorator';
 
 @Controller('code-assignments')
+@UseGuards(JwtAuthGuard)
 export class CodeAssignmentsController {
   constructor(
     private readonly codeAssignmentsService: CodeAssignmentsService,
   ) {}
   @UseGuards(JwtAuthGuard,PermissionsGuard)
-  @RequirePermissions('exercises_create')
+  @RequirePermissions('assignments_create')
   @Post()
   create(@Body() createCodeAssignmentDto: CreateCodeAssignmentDto) {
     return this.codeAssignmentsService.create(createCodeAssignmentDto);
@@ -40,7 +41,7 @@ export class CodeAssignmentsController {
     return this.codeAssignmentsService.findOne(id);
   }
   @UseGuards(JwtAuthGuard,PermissionsGuard)
-  @RequirePermissions('exercises_edit')
+  @RequirePermissions('assignments_edit')
   @Patch(':id')
   update(
     @Param('id', ParseObjectIdPipe) id: string,
@@ -49,7 +50,7 @@ export class CodeAssignmentsController {
     return this.codeAssignmentsService.update(id, updateCodeAssignmentDto);
   }
   @UseGuards(JwtAuthGuard,PermissionsGuard)
-  @RequirePermissions('exercises_delete')
+  @RequirePermissions('assignments_delete')
   @Delete(':id')
   remove(@Param('id', ParseObjectIdPipe) id: string) {
     return this.codeAssignmentsService.remove(id);

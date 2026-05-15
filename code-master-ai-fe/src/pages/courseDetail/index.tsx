@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import {
   CourseDetail,
   TabKey,
@@ -216,12 +217,7 @@ export default function CourseDetailPage() {
                 >
                   Nội dung khóa học
                 </button>
-                <button
-                  className={tabButtonClass(activeTab === "reviews")}
-                  onClick={() => setActiveTab("reviews")}
-                >
-                  Đánh giá
-                </button>
+                
               </div>
 
               <div className="space-y-10">
@@ -244,13 +240,13 @@ export default function CourseDetailPage() {
                   </section>
                 )}
 
-                {(activeTab === "intro" || activeTab === "content") && (
+                {( activeTab === "content") && (
                   <section>
                     <h3 className="mb-5 text-2xl font-bold text-brand-800">
                       Nội dung khóa học
                     </h3>
 
-                    {(activeTab === "intro" || activeTab === "content") && (
+                    {( activeTab === "content") && (
                       <section>
                         <div className="space-y-4">
                           {courseDetail.lessons?.map((lesson, index) => (
@@ -272,31 +268,10 @@ export default function CourseDetailPage() {
                                     Bài {lesson.lesson_order}: {lesson.title}
                                   </p>
                                 </div>
-                                <span className="text-xl text-brand-400">
-                                  {openSectionIndex === index ? "−" : "+"}
-                                </span>
+                                
                               </button>
 
-                              {openSectionIndex === index && (
-                                <div className="space-y-3 border-t border-brand-50 px-5 py-4">
-                                  {lesson.content && (
-                                    <p className="text-sm text-slate-700">
-                                      {lesson.content}
-                                    </p>
-                                  )}
-
-                                  {lesson.video_url && (
-                                    <a
-                                      href={lesson.video_url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="inline-flex rounded-lg bg-brand-50 px-3 py-2 text-sm font-bold text-brand-700"
-                                    >
-                                      Xem video bài học
-                                    </a>
-                                  )}
-                                </div>
-                              )}
+                             
                             </div>
                           ))}
                         </div>
@@ -467,14 +442,17 @@ export default function CourseDetailPage() {
         <section className="relative mt-20 overflow-hidden rounded-[2rem] bg-brand-700 px-8 py-14 text-center text-white shadow-2xl sm:px-12">
           <div className="relative z-10 space-y-5">
             <h2 className="text-3xl font-extrabold sm:text-5xl">
-              Bắt đầu hành trình Backend ngay hôm nay
+              Bắt đầu hành trình lập trình ngay hôm nay
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-brand-50">
-              Làm chủ NestJS và MongoDB qua dự án thực tế với mức giá ưu đãi.
+              Làm chủ công nghệ qua dự án thực tế với mức giá ưu đãi.
             </p>
             <div className="pt-4">
-              <button className="rounded-2xl bg-white px-10 py-4 font-black text-brand-700 transition hover:bg-brand-50">
-                Đăng ký học ngay
+              <button 
+                onClick={() => navigate("/introduce")}
+                className="rounded-2xl bg-white px-10 py-4 font-black text-brand-700 transition hover:bg-brand-50"
+              >
+                Về chúng tôi
               </button>
             </div>
           </div>

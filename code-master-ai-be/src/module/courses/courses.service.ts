@@ -37,6 +37,8 @@ import {
 } from '../enrollments/entities/enrollment.entity';
 import { ProgressService } from '../progress/progress.service';
 import { UserLessonProgress, UserLessonProgressDocument } from '../user-lesson-progress/entities/user-lesson-progress.entity';
+import { UserLessonProgressService } from '../user-lesson-progress/user-lesson-progress.service';
+import { AssignmentType } from '../assignments/enums/types.enum';
 
 @Injectable()
 export class CoursesService {
@@ -71,6 +73,7 @@ export class CoursesService {
     private readonly userLessonProgressModel: Model<UserLessonProgressDocument>,
 
     private readonly progressService: ProgressService,
+    private readonly userLessonProgressService: UserLessonProgressService,
 
     private readonly uploadService: UploadService,
   ) {}
@@ -255,7 +258,7 @@ export class CoursesService {
       .exec();
 
     if (!course) {
-      throw new NotFoundException('Không tìm thấy khóa học');
+      throw new NotFoundException('Kh??ng t??m th???y kh??a h???c');
     }
 
     const lessons = await this.lessonModel
@@ -269,7 +272,7 @@ export class CoursesService {
     const lessonObjectIds = lessonIdStrings
       .filter((lid) => Types.ObjectId.isValid(lid))
       .map((lid) => new Types.ObjectId(lid));
-      
+
     const assignments = await this.assignmentModel
       .find({
         $or: [
@@ -301,7 +304,6 @@ export class CoursesService {
 
     const questionsByQuizId = new Map<string, any[]>();
     for (const question of questions) {
-      // Remove correct_answer for student endpoint
       const safeQuestion = { ...question };
       delete (safeQuestion as any).correct_answer;
 
@@ -314,15 +316,14 @@ export class CoursesService {
 
     const quizzesByAssignmentId = new Map<string, any[]>();
     for (const quiz of quizzes) {
-      const quizWithQuestions = {
-        ...quiz,
-        questions: questionsByQuizId.get(String(quiz._id)) || [],
-      };
       const key = String(quiz.assignment_id);
       if (!quizzesByAssignmentId.has(key)) {
         quizzesByAssignmentId.set(key, []);
       }
-      quizzesByAssignmentId.get(key)!.push(quizWithQuestions);
+      quizzesByAssignmentId.get(key)!.push({
+        ...quiz,
+        questions: questionsByQuizId.get(String(quiz._id)) || [],
+      });
     }
 
     const codeAssignmentByAssignmentId = new Map<string, any>();
@@ -336,74 +337,102 @@ export class CoursesService {
     const assignmentsByLessonId = new Map<string, any[]>();
     for (const assignment of assignments) {
       const assignmentId = String(assignment._id);
-      const enrichedAssignment = {
-        ...assignment,
-        quizzes: quizzesByAssignmentId.get(assignmentId) || [],
-        codeAssignment: codeAssignmentByAssignmentId.get(assignmentId) || null,
-      };
-
       const lessonKey = String(assignment.lesson_id);
+
       if (!assignmentsByLessonId.has(lessonKey)) {
         assignmentsByLessonId.set(lessonKey, []);
       }
-      assignmentsByLessonId.get(lessonKey)!.push(enrichedAssignment);
+
+      assignmentsByLessonId.get(lessonKey)!.push({
+        ...assignment,
+        quizzes: quizzesByAssignmentId.get(assignmentId) || [],
+        codeAssignment: codeAssignmentByAssignmentId.get(assignmentId) || null,
+      });
     }
 
-    // Fetch user progress
-    const progresses = await this.userLessonProgressModel
-      .find({
-        userId: new Types.ObjectId(userId),
-        courseId: new Types.ObjectId(id),
-      })
-      .lean()
-      .exec();
-
-    const progressByLessonId = new Map<string, any>();
-    for (const prog of progresses) {
-      progressByLessonId.set(String(prog.lessonId), prog);
-    }
-
-    let previousLessonCompleted = true; // First lesson is unlocked by default
+    const courseProgress =
+      await this.userLessonProgressService.getCourseProgressDetail(userId, id);
+    const progressByLessonId = new Map(
+      courseProgress.lessons.map((lesson) => [lesson.lessonId, lesson]),
+    );
 
     const lessonDetails = lessons.map((lesson) => {
-      const lessonAssignments = assignmentsByLessonId.get(String(lesson._id)) || [];
-      const lessonProgress = progressByLessonId.get(String(lesson._id));
-
-      const isCompleted = lessonProgress ? lessonProgress.isCompleted : false;
-      const watchPercent = lessonProgress ? lessonProgress.watchPercent : 0;
-      const status = lessonProgress ? lessonProgress.status : 'NOT_STARTED';
-
-      const canAccess = previousLessonCompleted;
-      const isLocked = !canAccess;
-      const reason = isLocked ? 'Vui lòng hoàn thành bài học trước đó' : null;
-
-      previousLessonCompleted = isCompleted;
+      const lessonAssignments =
+        assignmentsByLessonId.get(String(lesson._id)) || [];
+      const lessonProgress: any = progressByLessonId.get(String(lesson._id));
+      const quizAssignment =
+        lessonAssignments.find((item) => item.type === AssignmentType.QUIZ) ||
+        null;
+      const codeAssignment =
+        lessonAssignments.find(
+          (item) => item.type === AssignmentType.CODEASSIGNMENT,
+        ) || null;
 
       return {
-        ...lesson,
-        assignments: lessonAssignments,
-        assignment_ids: lessonAssignments.map((item) => item._id),
-        progress: {
-          status,
-          watchPercent,
-          isCompleted,
-          completedAt: lessonProgress ? lessonProgress.completedAt : null,
+        _id: lesson._id,
+        title: lesson.title,
+        lesson_order: lesson.lesson_order,
+        content: lesson.content,
+        fullyCompleted: lessonProgress?.fullyCompleted ?? false,
+        progress: lessonProgress ?? null,
+        legacyProgress: lessonProgress?.legacyProgress ?? {
+          isCompleted: false,
+          watchPercent: 0,
         },
-        access: {
-          isLocked,
-          canAccess,
-          reason,
-        }
+        video: {
+          status: lessonProgress?.video.status ?? 'LOCKED',
+          unlocked: lessonProgress?.video.unlocked ?? false,
+          lockedReason: lessonProgress?.video.lockedReason ?? null,
+          watchPercent: lessonProgress?.video.watchPercent ?? 0,
+          completedAt: lessonProgress?.video.completedAt ?? null,
+          videoUrl: lessonProgress?.video.unlocked ? lesson.video_url : null,
+        },
+        quiz: quizAssignment
+          ? {
+              assignmentId: quizAssignment._id,
+              title: quizAssignment.title,
+              status: lessonProgress?.quiz.status ?? 'LOCKED',
+              unlocked: lessonProgress?.quiz.unlocked ?? false,
+              lockedReason: lessonProgress?.quiz.lockedReason ?? null,
+              quizzes: lessonProgress?.quiz.unlocked
+                ? quizAssignment.quizzes
+                : [],
+            }
+          : null,
+        assignment: codeAssignment
+          ? {
+              assignmentId: codeAssignment._id,
+              title: codeAssignment.title,
+              status: lessonProgress?.assignment.status ?? 'LOCKED',
+              unlocked: lessonProgress?.assignment.unlocked ?? false,
+              lockedReason: lessonProgress?.assignment.lockedReason ?? null,
+              codeAssignment: lessonProgress?.assignment.unlocked
+                ? codeAssignment.codeAssignment
+                : null,
+            }
+          : null,
       };
     });
 
-    const courseProgress = await this.progressService.recalculate(userId, id);
-
-    return new ApiResponse('Thông tin học khóa học', {
+    return new ApiResponse('Th??ng tin h???c kh??a h???c', {
       course: course,
       progress: courseProgress,
       lessons: lessonDetails,
     });
+  }
+
+  async getCourseProgress(id: string, userId: string): Promise<ApiResponse<any>> {
+    const course = await this.courseModel.findById(id).lean().exec();
+    if (!course) {
+      throw new NotFoundException('Kh??ng t??m th???y kh??a h???c');
+    }
+
+    const progress = await this.userLessonProgressService.getCourseProgressDetail(
+      userId,
+      id,
+    );
+
+    return new ApiResponse('Ti???n ????? kh??a h???c', progress);
   }
 
   async update(
@@ -477,7 +506,6 @@ export class CoursesService {
 
     const data = await this.courseModel
       .find(filter)
-      .populate('category', 'category_name')
       .skip(skip)
       .limit(Number(limit));
 
