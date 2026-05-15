@@ -24,6 +24,13 @@ export interface SubmissionResult {
   compileError: string | null;
 }
 
+export interface SubmitLessonCodePayload {
+  courseId: string;
+  lessonId: string;
+  language: string;
+  code: string;
+}
+
 export interface ExerciseData {
   _id: string;
   title: string;
@@ -48,10 +55,23 @@ export const submitCode = async (payload: SubmitCodePayload & { codeAssignmentId
   return res.data?.data || res.data;
 };
 
+export const submitLessonCode = async (
+  payload: SubmitLessonCodePayload,
+): Promise<SubmissionResult> => {
+  const res = await axiosInstance.post(
+    `/courses/${payload.courseId}/lessons/${payload.lessonId}/assignment/submit`,
+    {
+      code: payload.code,
+      language: payload.language,
+    },
+  );
+  return res.data?.data || res.data;
+};
+
 // --- NEW ASSIGNMENT APIs ---
 export const searchAssignments = async (params?: { keyword?: string; course_id?: string; lesson_id?: string; type?: string; page?: number; limit?: number }) => {
   const res = await axiosInstance.get('/assignments/search', { params });
-  return res.data;
+  return res.data?.data || res.data;
 };
 
 export const getAssignments = async () => {
