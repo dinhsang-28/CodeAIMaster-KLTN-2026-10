@@ -7,8 +7,10 @@ import {
   Param,
   Delete,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { AssignmentsService } from './assignments.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
@@ -23,14 +25,14 @@ export class AssignmentsController {
 
   @Post()
   @UseGuards(JwtAuthGuard,PermissionsGuard)
-  @RequirePermissions('assignments_create')
+  @RequirePermissions('exercises_create')
   create(@Body() createAssignmentDto: CreateAssignmentDto) {
     return this.assignmentsService.create(createAssignmentDto);
   }
 
   @Get()
   @UseGuards(JwtAuthGuard,PermissionsGuard)
-  @RequirePermissions('assignments_view')
+  @RequirePermissions('exercises_view')
   findAll() {
     return this.assignmentsService.findAll();
   }
@@ -40,12 +42,30 @@ export class AssignmentsController {
     return this.assignmentsService.searchAssignments(search);
   }
 
+  @Get('export')
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('exercises_view')
+  async exportAssignments(
+    @Query() search: SearchAssignmentDto,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.assignmentsService.exportAssignments(search);
+    const fileName = `assignments-${Date.now()}.xlsx`;
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    return res.send(buffer);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.assignmentsService.findOne(id);
   }
    @UseGuards(JwtAuthGuard,PermissionsGuard)
-   @RequirePermissions('assignments_edit')  
+   @RequirePermissions('exercises_edit')  
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -54,7 +74,7 @@ export class AssignmentsController {
     return this.assignmentsService.update(id, updateAssignmentDto);
   }
   @UseGuards(JwtAuthGuard,PermissionsGuard)
-  @RequirePermissions('assignments_delete')
+  @RequirePermissions('exercises_delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.assignmentsService.remove(id);
