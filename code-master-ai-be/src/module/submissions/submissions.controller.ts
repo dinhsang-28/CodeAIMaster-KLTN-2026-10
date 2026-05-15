@@ -11,9 +11,8 @@ import { PermissionsGuard } from '@/auth/passport/permissions.guard';
 @Controller('submissions')
 export class SubmissionsController {
   constructor(private readonly submissionsService: SubmissionsService) {}
-
-  @Post('submit')
   @UseGuards(JwtAuthGuard) 
+  @Post('submit')
   async submitCode(
     @Req() req,
     @Body('assignmentId') assignmentId: string,
