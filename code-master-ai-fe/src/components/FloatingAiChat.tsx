@@ -6,8 +6,8 @@ import {
   RobotOutlined,
   SendOutlined,
 } from "@ant-design/icons";
-import { PostChatConsultant } from "../../api/auth";
-import { useUserInfo } from "../../store/user";
+import { PostChatConsultant } from "../api/auth";
+import { useUserInfo } from "../store/user";
 
 type Message = {
   role: "user" | "model";
@@ -65,10 +65,7 @@ export default function FloatingAiChat() {
     try {
       const historyToSend = currentHistory
         .slice(1)
-        .filter(
-          (msg) =>
-            !msg.text.includes("Xin lỗi, hệ thống AI đang hơi bận"),
-        );
+        .filter((msg) => !msg.text.includes("Xin lỗi, hệ thống AI đang hơi bận"));
 
       const res = await PostChatConsultant({
         chatHistory: historyToSend,

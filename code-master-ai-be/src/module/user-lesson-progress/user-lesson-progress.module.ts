@@ -10,6 +10,10 @@ import { Lesson, LessonSchema } from '../lessons/entities/lesson.entity';
 import { Assignment, AssignmentSchema } from '../assignments/entities/assignment.entity';
 import { Submission, SubmissionSchema } from '../submissions/entities/submission.entity';
 import { ProgressModule } from '../progress/progress.module';
+import {
+  QuizSubmission,
+  QuizSubmissionSchema,
+} from '../quiz-submissions/entities/quiz-submission.entity';
 
 @Module({
   imports: [
@@ -18,6 +22,7 @@ import { ProgressModule } from '../progress/progress.module';
       { name: Lesson.name, schema: LessonSchema },
       { name: Assignment.name, schema: AssignmentSchema },
       { name: Submission.name, schema: SubmissionSchema },
+      { name: QuizSubmission.name, schema: QuizSubmissionSchema },
     ]),
     ProgressModule,
   ],

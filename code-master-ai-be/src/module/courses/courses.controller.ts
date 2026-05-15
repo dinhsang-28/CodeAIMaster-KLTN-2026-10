@@ -2,6 +2,9 @@ import { Controller,Get, Post, Body, Patch, Param, Query, UseInterceptors,
   UploadedFile, UseGuards, Req, Delete} from '@nestjs/common';
 import { JwtAuthGuard } from '@/auth/passport/jwt-auth.guard';
 import { CoursesService } from './courses.service';
+import { UserLessonProgressService } from '../user-lesson-progress/user-lesson-progress.service';
+import { SubmissionsService } from '../submissions/submissions.service';
+import { SubmitQuizDto } from '../submissions/dto/submit-quiz.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { SearchCourse } from './dto/search-course.dto';
@@ -13,7 +16,11 @@ import { RequirePermissions } from '@/auth/decorators/permisions.decorator';
 
 @Controller('courses')
 export class CoursesController {
-  constructor(private readonly coursesService: CoursesService) {}
+  constructor(
+    private readonly coursesService: CoursesService,
+    private readonly userLessonProgressService: UserLessonProgressService,
+    private readonly submissionsService: SubmissionsService,
+  ) {}
   @UseGuards(JwtAuthGuard,PermissionsGuard)
   @RequirePermissions('courses_create')
   @Post()
@@ -62,6 +69,77 @@ export class CoursesController {
   getLearningCourse(@Req() req, @Param('id') id: string) {
     const userId = req.user._id;
     return this.coursesService.getLearningCourse(id, userId);
+  }
+
+  @Get(':id/progress')
+  @UseGuards(JwtAuthGuard)
+  getCourseProgress(@Req() req, @Param('id') id: string) {
+    const userId = req.user._id;
+    return this.coursesService.getCourseProgress(id, userId);
+  }
+
+  @Patch(':courseId/lessons/:lessonId/video-progress')
+  @UseGuards(JwtAuthGuard)
+  updateLessonVideoProgress(
+    @Req() req,
+    @Param('courseId') courseId: string,
+    @Param('lessonId') lessonId: string,
+    @Body('watchPercent') watchPercent: number,
+  ) {
+    return this.userLessonProgressService.markVideoProgress(
+      req.user._id,
+      courseId,
+      lessonId,
+      watchPercent,
+    );
+  }
+
+  @Post(':courseId/lessons/:lessonId/quiz/submit')
+  @UseGuards(JwtAuthGuard)
+  submitLessonQuiz(
+    @Req() req,
+    @Param('courseId') courseId: string,
+    @Param('lessonId') lessonId: string,
+    @Body('answers') answers: SubmitQuizDto['answers'],
+  ) {
+    return this.submissionsService.submitQuizForLesson(
+      req.user._id,
+      courseId,
+      lessonId,
+      answers,
+    );
+  }
+
+  @Post(':courseId/lessons/:lessonId/assignment/submit')
+  @UseGuards(JwtAuthGuard)
+  submitLessonAssignment(
+    @Req() req,
+    @Param('courseId') courseId: string,
+    @Param('lessonId') lessonId: string,
+    @Body('language') language: string,
+    @Body('code') code: string,
+  ) {
+    return this.submissionsService.submitCodeForLesson(
+      req.user._id,
+      courseId,
+      lessonId,
+      language,
+      code,
+    );
+  }
+
+  @Get(':courseId/lessons/:lessonId/access')
+  @UseGuards(JwtAuthGuard)
+  getLessonAccess(
+    @Req() req,
+    @Param('courseId') courseId: string,
+    @Param('lessonId') lessonId: string,
+  ) {
+    return this.userLessonProgressService.computeLessonAccess(
+      req.user._id,
+      courseId,
+      lessonId,
+    );
   }
 
   @Get(':id')

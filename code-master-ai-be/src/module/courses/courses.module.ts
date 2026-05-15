@@ -34,6 +34,11 @@ import {
   UserLessonProgress,
   UserLessonProgressSchema,
 } from '../user-lesson-progress/entities/user-lesson-progress.entity';
+import {
+  QuizSubmission,
+  QuizSubmissionSchema,
+} from '../quiz-submissions/entities/quiz-submission.entity';
+import { SubmissionsModule } from '../submissions/submissions.module';
 
 @Module({
   imports: [
@@ -47,11 +52,13 @@ import {
       { name: CartDetail.name, schema: CartDetailSchema },
       { name: Enrollment.name, schema: EnrollmentSchema },
       { name: UserLessonProgress.name, schema: UserLessonProgressSchema },
+      { name: QuizSubmission.name, schema: QuizSubmissionSchema },
     ]),
     CategoriesModule,
     UploadModule,
     ProgressModule,
     UserLessonProgressModule,
+    SubmissionsModule,
   ],
   controllers: [CoursesController],
   providers: [CoursesService],

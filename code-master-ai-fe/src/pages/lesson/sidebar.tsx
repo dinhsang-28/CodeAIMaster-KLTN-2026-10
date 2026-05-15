@@ -1,6 +1,13 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { CheckCircle2, Play, Lock, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
+  Play,
+} from "lucide-react";
 
 interface LessonItem {
   id: string;
@@ -8,178 +15,338 @@ interface LessonItem {
   title: string;
   path: string;
   type: string;
+  status?: "locked" | "learning" | "done";
 }
 
 interface SidebarProps {
   data: LessonItem[];
+  completedCount?: number;
+  totalCount?: number;
+  progressPercent?: number;
 }
 
 type LessonStatus = "done" | "learning" | "locked";
 
-const Sidebar = ({ data }: SidebarProps) => {
+type LessonGroup = {
+  lessonId: string;
+  lessonIndex: number;
+  lessonTitle: string;
+  status: LessonStatus;
+  items: LessonItem[];
+};
+
+const Sidebar = ({
+  data,
+  completedCount = 0,
+  totalCount = data.length,
+  progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0,
+}: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
+
+  const groupedLessons = useMemo<LessonGroup[]>(() => {
+    const grouped = data.reduce((acc, item) => {
+      if (!acc[item.lessonId]) acc[item.lessonId] = [];
+      acc[item.lessonId].push(item);
+      return acc;
+    }, {} as Record<string, LessonItem[]>);
+
+    return Object.values(grouped).map((items, index) => {
+      const videoItem = items.find((item) => item.type === "video");
+      const lessonTitle = videoItem
+        ? videoItem.title.replace(/^Bai \d+: /, "")
+        : `Bai ${index + 1}`;
+
+      const status: LessonStatus = items.some(
+        (item) => (item.status || "locked") === "learning",
+      )
+        ? "learning"
+        : items.every((item) => (item.status || "locked") === "done")
+          ? "done"
+          : "locked";
+
+      return {
+        lessonId: items[0].lessonId,
+        lessonIndex: index + 1,
+        lessonTitle,
+        status,
+        items,
+      };
+    });
+  }, [data]);
+
+  const activeLessonId = useMemo(() => {
+    return data.find((item) => location.pathname === item.path)?.lessonId ?? null;
+  }, [data, location.pathname]);
+
+  const firstAccessibleLessonId = useMemo(() => {
+    return (
+      groupedLessons.find((group) =>
+        group.items.some((item) => (item.status || "locked") !== "locked"),
+      )?.lessonId ??
+      groupedLessons[0]?.lessonId ??
+      null
+    );
+  }, [groupedLessons]);
 
   useEffect(() => {
-    const loadCompleted = () => {
-      const saved = localStorage.getItem("completed_lessons");
-      if (saved) setCompletedLessons(JSON.parse(saved));
-    };
-
-    loadCompleted();
-    window.addEventListener("lessonsUpdated", loadCompleted);
-    return () => window.removeEventListener("lessonsUpdated", loadCompleted);
-  }, []);
-
-  const currentIndex = data.findIndex(
-    (item) => item.path === location.pathname
-  );
-
-  const completedSet = new Set(completedLessons);
-  const completedCount = data.filter((item) =>
-    completedSet.has(item.id) || completedSet.has(`${item.lessonId}::video`) || completedSet.has(`${item.lessonId}::quiz`) || completedSet.has(`${item.lessonId}::code`)
-  ).length;
-  const progressPercent = data.length > 0 ? (completedCount / data.length) * 100 : 0;
-
-  const getStatus = (item: LessonItem, index: number): LessonStatus => {
-    const prevItems = data.slice(0, index);
-    const videoKey = `${item.lessonId}::video`;
-    const quizKey = `${item.lessonId}::quiz`;
-    const codeKey = `${item.lessonId}::code`;
-    const isCurrent = index === currentIndex;
-    const isDone = completedSet.has(item.id) || completedSet.has(videoKey) || completedSet.has(quizKey) || completedSet.has(codeKey);
-
-    if (isCurrent) return "learning";
-    if (isDone) return "done";
-
-    const sameLessonItems = data.filter((x) => x.lessonId === item.lessonId);
-    const currentPosition = sameLessonItems.findIndex((x) => x.id === item.id);
-    const previousInLesson = sameLessonItems.slice(0, currentPosition);
-    const prerequisiteMet = previousInLesson.every((x) =>
-      completedSet.has(x.id) || completedSet.has(`${x.lessonId}::video`) || completedSet.has(`${x.lessonId}::quiz`) || completedSet.has(`${x.lessonId}::code`)
-    );
-
-    if (prerequisiteMet) return "learning";
-    if (prevItems.some((x) => completedSet.has(x.id) || completedSet.has(`${x.lessonId}::video`) || completedSet.has(`${x.lessonId}::quiz`) || completedSet.has(`${x.lessonId}::code`))) {
-      return "locked";
-    }
-
-    return "locked";
-  };
+    setExpandedLessonId((prev) => {
+      if (activeLessonId) return activeLessonId;
+      if (prev && groupedLessons.some((group) => group.lessonId === prev)) {
+        return prev;
+      }
+      return firstAccessibleLessonId;
+    });
+  }, [activeLessonId, firstAccessibleLessonId, groupedLessons]);
 
   const getStatusIcon = (status: LessonStatus) => {
     switch (status) {
       case "done":
         return <CheckCircle2 size={18} className="text-brand-600" />;
       case "learning":
-        return <Play size={18} className="text-brand-600 fill-brand-600" />;
-      case "locked":
+        return <Play size={18} className="fill-brand-600 text-brand-600" />;
+      default:
         return <Lock size={18} className="text-gray-300" />;
     }
   };
 
-  // Group items by lessonId
-  const groupedData = data.reduce((acc, item) => {
-    if (!acc[item.lessonId]) acc[item.lessonId] = [];
-    acc[item.lessonId].push(item);
-    return acc;
-  }, {} as Record<string, LessonItem[]>);
-  
-  const groupedArray = Object.values(groupedData);
+  const getGroupTone = (status: LessonStatus, expanded: boolean) => {
+    if (expanded && status === "learning") {
+      return "border-brand-100 bg-gradient-to-r from-brand-50 to-[#f8f6ef]";
+    }
+    if (expanded && status === "done") {
+      return "border-emerald-100 bg-gradient-to-r from-emerald-50 to-white";
+    }
+    if (expanded) {
+      return "border-slate-200 bg-slate-50";
+    }
+    return "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50";
+  };
+
+  const getDisplayTitle = (item: LessonItem) => {
+    if (item.type === "quiz") return "Bài tập trắc nghiệm";
+    if (item.type === "code") return "Bài tập lập trình";
+    return "Video bài giảng";
+  };
+
+  const toggleLessonGroup = (lessonId: string) => {
+    setExpandedLessonId((prev) => (prev === lessonId ? null : lessonId));
+  };
+
+  const handleCollapsedGroupClick = (group: LessonGroup) => {
+    setCollapsed(false);
+    setExpandedLessonId(group.lessonId);
+  };
+
+  const renderCollapsedDesktopGroups = () => (
+    <div className="flex-1 space-y-2 overflow-y-auto px-2 py-3">
+      {groupedLessons.map((group) => {
+        const isActiveGroup = activeLessonId === group.lessonId;
+        const isExpanded = expandedLessonId === group.lessonId;
+
+        return (
+          <button
+            key={group.lessonId}
+            type="button"
+            title={`Bài ${group.lessonIndex}: ${group.lessonTitle}`}
+            onClick={() => handleCollapsedGroupClick(group)}
+            className={`group flex w-full flex-col items-center gap-2 rounded-2xl border px-2 py-3 text-center transition ${
+              isActiveGroup
+                ? "border-brand-200 bg-brand-50 shadow-sm ring-1 ring-brand-100/80"
+                : isExpanded
+                  ? "border-slate-200 bg-slate-50"
+                  : "border-transparent bg-white hover:border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white ring-1 ring-slate-200/80">
+              {getStatusIcon(group.status)}
+            </div>
+
+            <div className="flex h-7 min-w-[2.25rem] items-center justify-center rounded-full bg-slate-100 px-2 text-[11px] font-bold text-slate-600">
+              {group.lessonIndex}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderLessonGroups = (mode: "mobile" | "desktop") =>
+    groupedLessons.map((group) => {
+      const isExpanded = expandedLessonId === group.lessonId;
+
+      return (
+        <div
+          key={group.lessonId}
+          className={`overflow-hidden rounded-2xl border shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-all ${getGroupTone(
+            group.status,
+            isExpanded,
+          )}`}
+        >
+          <button
+            onClick={() => {
+              toggleLessonGroup(group.lessonId);
+            }}
+            className="flex w-full items-start gap-3 px-3 py-3 text-left transition sm:px-4"
+          >
+            <div className="mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/85 ring-1 ring-slate-200/70">
+              {getStatusIcon(group.status)}
+            </div>
+
+            {(mode === "mobile" || !collapsed) && (
+              <>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600/80">
+                    Bài {group.lessonIndex}
+                  </div>
+                  <div className="mt-1 text-[15px] font-bold leading-6 text-slate-800">
+                    {group.lessonTitle}
+                  </div>
+                </div>
+
+                <ChevronDown
+                  size={18}
+                  className={`mt-2 flex-shrink-0 text-slate-400 transition-transform ${
+                    isExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </>
+            )}
+          </button>
+
+          {(mode === "mobile" || !collapsed) && isExpanded && (
+            <div className="border-t border-slate-100/80 px-3 pb-3 pt-2 sm:px-4">
+              <div className="ml-[18px] border-l border-slate-200/80 pl-4">
+                <div className="space-y-2">
+                  {group.items.map((item) => {
+                    const status = item.status || "locked";
+                    const isLocked = status === "locked";
+                    const isActive = location.pathname === item.path;
+
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          if (isLocked) return;
+                          if (mode === "mobile") {
+                            setMobileOpen(false);
+                          }
+                          navigate(item.path);
+                        }}
+                        disabled={isLocked}
+                        className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                          isActive
+                            ? "border-brand-200 bg-white text-brand-900 shadow-sm ring-1 ring-brand-100/70"
+                            : "border-transparent bg-transparent hover:border-slate-200 hover:bg-white/90"
+                        } ${
+                          isLocked
+                            ? "cursor-not-allowed border-transparent text-slate-300 opacity-90"
+                            : "text-slate-700"
+                        }`}
+                      >
+                        {getStatusIcon(status)}
+
+                        <div className="truncate text-[15px] font-medium">
+                          {getDisplayTitle(item)}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    });
 
   return (
-    <div
-      className={`h-screen sticky top-0 bg-white border-r transition-all duration-300 flex flex-col
-      ${collapsed ? "w-[80px]" : "w-[300px]"}
-      `}
-    >
-      {/* HEADER */}
-      <div className="p-4 border-b flex items-center justify-between">
-        {!collapsed && (
-          <h2 className="text-sm font-bold text-brand-700 uppercase">
-            NỘI DUNG KHÓA HỌC
-          </h2>
-        )}
+    <>
+      <div className="sticky top-0 z-20 border-b bg-white md:hidden">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="truncate text-sm font-bold uppercase text-brand-700">
+                Nội dung khóa học
+              </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                {completedCount}/{totalCount} hoàn thành, {Math.round(progressPercent)}%
+              </p>
+            </div>
 
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-2 rounded-lg hover:bg-gray-100 transition"
-        >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </button>
-      </div>
-
-      {/* PROGRESS */}
-      {!collapsed && (
-        <div className="px-4 py-3 border-b">
-          <div className="flex justify-between text-xs mb-2">
-            <span>{completedCount}/{data.length}</span>
-            <span>{Math.round(progressPercent)}%</span>
+            <button
+              onClick={() => setMobileOpen((prev) => !prev)}
+              className="rounded-lg p-2 transition hover:bg-gray-100"
+            >
+              {mobileOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+            </button>
           </div>
-          <div className="w-full bg-gray-100 rounded-full h-2">
+
+          <div className="mt-3 h-2 w-full rounded-full bg-gray-100">
             <div
-              className="bg-brand-500 h-full rounded-full transition-all"
+              className="h-full rounded-full bg-brand-500 transition-all"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
         </div>
-      )}
 
-      {/* LIST */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-4">
-        {groupedArray.map((group, groupIndex) => {
-          const videoItem = group.find(i => i.type === 'video');
-          const lessonTitle = videoItem ? videoItem.title : `Bài ${groupIndex + 1}`;
-
-          return (
-            <div key={group[0].lessonId} className="space-y-1">
-              {!collapsed && (
-                <div className="text-xs font-bold text-gray-500 uppercase px-3 py-1 mb-1">
-                  Bài {groupIndex + 1}: {lessonTitle.replace(/^Bài \d+: /, '')}
-                </div>
-              )}
-              {group.map((item) => {
-                const globalIndex = data.findIndex(d => d.id === item.id);
-                const status = getStatus(item, globalIndex);
-                const isActive = location.pathname === item.path;
-                const isLocked = status === "locked";
-
-                let displayTitle = item.title;
-                if (item.type !== 'video') {
-                  // For sub-items, just show the type e.g., "Quiz", "Code"
-                  displayTitle = item.type === 'quiz' ? 'Bài tập trắc nghiệm' : 'Bài tập lập trình';
-                } else {
-                  displayTitle = 'Video bài giảng';
-                }
-
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => !isLocked && navigate(item.path)}
-                    disabled={isLocked}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition
-                      ${collapsed ? "justify-center" : "pl-6"}
-                      ${isActive ? "bg-brand-50" : "hover:bg-gray-50"}
-                      ${isLocked ? "opacity-50 cursor-not-allowed" : ""}
-                    `}
-                  >
-                    {getStatusIcon(status)}
-
-                    {!collapsed && (
-                      <div className="text-sm font-medium truncate">
-                        {displayTitle}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          );
-        })}
+        {mobileOpen && (
+          <div className="max-h-[55vh] space-y-3 overflow-y-auto border-t p-2">
+            {renderLessonGroups("mobile")}
+          </div>
+        )}
       </div>
-    </div>
+
+      <div
+        className={`sticky top-0 hidden h-screen flex-col border-r bg-white transition-all duration-300 md:flex ${
+          collapsed ? "w-[92px]" : "w-[320px]"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b p-4">
+          {!collapsed && (
+            <h2 className="text-sm font-bold uppercase text-brand-700">
+              Nội dung khóa học
+            </h2>
+          )}
+
+          <button
+            onClick={() => setCollapsed((prev) => !prev)}
+            className="rounded-lg p-2 transition hover:bg-gray-100"
+          >
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+        </div>
+
+        {!collapsed ? (
+          <>
+            <div className="border-b px-4 py-3">
+              <div className="mb-2 flex justify-between text-xs">
+                <span>
+                  {completedCount}/{totalCount}
+                </span>
+                <span>{Math.round(progressPercent)}%</span>
+              </div>
+
+              <div className="h-2 w-full rounded-full bg-gray-100">
+                <div
+                  className="h-full rounded-full bg-brand-500 transition-all"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 space-y-3 overflow-y-auto p-2">
+              {renderLessonGroups("desktop")}
+            </div>
+          </>
+        ) : (
+          renderCollapsedDesktopGroups()
+        )}
+      </div>
+    </>
   );
 };
 
