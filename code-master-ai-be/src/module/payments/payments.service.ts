@@ -448,22 +448,22 @@ export class PaymentsService {
       throw new NotFoundException('Không tìm thấy đơn hàng');
     }
 
-    const payment = await this.paymentModel.findOneAndUpdate(
-      {
-        order_id: orderObjectId,
-        payment_method: paymentMethod,
-        payment_status: PaymentStatus.PENDING,
-      },
-      {
-        payment_status: PaymentStatus.PAID,
-        paid_at: new Date(),
-      },
-      { new: true },
-    );
+    const payment = await this.paymentModel.findOne({
+      order_id: orderObjectId,
+      payment_method: paymentMethod,
+    });
 
     if (!payment) {
-      throw new NotFoundException('Không tìm thấy payment pending để cập nhật');
+      throw new NotFoundException('Không tìm thấy payment để cập nhật');
     }
+
+    if (payment.payment_status === PaymentStatus.PAID) {
+      return { payment, order };
+    }
+
+    payment.payment_status = PaymentStatus.PAID;
+    payment.paid_at = new Date();
+    await payment.save();
 
     await this.orderModel.findByIdAndUpdate(orderObjectId, {
       status: OrderStatus.PAID,

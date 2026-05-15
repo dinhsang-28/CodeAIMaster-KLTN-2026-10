@@ -14,6 +14,7 @@ import type { Response } from 'express';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment.dto';
+import { PaymentMethod } from './entities/payment.entity';
 
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@/auth/passport/jwt-auth.guard';
@@ -67,6 +68,11 @@ export class PaymentsController {
         `https://code-ai-master-kltn-2026-10.vercel.app/payment-fail/${orderId}`,
       );
     }
+
+    await this.paymentsService.confirmPaymentSuccessByOrder(
+      orderId,
+      PaymentMethod.MOMO,
+    );
 
     return res.redirect(
       `https://code-ai-master-kltn-2026-10.vercel.app/payment-success/${orderId}`,
