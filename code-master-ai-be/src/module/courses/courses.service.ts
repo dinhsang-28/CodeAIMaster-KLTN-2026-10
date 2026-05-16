@@ -546,6 +546,40 @@ export class CoursesService {
     return new ApiResponse('Danh sách khóa học đã đăng ký', courses);
   }
 
+  async enrollFreeCourse(id: string, userId: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('courseId không hợp lệ');
+    }
+
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('userId không hợp lệ');
+    }
+
+    const course = await this.courseModel.findById(id).lean().exec();
+    if (!course) {
+      throw new NotFoundException('Không tìm thấy khóa học');
+    }
+
+    if (course.status !== CourseStatus.ACTIVE) {
+      throw new BadRequestException('Khóa học chưa được mở');
+    }
+
+    if (Number(course.price || 0) > 0) {
+      throw new BadRequestException('Khóa học này cần thanh toán');
+    }
+
+    const enrollment = await this.enrollmentModel.findOneAndUpdate(
+      {
+        user_id: new Types.ObjectId(userId),
+        course_id: new Types.ObjectId(id),
+      },
+      { $set: { status: 'active' } },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
+    );
+
+    return new ApiResponse('Đăng ký khóa học miễn phí thành công', enrollment);
+  }
+
   async getFeaturedCourse(): Promise<ApiResponse<any>> {
     const topCourses = await this.enrollmentModel.aggregate([
       {

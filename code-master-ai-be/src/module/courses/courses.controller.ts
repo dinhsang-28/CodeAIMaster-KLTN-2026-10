@@ -64,6 +64,13 @@ export class CoursesController {
   getCourseEnrollment(@CurrentUser() user: any) {
     return this.coursesService.getCourseEnrollment(user._id);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/free-enrollment')
+  enrollFreeCourse(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.coursesService.enrollFreeCourse(id, user._id);
+  }
+
   @Get(':id/learning')
   @UseGuards(JwtAuthGuard)
   getLearningCourse(@Req() req, @Param('id') id: string) {
