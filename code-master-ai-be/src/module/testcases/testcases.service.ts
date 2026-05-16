@@ -32,7 +32,11 @@ export class TestcasesService {
     private codeAssignmentModel: Model<CodeAssignmentDocument>,
     private readonly aiAssistantService: AiAssistantService,
   ) {
-    this.aiApiKey = (process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '').trim();
+    this.aiApiKey = (
+      process.env.GEMINI_API_KEY ||
+      process.env.OPENAI_API_KEY ||
+      ''
+    ).trim();
     this.genAI = this.aiApiKey ? new GoogleGenerativeAI(this.aiApiKey) : null;
   }
   // async generateTestCaseByAI(
@@ -92,7 +96,7 @@ export class TestcasesService {
   //   // 2. Thiết lập Prompt ép AI trả về chuẩn cấu trúc DB của bạn
   //   const prompt = `
   //     Bạn là chuyên gia thuật toán. Hãy tạo ra ${numberOfTestCases} test cases cho bài toán sau.
-      
+
   //     THÔNG TIN BÀI TOÁN:
   //     - Tên bài: ${codeAssignment.title}
   //     - Mô tả: ${codeAssignment.problem_description}
@@ -172,6 +176,123 @@ export class TestcasesService {
   //     );
   //   }
   // }
+  // đang test 2
+  // async generateTestCaseByAI(
+  //   assignmentId: string,
+  //   solutionCode: string,
+  //   constraints: string,
+  //   numberOfTestCases: number = 5,
+  //   hiddenTestCases?: number,
+  // ) {
+  //   if (!Types.ObjectId.isValid(assignmentId)) {
+  //     throw new BadRequestException('assignmentId không hợp lệ');
+  //   }
+
+  //   const assignmentObjectId = new Types.ObjectId(assignmentId);
+  //   const assignment = await this.assignmentModel.findById(assignmentObjectId).lean().exec();
+  //   if (!assignment) {
+  //     throw new BadRequestException('Không tìm thấy assignment cho bài tập này.');
+  //   }
+
+  //   const codeAssignment = await this.codeAssignmentModel
+  //     .findOne({ assignment_id: assignmentObjectId })
+  //     .lean()
+  //     .exec();
+
+  //   if (!codeAssignment) {
+  //     throw new BadRequestException('Bài tập này chưa có CodeAssignment để sinh testcase.');
+  //   }
+
+  //   if (!this.genAI) {
+  //     throw new BadRequestException('Chưa cấu hình AI API key.');
+  //   }
+
+  //   //  Cải tiến Prompt để AI không sinh ra Object và bỏ chữ "Kết quả:"
+  //   const prompt = `
+  //     Bạn là chuyên gia thuật toán. Hãy tạo ra ${numberOfTestCases} test cases cho bài toán sau.
+
+  //     THÔNG TIN BÀI TOÁN:
+  //     - Tên bài: ${codeAssignment.title}
+  //     - Mô tả: ${codeAssignment.problem_description}
+  //     - Giới hạn: ${constraints}
+  //     - Code giải chuẩn: \n${solutionCode}
+
+  //     YÊU CẦU BẮT BUỘC:
+  //     1. "input_data" PHẢI LÀ CHUỖI (STRING). Các giá trị cách nhau bởi dấu cách. Ví dụ: "5 10". KHÔNG được dùng object {}.
+  //     2. "expected_output" PHẢI LÀ CHUỖI (STRING). Chỉ chứa kết quả cuối cùng, KHÔNG kèm văn bản như "Kết quả: ". Ví dụ: "15".
+  //     3. 2 test cases đầu tiên set "is_hidden": false. Các test cases còn lại set "is_hidden": true.
+  //     4. CHỈ TRẢ VỀ JSON ARRAY, KHÔNG GIẢI THÍCH.
+
+  //     Cấu trúc JSON mẫu:
+  //     [
+  //       {
+  //         "input_data": "5 10",
+  //         "expected_output": "15",
+  //         "is_hidden": false
+  //       }
+  //     ]
+  //   `;
+
+  //   try {
+  //     const model = this.genAI!.getGenerativeModel({
+  //       model: 'gemini-2.5-flash-lite', // Dòng model này ổn định cho JSON
+  //     });
+  //     const result = await model.generateContent(prompt);
+  //     const rawText = result.response.text();
+
+  //     let textResponse = rawText
+  //       .replace(/```json/g, '')
+  //       .replace(/```/g, '')
+  //       .trim();
+
+  //     const jsonMatch = textResponse.match(/\[[\s\S]*\]/);
+  //     if (jsonMatch) textResponse = jsonMatch[0];
+
+  //     let parsedTestCases: any[] = JSON.parse(textResponse);
+
+  //     const hiddenCount = typeof hiddenTestCases === 'number' && hiddenTestCases >= 0
+  //       ? hiddenTestCases
+  //       : Math.max(numberOfTestCases - 2, 0);
+
+  //     // 2. Xử lý dữ liệu linh hoạt (Map và ép kiểu)
+  //     const testCasesToSave = parsedTestCases.map((tc, index) => {
+  //       let inputStr = '';
+
+  //       // Nếu AI lỡ trả về object {"a": 10, "b": 20}, ta nối thành "10 20"
+  //       if (tc.input_data && typeof tc.input_data === 'object') {
+  //         inputStr = Object.values(tc.input_data).join(' ');
+  //       } else {
+  //         inputStr = String(tc.input_data ?? '').trim();
+  //       }
+
+  //       // Loại bỏ chữ "Kết quả: " nếu AI quên không tuân thủ prompt
+  //       let outputStr = String(tc.expected_output ?? '').trim();
+  //       outputStr = outputStr.replace(/Kết quả:\s*/i, '');
+
+  //       return {
+  //         assignment_id: assignmentObjectId,
+  //         code_assignment_id: codeAssignment._id,
+  //         input_data: inputStr,
+  //         expected_output: outputStr,
+  //         is_hidden: typeof tc.is_hidden === 'boolean'
+  //           ? tc.is_hidden
+  //           : index >= (parsedTestCases.length - hiddenCount),
+  //       };
+  //     });
+
+  //     // 3. Lưu vào DB
+  //     const savedTestCases = await this.testCaseModel.insertMany(testCasesToSave);
+
+  //     return {
+  //       message: `Đã tự động tạo và lưu ${savedTestCases.length} Test Cases thành công!`,
+  //       data: savedTestCases,
+  //     };
+  //   } catch (error) {
+  //     console.error('[generate-ai] Error:', error);
+  //     throw new BadRequestException('AI tạo dữ liệu không hợp lệ, vui lòng thử lại.');
+  //   }
+  // }
+
   async generateTestCaseByAI(
     assignmentId: string,
     solutionCode: string,
@@ -184,9 +305,14 @@ export class TestcasesService {
     }
 
     const assignmentObjectId = new Types.ObjectId(assignmentId);
-    const assignment = await this.assignmentModel.findById(assignmentObjectId).lean().exec();
+    const assignment = await this.assignmentModel
+      .findById(assignmentObjectId)
+      .lean()
+      .exec();
     if (!assignment) {
-      throw new BadRequestException('Không tìm thấy assignment cho bài tập này.');
+      throw new BadRequestException(
+        'Không tìm thấy assignment cho bài tập này.',
+      );
     }
 
     const codeAssignment = await this.codeAssignmentModel
@@ -195,88 +321,114 @@ export class TestcasesService {
       .exec();
 
     if (!codeAssignment) {
-      throw new BadRequestException('Bài tập này chưa có CodeAssignment để sinh testcase.');
+      throw new BadRequestException(
+        'Bài tập này chưa có CodeAssignment để sinh testcase.',
+      );
     }
 
     if (!this.genAI) {
       throw new BadRequestException('Chưa cấu hình AI API key.');
     }
 
-    //  Cải tiến Prompt để AI không sinh ra Object và bỏ chữ "Kết quả:"
     const prompt = `
-      Bạn là chuyên gia thuật toán. Hãy tạo ra ${numberOfTestCases} test cases cho bài toán sau.
-      
-      THÔNG TIN BÀI TOÁN:
-      - Tên bài: ${codeAssignment.title}
-      - Mô tả: ${codeAssignment.problem_description}
-      - Giới hạn: ${constraints}
-      - Code giải chuẩn: \n${solutionCode}
+    Bạn là chuyên gia thuật toán. Hãy tạo ra ${numberOfTestCases} test cases cho bài toán sau.
+   
+    THÔNG TIN BÀI TOÁN:
+    - Tên bài: ${codeAssignment.title}
+    - Mô tả: ${codeAssignment.problem_description}
+    - Giới hạn: ${constraints}
+    - Code giải chuẩn: \n${solutionCode}
 
-      YÊU CẦU BẮT BUỘC:
-      1. "input_data" PHẢI LÀ CHUỖI (STRING). Các giá trị cách nhau bởi dấu cách. Ví dụ: "5 10". KHÔNG được dùng object {}.
-      2. "expected_output" PHẢI LÀ CHUỖI (STRING). Chỉ chứa kết quả cuối cùng, KHÔNG kèm văn bản như "Kết quả: ". Ví dụ: "15".
-      3. 2 test cases đầu tiên set "is_hidden": false. Các test cases còn lại set "is_hidden": true.
-      4. CHỈ TRẢ VỀ JSON ARRAY, KHÔNG GIẢI THÍCH.
 
-      Cấu trúc JSON mẫu:
-      [
-        {
-          "input_data": "5 10",
-          "expected_output": "15",
-          "is_hidden": false
-        }
-      ]
-    `;
+    YÊU CẦU BẮT BUỘC:
+    1. "input_data" PHẢI LÀ CHUỖI KHÁC RỖNG. Các giá trị cách nhau bởi dấu cách. Ví dụ: "5 10". Nếu bài không cần input, dùng "none". KHÔNG được dùng object {} hay mảng [].
+    2. "expected_output" PHẢI LÀ CHUỖI KHÁC RỖNG. Chỉ chứa kết quả cuối cùng, KHÔNG kèm văn bản như "Kết quả: ". Ví dụ: "15".
+    3. 2 test cases đầu tiên set "is_hidden": false. Các test cases còn lại set "is_hidden": true.
+    4. CHỈ TRẢ VỀ JSON ARRAY, KHÔNG GIẢI THÍCH, KHÔNG MARKDOWN.
+
+
+    Cấu trúc JSON mẫu:
+    [
+      {
+        "input_data": "5 10",
+        "expected_output": "15",
+        "is_hidden": false
+      }
+    ]
+  `;
 
     try {
       const model = this.genAI!.getGenerativeModel({
-        model: 'gemini-2.5-flash-lite', // Dòng model này ổn định cho JSON
+        model: 'gemini-2.5-flash-lite',
       });
       const result = await model.generateContent(prompt);
       const rawText = result.response.text();
-      
+
       let textResponse = rawText
         .replace(/```json/g, '')
         .replace(/```/g, '')
         .trim();
 
       const jsonMatch = textResponse.match(/\[[\s\S]*\]/);
-      if (jsonMatch) textResponse = jsonMatch[0];
+      if (!jsonMatch) {
+        throw new Error('Không tìm thấy JSON array trong response của AI.');
+      }
+      textResponse = jsonMatch[0];
 
       let parsedTestCases: any[] = JSON.parse(textResponse);
 
-      const hiddenCount = typeof hiddenTestCases === 'number' && hiddenTestCases >= 0
-        ? hiddenTestCases
-        : Math.max(numberOfTestCases - 2, 0);
+      if (!Array.isArray(parsedTestCases) || parsedTestCases.length === 0) {
+        throw new Error('AI trả về dữ liệu không hợp lệ.');
+      }
 
-      // 2. Xử lý dữ liệu linh hoạt (Map và ép kiểu)
-      const testCasesToSave = parsedTestCases.map((tc, index) => {
-        let inputStr = '';
-        
-        // Nếu AI lỡ trả về object {"a": 10, "b": 20}, ta nối thành "10 20"
-        if (tc.input_data && typeof tc.input_data === 'object') {
-          inputStr = Object.values(tc.input_data).join(' ');
-        } else {
-          inputStr = String(tc.input_data ?? '').trim();
-        }
+      const hiddenCount =
+        typeof hiddenTestCases === 'number' && hiddenTestCases >= 0
+          ? hiddenTestCases
+          : Math.max(numberOfTestCases - 2, 0);
 
-        // Loại bỏ chữ "Kết quả: " nếu AI quên không tuân thủ prompt
-        let outputStr = String(tc.expected_output ?? '').trim();
-        outputStr = outputStr.replace(/Kết quả:\s*/i, '');
+      const testCasesToSave = parsedTestCases
+        .map((tc, index) => {
+          // Xử lý input_data
+          let inputStr = '';
+          if (
+            tc.input_data &&
+            typeof tc.input_data === 'object' &&
+            !Array.isArray(tc.input_data)
+          ) {
+            inputStr = Object.values(tc.input_data).join(' ').trim();
+          } else if (Array.isArray(tc.input_data)) {
+            inputStr = tc.input_data.join(' ').trim();
+          } else {
+            inputStr = String(tc.input_data ?? '').trim();
+          }
+          if (!inputStr) inputStr = 'none'; // fallback tránh lỗi required
 
-        return {
-          assignment_id: assignmentObjectId,
-          code_assignment_id: codeAssignment._id,
-          input_data: inputStr,
-          expected_output: outputStr,
-          is_hidden: typeof tc.is_hidden === 'boolean' 
-            ? tc.is_hidden 
-            : index >= (parsedTestCases.length - hiddenCount),
-        };
-      });
+          // Xử lý expected_output
+          let outputStr = String(tc.expected_output ?? '').trim();
+          outputStr = outputStr.replace(/Kết quả:\s*/i, '').trim();
 
-      // 3. Lưu vào DB
-      const savedTestCases = await this.testCaseModel.insertMany(testCasesToSave);
+          // Bỏ qua test case nếu output rỗng
+          if (!outputStr) return null;
+
+          return {
+            assignment_id: assignmentObjectId,
+            code_assignment_id: codeAssignment._id,
+            input_data: inputStr,
+            expected_output: outputStr,
+            is_hidden:
+              typeof tc.is_hidden === 'boolean'
+                ? tc.is_hidden
+                : index >= parsedTestCases.length - hiddenCount,
+          };
+        })
+        .filter(Boolean); // lọc bỏ các test case null
+
+      if (testCasesToSave.length === 0) {
+        throw new Error('Không có test case hợp lệ nào sau khi xử lý.');
+      }
+
+      const savedTestCases =
+        await this.testCaseModel.insertMany(testCasesToSave);
 
       return {
         message: `Đã tự động tạo và lưu ${savedTestCases.length} Test Cases thành công!`,
@@ -284,78 +436,83 @@ export class TestcasesService {
       };
     } catch (error) {
       console.error('[generate-ai] Error:', error);
-      throw new BadRequestException('AI tạo dữ liệu không hợp lệ, vui lòng thử lại.');
+      throw new BadRequestException(
+        error instanceof Error
+          ? `Sinh test case thất bại: ${error.message}`
+          : 'AI tạo dữ liệu không hợp lệ, vui lòng thử lại.',
+      );
     }
   }
+
   //đang test
-//   async generateTestCaseByAI(
-//   assignmentId: string,
-//   solutionCode: string,
-//   constraints: string,
-//   numberOfTestCases: number = 5,
-//   hiddenTestCases?: number,
-// ) {
-//   if (!Types.ObjectId.isValid(assignmentId)) {
-//     throw new BadRequestException('assignmentId không hợp lệ');
-//   }
+  //   async generateTestCaseByAI(
+  //   assignmentId: string,
+  //   solutionCode: string,
+  //   constraints: string,
+  //   numberOfTestCases: number = 5,
+  //   hiddenTestCases?: number,
+  // ) {
+  //   if (!Types.ObjectId.isValid(assignmentId)) {
+  //     throw new BadRequestException('assignmentId không hợp lệ');
+  //   }
 
-//   const assignmentObjectId = new Types.ObjectId(assignmentId);
-//   const assignment = await this.assignmentModel
-//     .findById(assignmentObjectId)
-//     .lean()
-//     .exec();
+  //   const assignmentObjectId = new Types.ObjectId(assignmentId);
+  //   const assignment = await this.assignmentModel
+  //     .findById(assignmentObjectId)
+  //     .lean()
+  //     .exec();
 
-//   if (!assignment) {
-//     throw new BadRequestException('Không tìm thấy assignment cho bài tập này.');
-//   }
+  //   if (!assignment) {
+  //     throw new BadRequestException('Không tìm thấy assignment cho bài tập này.');
+  //   }
 
-//   const codeAssignment = await this.codeAssignmentModel
-//     .findOne({ assignment_id: assignmentObjectId })
-//     .lean()
-//     .exec();
+  //   const codeAssignment = await this.codeAssignmentModel
+  //     .findOne({ assignment_id: assignmentObjectId })
+  //     .lean()
+  //     .exec();
 
-//   if (!codeAssignment) {
-//     throw new BadRequestException('Bài tập này chưa có CodeAssignment để sinh testcase.');
-//   }
+  //   if (!codeAssignment) {
+  //     throw new BadRequestException('Bài tập này chưa có CodeAssignment để sinh testcase.');
+  //   }
 
-//   try {
-//     // Gọi qua AiAssistantService → tự động key rotation
-//     const parsedTestCases = await this.aiAssistantService.generateTestCases(
-//       codeAssignment.title,
-//       codeAssignment.problem_description,
-//       constraints,
-//       solutionCode,
-//       numberOfTestCases,
-//     );
+  //   try {
+  //     // Gọi qua AiAssistantService → tự động key rotation
+  //     const parsedTestCases = await this.aiAssistantService.generateTestCases(
+  //       codeAssignment.title,
+  //       codeAssignment.problem_description,
+  //       constraints,
+  //       solutionCode,
+  //       numberOfTestCases,
+  //     );
 
-//     const hiddenCount =
-//       typeof hiddenTestCases === 'number' && hiddenTestCases >= 0
-//         ? hiddenTestCases
-//         : Math.max(numberOfTestCases - 2, 0);
+  //     const hiddenCount =
+  //       typeof hiddenTestCases === 'number' && hiddenTestCases >= 0
+  //         ? hiddenTestCases
+  //         : Math.max(numberOfTestCases - 2, 0);
 
-//     // Gắn thêm assignment_id và code_assignment_id trước khi lưu
-//     const testCasesToSave = parsedTestCases.map((tc, index) => ({
-//       ...tc,
-//       assignment_id: assignmentObjectId,
-//       code_assignment_id: codeAssignment._id,
-//       // Ghi đè is_hidden nếu caller truyền hiddenTestCases cụ thể
-//       is_hidden:
-//         typeof hiddenTestCases === 'number'
-//           ? index >= parsedTestCases.length - hiddenCount
-//           : tc.is_hidden,
-//     }));
+  //     // Gắn thêm assignment_id và code_assignment_id trước khi lưu
+  //     const testCasesToSave = parsedTestCases.map((tc, index) => ({
+  //       ...tc,
+  //       assignment_id: assignmentObjectId,
+  //       code_assignment_id: codeAssignment._id,
+  //       // Ghi đè is_hidden nếu caller truyền hiddenTestCases cụ thể
+  //       is_hidden:
+  //         typeof hiddenTestCases === 'number'
+  //           ? index >= parsedTestCases.length - hiddenCount
+  //           : tc.is_hidden,
+  //     }));
 
-//     const savedTestCases = await this.testCaseModel.insertMany(testCasesToSave);
+  //     const savedTestCases = await this.testCaseModel.insertMany(testCasesToSave);
 
-//     return {
-//       message: `Đã tự động tạo và lưu ${savedTestCases.length} Test Cases thành công!`,
-//       data: savedTestCases,
-//     };
-//   } catch (error) {
-//     this.logger.error('[generate-ai] Error:', error);
-//     throw new BadRequestException('AI tạo dữ liệu không hợp lệ, vui lòng thử lại.');
-//   }
-// }
+  //     return {
+  //       message: `Đã tự động tạo và lưu ${savedTestCases.length} Test Cases thành công!`,
+  //       data: savedTestCases,
+  //     };
+  //   } catch (error) {
+  //     this.logger.error('[generate-ai] Error:', error);
+  //     throw new BadRequestException('AI tạo dữ liệu không hợp lệ, vui lòng thử lại.');
+  //   }
+  // }
   async findAll(code_assignment_id?: string): Promise<TestCase[]> {
     const filter: Record<string, any> = {};
     if (code_assignment_id) {
@@ -379,7 +536,7 @@ export class TestcasesService {
       .exec();
 
     // Map over test cases and remove expected_output if it's hidden
-    return testCases.map(tc => {
+    return testCases.map((tc) => {
       if (tc.is_hidden) {
         return {
           ...tc,
@@ -401,22 +558,23 @@ export class TestcasesService {
   //   return this.testCaseModel.create(createTestcaseDto);
   // }
   async create(createTestcaseDto: CreateTestcaseDto): Promise<TestCase> {
-  const codeAssignment = await this.codeAssignmentModel.findById(
-    createTestcaseDto.code_assignment_id,
-  ).lean().exec();
+    const codeAssignment = await this.codeAssignmentModel
+      .findById(createTestcaseDto.code_assignment_id)
+      .lean()
+      .exec();
 
-  if (!codeAssignment) {
-    throw new NotFoundException('CodeAssignment not found');
+    if (!codeAssignment) {
+      throw new NotFoundException('CodeAssignment not found');
+    }
+
+    // Gán assignment_id từ CodeAssignment vào data trước khi tạo
+    const newTestCaseData = {
+      ...createTestcaseDto,
+      assignment_id: codeAssignment.assignment_id, // Lấy reference từ assignment cha
+    };
+
+    return this.testCaseModel.create(newTestCaseData);
   }
-
-  // Gán assignment_id từ CodeAssignment vào data trước khi tạo
-  const newTestCaseData = {
-    ...createTestcaseDto,
-    assignment_id: codeAssignment.assignment_id, // Lấy reference từ assignment cha
-  };
-
-  return this.testCaseModel.create(newTestCaseData);
-}
   async findOne(id: string): Promise<TestCase> {
     const testCase = await this.testCaseModel.findById(id).lean().exec();
     if (!testCase) {
@@ -451,34 +609,38 @@ export class TestcasesService {
   //   return updated.toObject();
   // }
 
-  async update(id: string, updateTestcaseDto: UpdateTestcaseDto): Promise<TestCase> {
-  let finalUpdateData = { ...updateTestcaseDto };
+  async update(
+    id: string,
+    updateTestcaseDto: UpdateTestcaseDto,
+  ): Promise<TestCase> {
+    let finalUpdateData = { ...updateTestcaseDto };
 
-  if (updateTestcaseDto.code_assignment_id) {
-    const codeAssignment = await this.codeAssignmentModel.findById(
-      updateTestcaseDto.code_assignment_id,
-    ).lean().exec();
+    if (updateTestcaseDto.code_assignment_id) {
+      const codeAssignment = await this.codeAssignmentModel
+        .findById(updateTestcaseDto.code_assignment_id)
+        .lean()
+        .exec();
 
-    if (!codeAssignment) {
-      throw new NotFoundException('CodeAssignment not found');
+      if (!codeAssignment) {
+        throw new NotFoundException('CodeAssignment not found');
+      }
+
+      // Cập nhật luôn cả assignment_id cha
+      finalUpdateData.assignment_id = codeAssignment.assignment_id.toString();
     }
-    
-    // Cập nhật luôn cả assignment_id cha
-    finalUpdateData.assignment_id = codeAssignment.assignment_id.toString();
+
+    const updated = await this.testCaseModel.findByIdAndUpdate(
+      id,
+      finalUpdateData, // Sử dụng data đã xử lý
+      { new: true, runValidators: true },
+    );
+
+    if (!updated) {
+      throw new NotFoundException('TestCase not found');
+    }
+
+    return updated.toObject();
   }
-
-  const updated = await this.testCaseModel.findByIdAndUpdate(
-    id,
-    finalUpdateData, // Sử dụng data đã xử lý
-    { new: true, runValidators: true },
-  );
-
-  if (!updated) {
-    throw new NotFoundException('TestCase not found');
-  }
-
-  return updated.toObject();
-}
 
   async remove(id: string): Promise<void> {
     const deleted = await this.testCaseModel.findByIdAndDelete(id);
