@@ -7,6 +7,7 @@ import {
   LeftOutlined,
   RightOutlined,
 } from "@ant-design/icons";
+import { Modal as AntdModal, message } from "antd";
 import PermissionControl from "../../components/permissionControl";
 import axiosInstance from "../../utils/axios"; 
 
@@ -79,10 +80,10 @@ const ArticleManage = () => {
 
   // ===================== CREATE / UPDATE =====================
   const handleSubmit = async () => {
-    if (!formData.title.trim()) return alert("Vui lòng nhập tiêu đề!");
-    if (!formData.author.trim()) return alert("Vui lòng nhập tác giả!");
-    if (!formData.content.trim()) return alert("Vui lòng nhập nội dung!");
-    if (!isEdit && !coverImageFile) return alert("Vui lòng chọn ảnh thumbnail!");
+    if (!formData.title.trim()) return message.error("Vui lòng nhập tiêu đề!");
+    if (!formData.author.trim()) return message.error("Vui lòng nhập tác giả!");
+    if (!formData.content.trim()) return message.error("Vui lòng nhập nội dung!");
+    if (!isEdit && !coverImageFile) return message.error("Vui lòng chọn ảnh thumbnail!");
 
     try {
       const submitData = new FormData();
@@ -99,7 +100,7 @@ const ArticleManage = () => {
           { headers: { "Content-Type": "multipart/form-data" } },
         );
 
-        alert("Cập nhật thành công!");
+        message.success("Cập nhật bài viết thành công!");
       } else {
         //CREATE
         submitData.append("slug", generateSlug(formData.title));
@@ -109,7 +110,7 @@ const ArticleManage = () => {
           { headers: { "Content-Type": "multipart/form-data" } },
         );
 
-        alert("Thêm bài viết thành công!");
+        message.success("Thêm bài viết thành công!");
       }
 
       setIsModalOpen(false);
@@ -120,7 +121,7 @@ const ArticleManage = () => {
       fetchArticles();
     } catch (error: any) {
       console.log(error.response?.data);
-      alert(error.response?.data?.message || "Có lỗi xảy ra!");
+      message.error(error.response?.data?.message || "Có lỗi xảy ra!");
     }
   };
 
@@ -143,7 +144,7 @@ const ArticleManage = () => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Vui lòng chọn file ảnh!");
+      message.error("Vui lòng chọn file ảnh!");
       return;
     }
 
@@ -153,18 +154,23 @@ const ArticleManage = () => {
 
   // ===================== DELETE =====================
   const handleDelete = async (id: string) => {
-    const confirmDelete = window.confirm("Bạn có muốn xóa bài viết này không?");
-
-    if (!confirmDelete) return;
-
-    try {
-      await axiosInstance.delete(`/blogs/${id}`);
-      alert("Xóa thành công!");
-      fetchArticles();
-    } catch (error: any) {
-      console.log(error.response?.data);
-      alert("Lỗi khi xóa!");
-    }
+    AntdModal.confirm({
+      title: "Xác nhận xóa",
+      content: "Bạn có chắc chắn muốn xóa bài viết này không?",
+      okText: "Xóa",
+      okType: "danger",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          await axiosInstance.delete(`/blogs/${id}`);
+          message.success("Xóa bài viết thành công!");
+          fetchArticles();
+        } catch (error: any) {
+          console.log(error.response?.data);
+          message.error(error.response?.data?.message || "Lỗi khi xóa bài viết!");
+        }
+      },
+    });
   };
 
   return (
