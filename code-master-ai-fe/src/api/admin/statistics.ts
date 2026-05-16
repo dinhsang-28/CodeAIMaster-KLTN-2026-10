@@ -1,5 +1,4 @@
-import axios from "axios";
-import { API_URL } from "../../api/auth";
+import axiosInstance from "../../utils/axios";
 
 export type WeeklyRevenueItem = {
   day: number;
@@ -44,21 +43,42 @@ export type OrderByWeekResponse = {
   weeklyOrders?: OrderStatisticItem[];
 };
 
-const buildUrl = (path: string, params: Record<string, string>) => {
-  const url = new URL(`${API_URL}${path}`);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  return url.toString();
-};
-
 export const getRevenueByWeek = (date: string) =>
-  axios.get<WeeklyRevenueResponse>(buildUrl("/statistics/revenue-by-week", { date })).then((r) => r.data);
+  axiosInstance
+    .get<WeeklyRevenueResponse>("/statistics/revenue-by-week", {
+      params: { date },
+    })
+    .then((r) => r.data);
 
 export const getOrderByMonth = (year: string) =>
-  axios.get<OrderByMonthResponse>(buildUrl("/statistics/order-by-month", { year })).then((r) => r.data);
+  axiosInstance
+    .get<OrderByMonthResponse>("/statistics/order-by-month", {
+      params: { year },
+    })
+    .then((r) => r.data);
 
 export const getOrderByWeek = (date: string) =>
-  axios.get<OrderByWeekResponse>(buildUrl("/statistics/order-by-week", { date })).then((r) => r.data);
+  axiosInstance
+    .get<OrderByWeekResponse>("/statistics/order-by-week", {
+      params: { date },
+    })
+    .then((r) => r.data);
 
-export const exportOrderDetail = (year: string) => {
-  window.open(buildUrl("/statistics/export-order-detail", { year }), "_blank", "noopener,noreferrer");
+export const exportOrderDetail = async (year: string) => {
+  const response = await axiosInstance.get<Blob>(
+    "/statistics/export-order-detail",
+    {
+      params: { year },
+      responseType: "blob",
+    },
+  );
+
+  const blobUrl = window.URL.createObjectURL(response.data);
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = `order-detail-${year}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(blobUrl);
 };
