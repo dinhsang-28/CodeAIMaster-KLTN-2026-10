@@ -29,6 +29,7 @@ import BlogDetail from "../pages/blogDetail";
 import AdminLeads from "../pages/admin/AdminLeads";
 import AdminStudents from "../pages/admin/AdminStudents";
 import MyEnrollment from "../pages/myCourses";
+import SupportInfoPage from "../pages/supportInfo";
 
 export const router = createBrowserRouter([
   {
@@ -94,6 +95,26 @@ export const router = createBrowserRouter([
       {
         path: "/profile/password",
         element: <ProfilePage />,
+      },
+      {
+        path: "/privacy-policy",
+        element: <SupportInfoPage type="privacy" />,
+      },
+      {
+        path: "/help-center",
+        element: <SupportInfoPage type="help" />,
+      },
+      {
+        path: "/terms-of-service",
+        element: <SupportInfoPage type="terms" />,
+      },
+      {
+        path: "/faq",
+        element: <SupportInfoPage type="faq" />,
+      },
+      {
+        path: "/partners",
+        element: <SupportInfoPage type="partners" />,
       },
       
     ],
