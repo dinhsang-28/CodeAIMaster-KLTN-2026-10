@@ -165,10 +165,10 @@ const AdminLayout: React.FC = () => {
   const pageTitle = getPageTitle();
 
   return (
-    <div className="flex min-h-screen bg-brand-25 text-brand-900 overflow-x-hidden">
+    <div className="flex h-screen overflow-hidden bg-brand-25 text-brand-900">
       {/* --- SIDEBAR --- */}
       <aside
-        className={`flex min-h-screen flex-col border-r border-brand-100 bg-brand-50 transition-all duration-300 ${collapsed ? "w-[88px]" : "w-[280px]"}`}
+        className={`sticky top-0 flex h-screen shrink-0 flex-col border-r border-brand-100 bg-brand-50 transition-all duration-300 ${collapsed ? "w-[88px]" : "w-[280px]"}`}
       >
         <div
           className={`flex h-[76px] items-center ${collapsed ? "justify-center px-2" : "px-6"}`}
@@ -243,8 +243,8 @@ const AdminLayout: React.FC = () => {
         </button>
       </aside>
 
-      <div className="flex min-h-screen flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-brand-100 shadow-sm bg-white px-6 py-3">
+      <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="sticky top-0 z-50 flex shrink-0 items-center justify-between border-b border-brand-100 bg-white px-6 py-3 shadow-sm">
           <div />
 
           <div
@@ -349,7 +349,7 @@ const AdminLayout: React.FC = () => {
           </div>
         </header>
 
-        <main className="flex-1 bg-white p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto bg-white p-4 md:p-6">
           <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-brand-300">
             {location.pathname !== "/admin" && (
               <>

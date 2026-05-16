@@ -284,8 +284,6 @@ const CourseManage: React.FC = () => {
   };
 
   // Safe mapping helpers
-  const getTeacherName = (course: Course) => course.instructor?.fullname || course.instructor?.name || "Chưa gán";
-  const getTeacherAvatar = (course: Course) => course.instructor?.avatar || "https://i.pravatar.cc/40?img=1";
   const getCategoryName = (course: Course) => course.category?.category_name || course.category?.name || "Chưa phân loại";
   const getCourseName = (course: Course) => course.title || course.name || "Khóa học chưa có tên";
   const formatPrice = (price?: number | string) => {
@@ -348,12 +346,6 @@ const CourseManage: React.FC = () => {
         </div>
         <p className="text-xs text-gray-400 mb-1">Cập nhật {getFormattedDate(course.updatedAt)}</p>
         <div className="flex items-center gap-2 mb-2">
-          <img
-            src={getTeacherAvatar(course)}
-            alt={getTeacherName(course)}
-            className="w-5 h-5 rounded-full object-cover"
-          />
-          <span className="text-xs text-gray-600">{getTeacherName(course)}</span>
           <CategoryPill label={getCategoryName(course)} />
         </div>
         <div className="flex items-center justify-between">
@@ -438,7 +430,7 @@ const CourseManage: React.FC = () => {
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
               <Input
                 prefix={<SearchOutlined className="text-gray-400" />}
-                placeholder="Tên khóa học, giảng viên..."
+                placeholder="Tên khóa học..."
                 className="w-full sm:w-64"
                 style={{ borderRadius: 999 }}
                 value={keyword}
@@ -491,7 +483,7 @@ const CourseManage: React.FC = () => {
           ) : (
             <div className="bg-white border border-brand-100 rounded-2xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[700px]">
+                <table className="w-full min-w-[640px]">
                   <thead>
                     <tr
                       style={{
@@ -502,7 +494,6 @@ const CourseManage: React.FC = () => {
                       {[
                         "THUMBNAIL",
                         "TÊN KHÓA HỌC",
-                        "GIẢNG VIÊN",
                         "THỂ LOẠI",
                         "GIÁ",
                         "TRẠNG THÁI",
@@ -515,7 +506,7 @@ const CourseManage: React.FC = () => {
                             fontSize: 11,
                             fontWeight: 700,
                             letterSpacing: "0.06em",
-                            textAlign: i === 6 ? "right" : "left",
+                            textAlign: i === 5 ? "right" : "left",
                           }}
                         >
                           {col}
@@ -563,30 +554,6 @@ const CourseManage: React.FC = () => {
                           >
                             Cập nhật {getFormattedDate(course.updatedAt)}
                           </p>
-                        </td>
-                        <td className="p-4">
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                            }}
-                          >
-                            <img
-                              src={getTeacherAvatar(course)}
-                              alt={getTeacherName(course)}
-                              style={{
-                                width: 30,
-                                height: 30,
-                                borderRadius: "50%",
-                                objectFit: "cover",
-                                flexShrink: 0,
-                              }}
-                            />
-                            <span style={{ fontSize: 13, color: "#374151" }}>
-                              {getTeacherName(course)}
-                            </span>
-                          </div>
                         </td>
                         <td className="p-4">
                           <CategoryPill label={getCategoryName(course)} />
@@ -639,7 +606,7 @@ const CourseManage: React.FC = () => {
                     ))}
                     {courses.length === 0 && !loading && (
                       <tr>
-                        <td colSpan={7} className="text-center py-8 text-gray-400">Không tìm thấy khóa học nào.</td>
+                        <td colSpan={6} className="text-center py-8 text-gray-400">Không tìm thấy khóa học nào.</td>
                       </tr>
                     )}
                   </tbody>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ChevronRight, Plus, Pencil, Trash2, X } from "lucide-react";
+import { Modal as AntdModal } from "antd";
 import {
   GetCategories,
   CreateCategory,
@@ -140,28 +141,35 @@ const CategoryManage: React.FC = () => {
     title: string,
     quantityCourse: number,
   ) => {
-    const confirmed = window.confirm(
-      `Bạn có chắc chắn muốn xóa thể loại "${title}" không?`,
-    );
-
-    if (!confirmed) return;
-
     if (quantityCourse > 0) {
-      window.alert(
-        `Không thể xóa thể loại "${title}" vì đang có khóa học thuộc thể loại này?`,
-      );
+      AntdModal.warning({
+        title: "Không thể xóa thể loại",
+        content: `Thể loại "${title}" đang có khóa học thuộc thể loại này.`,
+        okText: "Đã hiểu",
+      });
       return;
     }
-    try {
-      await DeleteCategory(id);
-      showNotification("success", "Xóa thể loại thành công!");
-      await fetchCategories();
-    } catch (error: any) {
-      showNotification(
-        "error",
-        error?.response?.data?.message || "Có lỗi xảy ra khi xóa thể loại.",
-      );
-    }
+
+    AntdModal.confirm({
+      title: "Xác nhận xóa",
+      content: `Bạn có chắc chắn muốn xóa thể loại "${title}" không?`,
+      okText: "Xóa",
+      okType: "danger",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          await DeleteCategory(id);
+          showNotification("success", "Xóa thể loại thành công!");
+          await fetchCategories();
+        } catch (error: any) {
+          showNotification(
+            "error",
+            error?.response?.data?.message ||
+              "Có lỗi xảy ra khi xóa thể loại.",
+          );
+        }
+      },
+    });
   };
 
   const handleSubmit = async () => {

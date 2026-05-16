@@ -61,6 +61,13 @@ export class ProgressService {
     ]);
 
     const totalActivities = totalLessons * 3;
+    const isLessonCompleted = (progress: UserLessonProgress) =>
+      progress.fullyCompleted === true ||
+      (progress.video?.status === ActivityProgressStatus.COMPLETED &&
+        progress.quiz?.status === ActivityProgressStatus.COMPLETED &&
+        progress.assignment?.status === ActivityProgressStatus.COMPLETED);
+
+    const completedLessons = progresses.filter(isLessonCompleted).length;
     const completedActivities = progresses.reduce((count, progress) => {
       return (
         count +
@@ -80,6 +87,7 @@ export class ProgressService {
     return {
       courseId,
       totalLessons,
+      completedLessons,
       totalActivities,
       completedActivities,
       progressPercent,
