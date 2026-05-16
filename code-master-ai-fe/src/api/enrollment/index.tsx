@@ -34,3 +34,8 @@ export const getCourseProgress = async (courseId: string) => {
   const res = await axiosInstance.get(`/progress/course/${courseId}`);
   return res.data?.data || res.data;
 };
+
+export const enrollFreeCourse = async (courseId: string) => {
+  const res = await axiosInstance.post(`/courses/${courseId}/free-enrollment`);
+  return res.data?.data || res.data;
+};

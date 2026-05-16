@@ -6,6 +6,7 @@ import { useUserCart } from "../../store/cart";
 import { Modal } from "antd";
 import { useState } from "react";
 import { useUserInfo } from "../../store/user";
+import { getMyCourses } from "../../api/enrollment";
 
 export const CourseCard = ({ course }: { course: ICourse }) => {
   const [open, setOpen] = useState(false);
@@ -43,6 +44,25 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
       console.log("Thêm vào giỏ hàng thành công!");
     } catch (error) {
       console.log("Lỗi khi thêm vào giỏ hàng. Vui lòng thử lại.");
+    }
+  };
+
+  const goToFreeCourse = async () => {
+    if (!userInfo) {
+      setModalText("Vui lòng đăng nhập để học khóa học!");
+      showModal();
+      return;
+    }
+
+    try {
+      const myCourses = await getMyCourses();
+      const alreadyEnrolled =
+        Array.isArray(myCourses) &&
+        myCourses.some((item: any) => String(item._id) === String(course._id));
+
+      navigate(alreadyEnrolled ? "/myCourses" : `/course/${course._id}`);
+    } catch {
+      navigate(`/course/${course._id}`);
     }
   };
 
@@ -148,7 +168,7 @@ export const CourseCard = ({ course }: { course: ICourse }) => {
               className="rounded-xl bg-brand-700 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-800"
               onClick={() => {
                 if (course.price === 0) {
-                  navigate(`/learn/${course._id}`);
+                  goToFreeCourse();
                 } else {
                   checkUser(true);
                 }

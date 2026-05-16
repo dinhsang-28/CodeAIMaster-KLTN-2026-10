@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { GetCoursesDetail } from "../../api/courseDetail";
 import { GetFeaturedCourses } from "../../api/course";
 import { createCartItem } from "../../api/cart";
-import { getMyCourses } from "../../api/enrollment";
+import { enrollFreeCourse, getMyCourses } from "../../api/enrollment";
 import { Modal } from "antd";
 import { useUserInfo } from "../../store/user";
 const formatPrice = (price: number) =>
@@ -125,6 +125,29 @@ export default function CourseDetailPage() {
       console.error("Lỗi khi thêm vào giỏ hàng: ", error);
     }
   };
+
+  const handleFreeEnrollment = async () => {
+    if (!courseDetail) return;
+
+    if (!userInfo) {
+      setModalText("Vui lòng đăng nhập để học khóa học!");
+      showModal();
+      return;
+    }
+
+    try {
+      await enrollFreeCourse(courseDetail._id);
+      setIsPurchased(true);
+      navigate("/myCourses");
+    } catch (error: any) {
+      console.error("Lỗi đăng ký khóa học miễn phí:", error);
+      setModalText(
+        error?.response?.data?.message || "Không thể đăng ký khóa học miễn phí.",
+      );
+      showModal();
+    }
+  };
+
   if (!courseDetail) {
     return (
       <div className="min-h-screen bg-brand-25 px-4 py-10">
@@ -370,12 +393,23 @@ export default function CourseDetailPage() {
                 </div>
 
                 <div className="space-y-4">
-                  {isPurchased || courseDetail.price === 0 ? (
+                  {isPurchased ? (
                     <button
-                      onClick={() => navigate(`/learn/${courseDetail._id}`)}
+                      onClick={() =>
+                        courseDetail.price === 0
+                          ? navigate("/myCourses")
+                          : navigate(`/learn/${courseDetail._id}`)
+                      }
                       className="w-full rounded-2xl bg-brand-600 px-5 py-4 font-bold text-white transition hover:bg-brand-700"
                     >
-                      Học ngay
+                      {courseDetail.price === 0 ? "Vào khóa học của tôi" : "Học ngay"}
+                    </button>
+                  ) : courseDetail.price === 0 ? (
+                    <button
+                      onClick={handleFreeEnrollment}
+                      className="w-full rounded-2xl bg-brand-600 px-5 py-4 font-bold text-white transition hover:bg-brand-700"
+                    >
+                      Đăng ký học miễn phí
                     </button>
                   ) : (
                     <>
@@ -386,16 +420,10 @@ export default function CourseDetailPage() {
                         Thêm vào giỏ hàng
                       </button>
                       <button
-                        onClick={() => {
-                          if (courseDetail.price === 0) {
-                            navigate(`/learn/${courseDetail._id}`);
-                          } else {
-                            checkUser(true);
-                          }
-                        }}
+                        onClick={() => checkUser(true)}
                         className="w-full rounded-2xl border-2 border-brand-700 px-5 py-4 font-bold text-brand-700 transition hover:bg-brand-700 hover:text-white"
                       >
-                        {courseDetail.price === 0 ? "Học" : "Mua ngay"}
+                        Mua ngay
                       </button>
                     </>
                   )}
