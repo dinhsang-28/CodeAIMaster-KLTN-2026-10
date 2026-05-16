@@ -6,6 +6,7 @@ import WeekNavigator from "./WeekNavigator";
 import SummaryCard from "./SummaryCard";
 import { getRevenueByWeek, type WeeklyRevenueResponse } from "../../api/admin/statistics";
 import { GetRevenueExport } from "../../api/admin/revenue";
+import dayjs from "dayjs";
 
 const yearItems: MenuProps["items"] = [2022, 2023, 2024, 2025, 2026].map((year) => ({
   key: String(year),
@@ -21,6 +22,24 @@ const startOfWeek = (date: Date) => {
   d.setHours(0, 0, 0, 0);
   return d;
 };
+
+const formatSub = (sub?: string) => {
+    if (!sub) return "";
+
+    const dates = sub.split(" - ");
+
+    const isDateRange =
+      dates.length === 2 &&
+      dates.every((date) => dayjs(date).isValid());
+
+    if (isDateRange) {
+      return dates
+        .map((date) => dayjs(date).format("DD/MM/YYYY"))
+        .join(" - ");
+    }
+
+    return sub;
+  };
 
 const addDays = (date: Date, days: number) => {
   const d = new Date(date);
@@ -179,10 +198,10 @@ export default function RevenueStatisticsSection() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h2 className="text-base sm:text-lg font-bold" style={{ color: "#1f2d27" }}>Biểu đồ doanh thu theo tuần</h2>
-              <p className="text-xs sm:text-sm" style={{ color: "#7f9f6b" }}>{weekLabel}</p>
+              <p className="text-xs sm:text-sm" style={{ color: "#7f9f6b" }}>{formatSub(weekLabel)}</p>
             </div>
             <WeekNavigator
-              label={weekLabel}
+              label={formatSub(weekLabel)}
               onPrev={() => onWeekMove(-1)}
               onCurrent={() => setWeekDate(toDateInput(new Date()))}
               onNext={() => onWeekMove(1)}
@@ -208,7 +227,8 @@ export default function RevenueStatisticsSection() {
         <div className="rounded-2xl p-4 sm:p-6 shadow-sm" style={{ backgroundColor: "#344e41", color: "#dad7cd" }}>
           <h3 className="font-bold text-sm sm:text-base mb-1" style={{ color: "#cfd5c2" }}>Mục tiêu Năm {year}</h3>
           <p className="text-xs mb-4 sm:mb-6" style={{ color: "#7f9f6b" }}>Theo dõi tiến độ đạt mục tiêu doanh thu</p>
-          <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col justify-center">
+            <div className="mb-4 sm:mb-6">
             <div className="flex justify-between text-xs mb-2 gap-2" style={{ color: "#a3b18a" }}>
               <span>TIẾN ĐỘ DOANH THU</span>
               <span className="font-bold shrink-0" style={{ color: "#dad7cd" }}>
@@ -225,15 +245,16 @@ export default function RevenueStatisticsSection() {
               { label: "CÒN THIẾU", val: `${Math.max(0, GOAL - (monthlyReport?.totalRevenue ?? 0)).toLocaleString("vi-VN")}`, color: "#cfd5c2" },
               { label: "TIẾN ĐỘ", val: `${Math.min(100, Math.round((monthlyReport?.totalRevenue ?? 0) / GOAL * 100))}%`, color: "#7f9f6b" },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl p-2 sm:p-3 text-center" style={{ backgroundColor: "#2c3e36" }}>
+              <div key={item.label} className="rounded-xl p-2 sm:p-3 text-center flex flex-col justify-center" style={{ backgroundColor: "#2c3e36" }}>
                 <p className="text-sm sm:text-base font-extrabold" style={{ color: item.color }}>{item.val}</p>
                 <p className="text-xs mt-1" style={{ color: "#7f9f6b" }}>{item.label}</p>
               </div>
             ))}
           </div>
-          <button className="mt-4 sm:mt-5 w-full rounded-xl py-2 sm:py-2.5 text-xs sm:text-sm font-bold transition-opacity hover:opacity-80" style={{ backgroundColor: "#dad7cd", color: "#344e41" }}>
+          </div>
+          {/* <button className="mt-4 sm:mt-5 w-full rounded-xl py-2 sm:py-2.5 text-xs sm:text-sm font-bold transition-opacity hover:opacity-80" style={{ backgroundColor: "#dad7cd", color: "#344e41" }}>
             CẬP NHẬT MỤC TIÊU {year + 1}
-          </button>
+          </button> */}
         </div>
       </div>
     </section>
